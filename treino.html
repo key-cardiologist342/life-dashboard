@@ -100,7 +100,7 @@
 
   .sets-header {
     display: grid;
-    grid-template-columns: 36px 1fr 1fr 1fr 1fr 32px;
+    grid-template-columns: 60px 1fr 1fr 1fr 1fr 32px;
     gap: 8px;
     padding: 0 0 8px;
     border-bottom: 1px solid var(--border);
@@ -114,7 +114,7 @@
 
   .set-row {
     display: grid;
-    grid-template-columns: 36px 1fr 1fr 1fr 1fr 32px;
+    grid-template-columns: 60px 1fr 1fr 1fr 1fr 32px;
     gap: 8px; align-items: center;
     margin-bottom: 8px;
     animation: slideIn .2s ease;
@@ -265,7 +265,7 @@ function addExercise(){
     </div>
     <div class="sets-area">
       <div class="sets-header">
-        <span>Série</span>
+        <span>Séries</span>
         <span>Reps</span>
         <span>Duração</span>
         <span>Peso (kg)</span>
@@ -287,7 +287,7 @@ function addSet(exId){
   const row    = document.createElement('div');
   row.className = 'set-row';
   row.innerHTML = `
-    <div class="set-num">${setNum}</div>
+    <input class="set-input" type="number" min="1" value="1" title="Número de séries" style="color:var(--orange);font-weight:700"/>
     <input class="set-input" type="number" min="0" placeholder="—" title="Repetições"/>
     <input class="set-input" type="text" placeholder="ex: 1min" title="Duração"/>
     <input class="set-input" type="number" min="0" step="0.5" placeholder="—" title="Peso kg"/>
@@ -304,15 +304,8 @@ function removeExercise(id){
   atualizarResumo();
 }
 function removeSet(btn){
-  const row  = btn.closest('.set-row');
-  const list = row.parentElement;
-  row.remove();
-  // renumera
-  list.querySelectorAll('.set-row').forEach((r, i) => {
-    r.querySelector('.set-num').textContent = i+1;
-  });
-  atualizarResumo();
-}
+  btn.closest('.set-row').remove();
+  atualizarResumo();}
 
 // ── RESUMO ────────────────────────────────────────────────
 function atualizarResumo(){
@@ -320,17 +313,19 @@ function atualizarResumo(){
   let totalSeries = 0, totalVolume = 0;
   cards.forEach(card => {
     const rows = card.querySelectorAll('.set-row');
-    totalSeries += rows.length;
     rows.forEach(r => {
-      const reps  = parseFloat(r.querySelectorAll('input')[0].value) || 0;
-      const peso  = parseFloat(r.querySelectorAll('input')[2].value) || 0;
-      totalVolume += reps * peso;
+      const series = parseFloat(r.querySelectorAll('input')[0].value) || 1;
+      const reps   = parseFloat(r.querySelectorAll('input')[1].value) || 0;
+      const peso   = parseFloat(r.querySelectorAll('input')[3].value) || 0;
+      totalSeries += series;
+      totalVolume += series * reps * peso;
     });
   });
   document.getElementById('resExercicios').textContent = cards.length;
   document.getElementById('resSeries').textContent     = totalSeries;
   document.getElementById('resVolume').textContent     = totalVolume > 0 ? `${totalVolume.toFixed(1)} kg` : '—';
   document.getElementById('resumo').classList.toggle('visible', cards.length > 0);
+
 }
 
 // ── TOAST ─────────────────────────────────────────────────
@@ -377,20 +372,21 @@ async function salvar(){
     if(!nome){ valido = false; return; }
     const sets = card.querySelectorAll('.set-row');
     sets.forEach((row, i) => {
-      const inputs = row.querySelectorAll('input');
-      const reps   = inputs[0].value ? parseInt(inputs[0].value) : null;
-      const durStr = inputs[1].value;
-      const peso   = inputs[2].value ? parseFloat(inputs[2].value) : null;
-      const obs    = inputs[3].value.trim() || null;
+      const inputs     = row.querySelectorAll('input');
+      const num_series = inputs[0].value ? parseInt(inputs[0].value) : 1;
+      const reps       = inputs[1].value ? parseInt(inputs[1].value) : null;
+      const durStr     = inputs[2].value;
+      const peso       = inputs[3].value ? parseFloat(inputs[3].value) : null;
+      const obs        = inputs[4].value.trim() || null;
       rows.push({
-        sessao_id:    sessaoId,
+        sessao_id:   sessaoId,
         data,
-        exercicio:    nome,
-        serie_num:    i + 1,
+        exercicio:   nome,
+        num_series,
         reps,
-        duracao_seg:  parseDuracao(durStr),
-        peso_kg:      peso,
-        observacao:   obs
+        duracao_seg: parseDuracao(durStr),
+        peso_kg:     peso,
+        observacao:  obs
       });
     });
   });
