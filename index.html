@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Life Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #0e0f13;
+    --surface:   #16181f;
+    --surface2:  #1e2029;
+    --border:    rgba(255,255,255,0.06);
+    --text:      #e8eaf0;
+    --muted:     #6b7280;
+    --c-mood:    #a78bfa;
+    --c-sleep:   #38bdf8;
+    --c-energy:  #fb923c;
+    --c-health:  #34d399;
+    --c-time:    #f472b6;
+    --c-finance: #facc15;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(14,15,19,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--c-mood); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .date-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 100px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--c-health);
+    box-shadow: 0 0 8px var(--c-health);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── NAV ── */
+  nav {
+    padding: 0 40px;
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 14px 18px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all .2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--text); border-bottom-color: var(--c-mood); }
+
+  /* ── MAIN ── */
+  main { padding: 36px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── GREETING ── */
+  .greeting { margin-bottom: 36px; }
+  .greeting h1 { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+  .greeting h1 span { color: var(--c-mood); }
+  .greeting p { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+
+  /* ── SCORE STRIP ── */
+  .score-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 20px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .score-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+  .score-card::before {
+    content:'';
+    position: absolute;
+    top:0; left:0; right:0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .score-card .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+  .score-card .value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent); line-height:1; }
+  .score-card .sub { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+  .score-card .trend { position: absolute; top: 18px; right: 18px; font-size: 0.75rem; font-weight: 600; }
+  .up   { color: var(--c-health); }
+  .down { color: #f87171; }
+  .flat { color: var(--muted); }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 16px; }
+  @media(max-width:900px){ .grid-2,.grid-3{ grid-template-columns:1fr; } }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.1); }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .card-title { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .card-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+
+  /* ── HABIT TRACKER ── */
+  .habit-grid { display: flex; flex-direction: column; gap: 12px; }
+  .habit-row { display: flex; align-items: center; gap: 12px; }
+  .habit-name { font-size: 0.82rem; color: var(--muted); width: 100px; flex-shrink: 0; }
+  .habit-dots { display: flex; gap: 5px; flex: 1; }
+  .habit-dot {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all .15s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .habit-dot.done { border-color: transparent; }
+  .habit-dot:hover { transform: scale(1.1); }
+  .habit-streak { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); width: 36px; text-align: right; }
+
+  /* ── MINI BARS ── */
+  .bar-list { display: flex; flex-direction: column; gap: 14px; }
+  .bar-item {}
+  .bar-meta { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 6px; }
+  .bar-meta span:first-child { color: var(--muted); }
+  .bar-meta span:last-child { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .bar-track { height: 6px; background: var(--surface2); border-radius: 100px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  /* ── MOOD TIMELINE ── */
+  .mood-timeline { display: flex; gap: 6px; align-items: flex-end; height: 80px; }
+  .mood-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .mood-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: height .8s cubic-bezier(.4,0,.2,1);
+    min-height: 4px;
+  }
+  .mood-day { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); }
+
+  /* ── SLEEP RING ── */
+  .sleep-visual { display: flex; align-items: center; gap: 28px; }
+  .ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-center .big { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--c-sleep); }
+  .ring-center .sm { font-size: 0.65rem; color: var(--muted); }
+  .sleep-stats { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .sleep-stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; }
+  .sleep-stat-row span:first-child { color: var(--muted); }
+  .sleep-stat-row span:last-child { font-weight: 500; }
+
+  /* ── INSIGHTS ── */
+  .insights-list { display: flex; flex-direction: column; gap: 10px; }
+  .insight {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border-left: 3px solid var(--accent-i, var(--c-mood));
+  }
+  .insight-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .insight-text { font-size: 0.82rem; line-height: 1.5; color: var(--text); }
+  .insight-text strong { color: var(--accent-i, var(--c-mood)); }
+
+  /* ── WEEK HEATMAP ── */
+  .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .hm-col { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .hm-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); margin-bottom: 2px; }
+  .hm-cell {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 6px;
+    background: var(--surface2);
+    transition: transform .15s;
+    cursor: pointer;
+  }
+  .hm-cell:hover { transform: scale(1.1); }
+
+  /* ── TAGS ── */
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag:hover, .tag.active { background: var(--tag-bg); color: var(--tag-color); border-color: var(--tag-color); }
+
+  /* ── EMPTY STATE ── */
+  .empty { color: var(--muted); font-size: 0.8rem; text-align: center; padding: 24px 0; }
+
+  /* ── CONFIG BANNER ── */
+  .config-banner {
+    background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(56,189,248,0.08));
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .config-banner p { font-size: 0.82rem; color: var(--muted); }
+  .config-banner code { font-family: 'DM Mono', monospace; color: var(--c-mood); font-size: 0.78rem; background: rgba(167,139,250,0.1); padding: 2px 7px; border-radius: 4px; }
+  .btn-config {
+    background: var(--c-mood);
+    color: #0e0f13;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .2s;
+  }
+  .btn-config:hover { opacity: .85; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; backdrop-filter:blur(4px); align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 480px; }
+  .modal h2 { font-family:'Syne',sans-serif; font-size:1.2rem; margin-bottom:6px; }
+  .modal p { font-size:0.82rem; color:var(--muted); margin-bottom:24px; }
+  .modal label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
+  .modal input {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    color:var(--text); font-family:'DM Mono',monospace; font-size:0.8rem;
+    padding:10px 14px; border-radius:10px; outline:none; margin-bottom:16px;
+    transition: border-color .2s;
+  }
+  .modal input:focus { border-color: var(--c-mood); }
+  .modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+  .btn-cancel { background:var(--surface2); color:var(--muted); border:none; padding:9px 20px; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.82rem; }
+  .btn-save { background:var(--c-mood); color:#0e0f13; border:none; padding:9px 20px; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:600; font-size:0.82rem; }
+</style>
+</head>
+<body>
+
+<!-- MODAL CONFIG -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Conectar ao Supabase</h2>
+    <p>Cole as credenciais do seu projeto. Você encontra em <code>Settings → API</code>.</p>
+    <label>Project URL</label>
+    <input id="cfgUrl" placeholder="https://xxxx.supabase.co" />
+    <label>Anon Key</label>
+    <input id="cfgKey" placeholder="eyJ..." />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveConfig()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">life<span>.</span>dash</div>
+  <div class="header-right">
+    <div class="date-chip" id="dateChip"></div>
+    <div class="status-dot" title="Online"></div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <button class="active">Visão Geral</button>
+  <button>Saúde</button>
+  <button>Hábitos</button>
+  <button>Tempo</button>
+  <button>Finanças</button>
+  <button>Insights</button>
+</nav>
+
+<main>
+
+  <!-- GREETING -->
+  <div class="greeting">
+    <h1>Olá, <span id="greetName">você</span> 👋</h1>
+    <p id="greetSub">Carregando seus dados...</p>
+  </div>
+
+  <!-- CONFIG BANNER -->
+  <div class="config-banner" id="configBanner">
+    <p>Configure sua <code>SUPABASE_URL</code> e <code>ANON_KEY</code> para carregar dados reais. Por enquanto, os dados abaixo são demonstrativos.</p>
+    <button class="btn-config" onclick="openModal()">Configurar</button>
+  </div>
+
+  <!-- SCORE STRIP -->
+  <div class="section-title">resumo de hoje</div>
+  <div class="score-strip" id="scoreStrip">
+    <div class="score-card" style="--accent:var(--c-mood)">
+      <div class="label">Humor</div>
+      <div class="value" id="sc-mood">7.2</div>
+      <div class="sub">média semanal</div>
+      <div class="trend up">↑ 0.4</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-energy)">
+      <div class="label">Energia</div>
+      <div class="value" id="sc-energy">6.8</div>
+      <div class="sub">média semanal</div>
+      <div class="trend flat">→ 0.0</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-sleep)">
+      <div class="label">Sono</div>
+      <div class="value" id="sc-sleep">7h12</div>
+      <div class="sub">ontem à noite</div>
+      <div class="trend up">↑ 42min</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-health)">
+      <div class="label">Hábitos</div>
+      <div class="value" id="sc-habits">5/7</div>
+      <div class="sub">concluídos hoje</div>
+      <div class="trend down">↓ 1</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-time)">
+      <div class="label">Foco</div>
+      <div class="value" id="sc-focus">4h30</div>
+      <div class="sub">hoje (Toggl)</div>
+      <div class="trend up">↑ 45min</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-finance)">
+      <div class="label">Saldo</div>
+      <div class="value" id="sc-balance">R$</div>
+      <div class="sub">— não configurado</div>
+      <div class="trend flat">—</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="grid-2">
+
+    <!-- MOOD CHART -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div> Humor & Energia</div>
+        <span class="card-badge">7 dias</span>
+      </div>
+      <div class="mood-timeline" id="moodChart"></div>
+      <div style="display:flex;gap:16px;margin-top:14px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:var(--c-mood)"></div>Humor</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:var(--c-energy)"></div>Energia</div>
+      </div>
+    </div>
+
+    <!-- SLEEP -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div> Sono</div>
+        <span class="card-badge">ontem</span>
+      </div>
+      <div class="sleep-visual">
+        <div class="ring-wrap">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="44" fill="none" stroke="#1e2029" stroke-width="10"/>
+            <circle cx="55" cy="55" r="44" fill="none" stroke="var(--c-sleep)" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="55" id="sleepRing"/>
+          </svg>
+          <div class="ring-center">
+            <div class="big">7h12</div>
+            <div class="sm">de 8h meta</div>
+          </div>
+        </div>
+        <div class="sleep-stats">
+          <div class="sleep-stat-row"><span>Dormiu</span><span style="color:var(--c-sleep)">23:18</span></div>
+          <div class="sleep-stat-row"><span>Acordou</span><span style="color:var(--c-sleep)">06:30</span></div>
+          <div class="sleep-stat-row"><span>Qualidade</span><span>💜 Boa</span></div>
+          <div class="sleep-stat-row"><span>Média 7d</span><span>6h54</span></div>
+          <div class="sleep-stat-row"><span>Fase ciclo</span><span style="color:var(--c-mood)">Lútea</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="grid-2">
+
+    <!-- HABITS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-health)"></div> Hábitos</div>
+        <span class="card-badge">esta semana</span>
+      </div>
+      <div class="habit-grid" id="habitGrid"></div>
+    </div>
+
+    <!-- TIME -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-time)"></div> Tempo (Toggl)</div>
+        <span class="card-badge">hoje</span>
+      </div>
+      <div class="bar-list" id="timeList"></div>
+    </div>
+
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="grid-3">
+
+    <!-- INSIGHTS -->
+    <div class="card" style="grid-column: span 2">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div> Insights da semana</div>
+        <span class="card-badge">✦ IA</span>
+      </div>
+      <div class="insights-list" id="insightsList"></div>
+    </div>
+
+    <!-- TAGS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-finance)"></div> Tags de hoje</div>
+      </div>
+      <div class="tags" id="tagsArea"></div>
+    </div>
+
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="section-title" style="margin-top:8px">heatmap — humor últimas 5 semanas</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="heatmap" id="heatmap"></div>
+  </div>
+
+</main>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────
+const CFG_KEY = 'lifedash_config';
+function openModal(){ document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+function saveConfig(){
+  const url = document.getElementById('cfgUrl').value.trim();
+  const key = document.getElementById('cfgKey').value.trim();
+  if(!url||!key){ alert('Preencha os dois campos.'); return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
+  closeModal();
+  document.getElementById('configBanner').style.display='none';
+  init(url, key);
+}
+function getConfig(){ try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch{ return null; } }
+
+// ── DATE ─────────────────────────────────────────────────
+const now = new Date();
+const dayNames  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const monthNames= ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+document.getElementById('dateChip').textContent =
+  `${dayNames[now.getDay()]}, ${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+const hour  = now.getHours();
+const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+const todayISO = now.toISOString().slice(0,10);
+
+// ── SUPABASE FETCH ────────────────────────────────────────
+async function sb(url, key, path){
+  const res = await fetch(`${url}/rest/v1/${path}`, {
+    headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }
+  });
+  if(!res.ok){ const t = await res.text(); throw new Error(t); }
+  return res.json();
+}
+
+// ── HELPERS ──────────────────────────────────────────────
+function minToHM(min){ if(!min) return '—'; const h=Math.floor(min/60); const m=min%60; return m>0?`${h}h${String(m).padStart(2,'0')}min`:`${h}h`; }
+function trend(curr, prev){
+  if(curr==null||prev==null) return `<span class="flat">—</span>`;
+  const d = (curr-prev).toFixed(1);
+  if(d>0) return `<span class="up">↑ ${d}</span>`;
+  if(d<0) return `<span class="down">↓ ${Math.abs(d)}</span>`;
+  return `<span class="flat">→ 0</span>`;
+}
+const tagColors = ['#a78bfa','#38bdf8','#34d399','#fb923c','#f472b6','#facc15','#e879f9','#2dd4bf'];
+
+// ── RENDER SCORE CARDS ────────────────────────────────────
+function renderScores(diario, sono){
+  const hoje  = diario[0] || {};
+  const ontem = diario[1] || {};
+  const sonoHoje  = sono[0] || {};
+
+  document.getElementById('sc-mood').textContent    = hoje.humor    != null ? hoje.humor    : '—';
+  document.getElementById('sc-energy').textContent  = hoje.energia  != null ? hoje.energia  : '—';
+  document.getElementById('sc-sleep').textContent   = sonoHoje.duracao_min ? minToHM(sonoHoje.duracao_min) : '—';
+
+  // trends
+  document.querySelector('#scoreStrip .score-card:nth-child(1) .trend').innerHTML = trend(hoje.humor,   ontem.humor);
+  document.querySelector('#scoreStrip .score-card:nth-child(2) .trend').innerHTML = trend(hoje.energia, ontem.energia);
+}
+
+// ── RENDER MOOD CHART ─────────────────────────────────────
+function renderMoodChart(diario){
+  const mc = document.getElementById('moodChart');
+  mc.innerHTML = '';
+  const data = [...diario].reverse().slice(-7);
+  data.forEach(d => {
+    const dayLabel = dayNames[new Date(d.data+'T12:00:00').getDay()];
+    mc.innerHTML += `
+      <div class="mood-bar-wrap">
+        <div class="mood-bar" style="height:${(d.humor||0)*8}px;background:var(--c-mood);opacity:.85;border-radius:4px 4px 0 0" title="Humor: ${d.humor}"></div>
+        <div class="mood-bar" style="height:${(d.energia||0)*8}px;background:var(--c-energy);opacity:.7;border-radius:4px 4px 0 0" title="Energia: ${d.energia}"></div>
+        <div class="mood-day">${dayLabel}</div>
+      </div>`;
+  });
+  if(!data.length) mc.innerHTML = '<div class="empty">Sem dados ainda</div>';
+}
+
+// ── RENDER SLEEP ──────────────────────────────────────────
+function renderSleep(sono){
+  const s = sono[0];
+  if(!s){ document.querySelector('.sleep-visual').innerHTML = '<div class="empty">Sem dados de sono</div>'; return; }
+  const meta = 8*60;
+  const dur  = s.duracao_min || 0;
+  const pct  = Math.min(dur/meta, 1);
+  const circ = 2*Math.PI*44;
+  document.getElementById('sleepRing').setAttribute('stroke-dashoffset', circ*(1-pct));
+  document.querySelector('.ring-center .big').textContent = minToHM(dur);
+  document.querySelector('.ring-center .sm').textContent  = `de ${minToHM(meta)} meta`;
+
+  const stats = document.querySelector('.sleep-stats');
+  const qual  = ['','😴','😐','🙂','💜','✨'][s.qualidade] || '—';
+  stats.innerHTML = `
+    <div class="sleep-stat-row"><span>Dormiu</span><span style="color:var(--c-sleep)">${s.hora_dormir||'—'}</span></div>
+    <div class="sleep-stat-row"><span>Acordou</span><span style="color:var(--c-sleep)">${s.hora_acordar||'—'}</span></div>
+    <div class="sleep-stat-row"><span>Qualidade</span><span>${qual}</span></div>
+    <div class="sleep-stat-row"><span>Fase ciclo</span><span style="color:var(--c-mood)">${s.fase_ciclo||'—'}</span></div>`;
+}
+
+// ── RENDER HABITS ─────────────────────────────────────────
+function renderHabits(habitsDef, habitsLog){
+  const hg = document.getElementById('habitGrid');
+  hg.innerHTML = '';
+  if(!habitsDef.length){ hg.innerHTML = '<div class="empty">Nenhum hábito cadastrado</div>'; return; }
+
+  // últimos 7 dias
+  const last7 = Array.from({length:7},(_,i)=>{
+    const d = new Date(now); d.setDate(d.getDate()-6+i);
+    return d.toISOString().slice(0,10);
+  });
+
+  habitsDef.forEach(h => {
+    const logs = habitsLog.filter(l => l.habito_id === h.id);
+    const logMap = Object.fromEntries(logs.map(l=>[l.data, l.feito]));
+    const done7 = last7.map(d => logMap[d] ? 1 : 0);
+
+    // streak
+    let streak = 0;
+    for(let i=done7.length-1; i>=0; i--){
+      if(done7[i]) streak++; else break;
+    }
+
+    const dotsHtml = done7.map((d,i) =>
+      `<div class="habit-dot ${d?'done':''}" style="${d?`background:${h.cor};box-shadow:0 0 6px ${h.cor}40`:''}" title="${last7[i]}"></div>`
+    ).join('');
+
+    hg.innerHTML += `
+      <div class="habit-row">
+        <div class="habit-name">${h.nome}</div>
+        <div class="habit-dots">${dotsHtml}</div>
+        <div class="habit-streak" style="color:${h.cor}">${streak}🔥</div>
+      </div>`;
+  });
+
+  // score de hábitos hoje
+  const doneToday = habitsLog.filter(l=>l.data===todayISO && l.feito).length;
+  document.getElementById('sc-habits').textContent = `${doneToday}/${habitsDef.length}`;
+}
+
+// ── RENDER TIME ───────────────────────────────────────────
+function renderTime(toggl){
+  const tl = document.getElementById('timeList');
+  const catColors = {'Trabalho':'#f472b6','Estudo':'#a78bfa','Lazer':'#38bdf8','Exercício':'#34d399'};
+  if(!toggl.length){ tl.innerHTML = '<div class="empty">Sem registros de tempo hoje</div>'; return; }
+  const maxM = Math.max(...toggl.map(t=>t.minutos));
+  tl.innerHTML = toggl.map(t => {
+    const color = catColors[t.categoria] || '#6b7280';
+    const hm    = minToHM(t.minutos);
+    return `
+      <div class="bar-item">
+        <div class="bar-meta">
+          <span>${t.categoria}</span>
+          <span style="color:${color}">${hm}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${(t.minutos/maxM*100).toFixed(1)}%;background:${color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // focus score
+  const focusMin = toggl.find(t=>t.categoria==='Trabalho' || t.categoria==='Estudo');
+  if(focusMin) document.getElementById('sc-focus').textContent = minToHM(focusMin.minutos);
+}
+
+// ── RENDER TAGS ───────────────────────────────────────────
+function renderTags(diario){
+  const ta   = document.getElementById('tagsArea');
+  const hoje = diario[0];
+  if(!hoje || !hoje.tags || !hoje.tags.length){
+    ta.innerHTML = '<div class="empty">Sem tags hoje</div>'; return;
+  }
+  ta.innerHTML = hoje.tags.map((t,i) => {
+    const c = tagColors[i % tagColors.length];
+    return `<div class="tag" style="--tag-bg:${c}20;--tag-color:${c}">${t}</div>`;
+  }).join('');
+}
+
+// ── RENDER INSIGHTS ───────────────────────────────────────
+function renderInsights(insights){
+  const il = document.getElementById('insightsList');
+  if(!insights.length){
+    il.innerHTML = '<div class="empty">Nenhum insight gerado ainda — adicione dados por alguns dias!</div>';
+    return;
+  }
+  il.innerHTML = insights.map(i => `
+    <div class="insight" style="--accent-i:${i.cor||'#a78bfa'}">
+      <div class="insight-icon">${i.icone||'✦'}</div>
+      <div class="insight-text">${i.texto}</div>
+    </div>`).join('');
+}
+
+// ── RENDER HEATMAP ────────────────────────────────────────
+function renderHeatmap(diario){
+  const hm = document.getElementById('heatmap');
+  hm.innerHTML = '';
+  // monta mapa data→humor
+  const map = Object.fromEntries(diario.map(d=>[d.data, d.humor]));
+  // últimas 5 semanas completas (35 dias), coluna = dia da semana
+  const cols = 7;
+  const rows = 5;
+  const base = new Date(now);
+  base.setDate(base.getDate() - (cols*rows - 1));
+
+  // organiza por coluna (dia da semana do domingo)
+  const grid = Array.from({length:cols}, ()=>[]);
+  for(let i=0; i<cols*rows; i++){
+    const d = new Date(base); d.setDate(base.getDate()+i);
+    const iso = d.toISOString().slice(0,10);
+    grid[d.getDay()].push({ iso, val: map[iso] });
+  }
+
+  grid.forEach((col, wi) => {
+    let colHtml = `<div class="hm-col"><div class="hm-label">${dayNames[wi]}</div>`;
+    col.forEach(cell => {
+      const v = cell.val;
+      const alpha = v==null ? 0 : v<=3 ? 0.15 : v<=5 ? 0.3 : v<=7 ? 0.6 : 1;
+      const tip = v!=null ? `${cell.iso}: ${v}/10` : cell.iso;
+      colHtml += `<div class="hm-cell" style="background:rgba(167,139,250,${alpha})" title="${tip}"></div>`;
+    });
+    colHtml += '</div>';
+    hm.innerHTML += colHtml;
+  });
+}
+
+// ── MAIN INIT ─────────────────────────────────────────────
+async function init(url, key){
+  document.getElementById('greetSub').textContent = 'Carregando seus dados...';
+  try {
+    const [diario, sono, habitsDef, habitsLog, toggl, insights] = await Promise.all([
+      sb(url, key, `diario_base?order=data.desc&limit=35`),
+      sb(url, key, `sono?order=data.desc&limit=7`),
+      sb(url, key, `habitos_def?order=ordem&ativo=eq.true`),
+      sb(url, key, `habitos_log?order=data.desc&limit=200`),
+      sb(url, key, `toggl_diario?data=eq.${todayISO}`),
+      sb(url, key, `insights?order=gerado_em.desc&limit=3`),
+    ]);
+
+    renderScores(diario, sono);
+    renderMoodChart(diario);
+    renderSleep(sono);
+    renderHabits(habitsDef, habitsLog);
+    renderTime(toggl);
+    renderTags(diario);
+    renderInsights(insights);
+    renderHeatmap(diario);
+
+    document.getElementById('greetSub').textContent =
+      `${greet}! ${diario.length} dias de dados carregados.`;
+  } catch(e){
+    console.error(e);
+    document.getElementById('greetSub').textContent = '⚠️ Erro ao carregar dados. Veja o console.';
+  }
+}
+
+// ── BOOT ──────────────────────────────────────────────────
+const SUPABASE_URL = 'https://bszolfkwpqidoqzlzjci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
+document.getElementById('configBanner').style.display = 'none';
+init(SUPABASE_URL, SUPABASE_KEY);
+</script>
+</body>
+</html>
