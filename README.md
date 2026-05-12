@@ -1,1 +1,1 @@
-# personal-intelligence
+# life-dashboard
