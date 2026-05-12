@@ -240,18 +240,6 @@
   .insight-text { font-size: 0.82rem; line-height: 1.5; color: var(--text); }
   .insight-text strong { color: var(--accent-i, var(--c-mood)); }
 
-  /* ── WEEK HEATMAP ── */
-  .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .hm-col { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-  .hm-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); margin-bottom: 2px; }
-  .hm-cell {
-    width: 100%; aspect-ratio: 1;
-    border-radius: 6px;
-    background: var(--surface2);
-    transition: transform .15s;
-    cursor: pointer;
-  }
-  .hm-cell:hover { transform: scale(1.1); }
 
   /* ── TAGS ── */
   .tags { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -504,11 +492,6 @@
 
   </div>
 
-  <!-- HEATMAP -->
-  <div class="section-title" style="margin-top:8px">heatmap — humor últimas 5 semanas</div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="heatmap" id="heatmap"></div>
-  </div>
 
 </main>
 
@@ -704,38 +687,6 @@ function renderInsights(insights){
     </div>`).join('');
 }
 
-// ── RENDER HEATMAP ────────────────────────────────────────
-function renderHeatmap(diario){
-  const hm = document.getElementById('heatmap');
-  hm.innerHTML = '';
-  // monta mapa data→humor
-  const map = Object.fromEntries(diario.map(d=>[d.data, d.humor]));
-  // últimas 5 semanas completas (35 dias), coluna = dia da semana
-  const cols = 7;
-  const rows = 5;
-  const base = new Date(now);
-  base.setDate(base.getDate() - (cols*rows - 1));
-
-  // organiza por coluna (dia da semana do domingo)
-  const grid = Array.from({length:cols}, ()=>[]);
-  for(let i=0; i<cols*rows; i++){
-    const d = new Date(base); d.setDate(base.getDate()+i);
-    const iso = d.toISOString().slice(0,10);
-    grid[d.getDay()].push({ iso, val: map[iso] });
-  }
-
-  grid.forEach((col, wi) => {
-    let colHtml = `<div class="hm-col"><div class="hm-label">${dayNames[wi]}</div>`;
-    col.forEach(cell => {
-      const v = cell.val;
-      const alpha = v==null ? 0 : v<=3 ? 0.15 : v<=5 ? 0.3 : v<=7 ? 0.6 : 1;
-      const tip = v!=null ? `${cell.iso}: ${v}/10` : cell.iso;
-      colHtml += `<div class="hm-cell" style="background:rgba(167,139,250,${alpha})" title="${tip}"></div>`;
-    });
-    colHtml += '</div>';
-    hm.innerHTML += colHtml;
-  });
-}
 
 // ── MAIN INIT ─────────────────────────────────────────────
 async function init(url, key){
@@ -757,7 +708,6 @@ async function init(url, key){
     renderTime(toggl);
     renderTags(diario);
     renderInsights(insights);
-    renderHeatmap(diario);
 
     document.getElementById('greetSub').textContent =
       `${greet}! ${diario.length} dias de dados carregados.`;
