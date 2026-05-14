@@ -345,7 +345,7 @@ function copiarParaClaude(){
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
     .join('\n');
 
-  const texto = `Aqui estão meus dados de life tracking dos últimos ${_resumo.dias} dias. Analise TODAS as correlações abaixo e gere TODOS os insights relevantes (mínimo 3, sem limite máximo — inclua tudo que tiver |r| ≥ ${rMin}).
+  const texto = `Aqui estão meus dados de life tracking dos últimos ${_resumo.dias} dias. Analise TODAS as correlações abaixo e gere TODOS os insights relevantes (mínimo 3 e máximo 5 — as mais relevantes).
 
 MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
 ${mediasTexto}
