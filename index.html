@@ -387,7 +387,14 @@ function renderScores(diario, sono, clue){
   document.getElementById('sc-mood').textContent     = hoje.humor    != null ? hoje.humor    : '—';
   document.getElementById('sc-energy').textContent   = hoje.energia  != null ? hoje.energia  : '—';
   document.getElementById('sc-focus').textContent    = hoje.foco_geral != null ? `${hoje.foco_geral}/5` : '—';
-  document.getElementById('sc-sleep').textContent    = s.duracao_min  ? minToHM(s.duracao_min) : '—';
+  const diffSono = s.duracao_min && sp.duracao_min ? s.duracao_min - sp.duracao_min : null;
+document.getElementById('trend-sleep').innerHTML = diffSono == null
+  ? `<span class="flat">—</span>`
+  : diffSono > 0
+    ? `<span class="up">↑ ${minToHM(diffSono)}</span>`
+    : diffSono < 0
+      ? `<span class="down">↓ ${minToHM(Math.abs(diffSono))}</span>`
+      : `<span class="flat">→ igual</span>`;
   document.getElementById('sc-sleep-sub').textContent = s.sleep_score ? `score: ${s.sleep_score}` : 'ontem';
 
   document.getElementById('trend-mood').innerHTML   = trendHTML(hoje.humor,    ontem.humor);
