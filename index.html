@@ -536,7 +536,7 @@ async function init(){
       sb(`sono?order=data.desc&limit=7`),
       sb(`toggl_diario?data=gte.${from7}&order=data.desc`),
       sb(`treino_forca?data=gte.${from7}&order=data.desc`),
-      sb(`insights?order=gerado_em.desc&limit=5`),
+      sb(`insights?order=correlacao.desc&limit=5`)
       sb(`clue_diario?data=gte.2026-01-01&order=data.desc&limit=200`),
     ]);
 
