@@ -366,13 +366,13 @@
   <div class="score-strip" id="scoreStrip">
     <div class="score-card" style="--accent:var(--c-mood)">
       <div class="label">Humor</div>
-      <div class="value" id="sc-mood">7.2</div>
+      <div class="value" id="sc-mood">-</div>
       <div class="sub">média semanal</div>
       <div class="trend up">↑ 0.4</div>
     </div>
     <div class="score-card" style="--accent:var(--c-energy)">
       <div class="label">Energia</div>
-      <div class="value" id="sc-energy">6.8</div>
+      <div class="value" id="sc-energy">-</div>
       <div class="sub">média semanal</div>
       <div class="trend flat">→ 0.0</div>
     </div>
@@ -384,15 +384,15 @@
     </div>
     <div class="score-card" style="--accent:var(--c-health)">
       <div class="label">Hábitos</div>
-      <div class="value" id="sc-habits">5/7</div>
+      <div class="value" id="sc-habits">-</div>
       <div class="sub">concluídos hoje</div>
       <div class="trend down">↓ 1</div>
     </div>
     <div class="score-card" style="--accent:var(--c-time)">
       <div class="label">Foco</div>
-      <div class="value" id="sc-focus">4h30</div>
-      <div class="sub">hoje (Toggl)</div>
-      <div class="trend up">↑ 45min</div>
+      <div class="value" id="sc-focus">—</div>
+      <div class="sub">hoje (diário)</div>
+      <div class="trend flat">—</div>
     </div>
     <div class="score-card" style="--accent:var(--c-finance)">
       <div class="label">Saldo</div>
@@ -545,15 +545,32 @@ const tagColors = ['#a78bfa','#38bdf8','#34d399','#fb923c','#f472b6','#facc15','
 function renderScores(diario, sono){
   const hoje  = diario[0] || {};
   const ontem = diario[1] || {};
-  const sonoHoje  = sono[0] || {};
+  const sonoHoje = sono[0] || {};
 
-  document.getElementById('sc-mood').textContent    = hoje.humor    != null ? hoje.humor    : '—';
-  document.getElementById('sc-energy').textContent  = hoje.energia  != null ? hoje.energia  : '—';
-  document.getElementById('sc-sleep').textContent   = sonoHoje.duracao_min ? minToHM(sonoHoje.duracao_min) : '—';
+  document.getElementById('sc-mood').textContent   = hoje.humor    != null ? hoje.humor    : '—';
+  document.getElementById('sc-energy').textContent = hoje.energia  != null ? hoje.energia  : '—';
+  document.getElementById('sc-sleep').textContent  = sonoHoje.duracao_min ? minToHM(sonoHoje.duracao_min) : '—';
 
-  // trends
   document.querySelector('#scoreStrip .score-card:nth-child(1) .trend').innerHTML = trend(hoje.humor,   ontem.humor);
   document.querySelector('#scoreStrip .score-card:nth-child(2) .trend').innerHTML = trend(hoje.energia, ontem.energia);
+
+  // campos extras de diario_diario
+  document.getElementById('sc-focus').textContent =
+    hoje.foco_geral != null ? `${hoje.foco_geral}/5` : '—';
+
+  // saldo do mês atual no financeiro
+  const mes = now.toISOString().slice(0,7);
+  sb(SUPABASE_URL, SUPABASE_KEY, `financeiro_entradas?mes_referencia=eq.${mes}`)
+    .then(entradas => sb(SUPABASE_URL, SUPABASE_KEY, `financeiro_gastos?mes_referencia=eq.${mes}`)
+    .then(gastos => {
+      const e = entradas.reduce((s,x)=>s+Number(x.valor),0);
+      const g = gastos.reduce((s,x)=>s+Number(x.valor),0);
+      const saldo = e - g;
+      const el = document.getElementById('sc-balance');
+      el.textContent = `R$ ${saldo.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+      el.style.color = saldo >= 0 ? 'var(--c-health)' : '#f87171';
+      document.querySelector('#scoreStrip .score-card:nth-child(6) .sub').textContent = 'saldo do mês';
+    })).catch(()=>{});
 }
 
 // ── RENDER MOOD CHART ─────────────────────────────────────
@@ -664,15 +681,19 @@ function renderTime(toggl){
 function renderTags(diario){
   const ta   = document.getElementById('tagsArea');
   const hoje = diario[0];
-  if(!hoje || !hoje.tags || !hoje.tags.length){
-    ta.innerHTML = '<div class="empty">Sem tags hoje</div>'; return;
-  }
-  ta.innerHTML = hoje.tags.map((t,i) => {
-    const c = tagColors[i % tagColors.length];
-    return `<div class="tag" style="--tag-bg:${c}20;--tag-color:${c}">${t}</div>`;
-  }).join('');
+  if(!hoje){ ta.innerHTML = '<div class="empty">Sem registro hoje</div>'; return; }
+  const campos = [
+    hoje.evento_positivo===1 && {label:'✨ dia positivo', cor:'#34d399'},
+    hoje.social_bom===1      && {label:'👥 social bom',   cor:'#38bdf8'},
+    hoje.evento_negativo===0 && {label:'⚠️ evento neg.',  cor:'#f87171'},
+    hoje.conflito===0        && {label:'😤 conflito',      cor:'#fb923c'},
+    hoje.dia_bom >= 4        && {label:'🌟 bom dia',       cor:'#facc15'},
+  ].filter(Boolean);
+  ta.innerHTML = campos.length
+    ? campos.map(t=>`<div class="tag" style="--tag-bg:${t.cor}20;--tag-color:${t.cor}">${t.label}</div>`).join('')
+    : '<div class="empty">Sem destaques hoje</div>';
 }
-
+  
 // ── RENDER INSIGHTS ───────────────────────────────────────
 function renderInsights(insights){
   const il = document.getElementById('insightsList');
@@ -693,7 +714,7 @@ async function init(url, key){
   document.getElementById('greetSub').textContent = 'Carregando seus dados...';
   try {
     const [diario, sono, habitsDef, habitsLog, toggl, insights] = await Promise.all([
-      sb(url, key, `diario_base?order=data.desc&limit=35`),
+      sb(url, key, `diario_diario?order=data.desc&limit=35`),
       sb(url, key, `sono?order=data.desc&limit=7`),
       sb(url, key, `habitos_def?order=ordem&ativo=eq.true`),
       sb(url, key, `habitos_log?order=data.desc&limit=200`),
