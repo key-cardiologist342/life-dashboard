@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Life Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0e0f13;
+    --surface:  #16181f;
+    --surface2: #1e2029;
+    --border:   rgba(255,255,255,0.06);
+    --text:     #e8eaf0;
+    --muted:    #6b7280;
+    --c-mood:   #a78bfa;
+    --c-sleep:  #38bdf8;
+    --c-energy: #fb923c;
+    --c-health: #34d399;
+    --c-time:   #f472b6;
+    --c-cycle:  #f9a8d4;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 60px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+    background: rgba(14,15,19,0.95); backdrop-filter: blur(12px);
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; }
+  .logo span { color: var(--c-mood); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .date-chip { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: 100px; }
+  @media(max-width:480px){ .date-chip { display: none; } }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-health); box-shadow: 0 0 8px var(--c-health); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── NAV ── */
+  nav { padding: 0 12px; display: flex; gap: 2px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a { color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; padding: 12px 14px; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .2s; text-decoration: none; display: block; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--text); border-bottom-color: var(--c-mood); }
+
+  /* ── MAIN ── */
+  main { padding: 20px 16px; max-width: 1400px; margin: 0 auto; }
+  @media(min-width:640px)  { main { padding: 28px 24px; } }
+  @media(min-width:1024px) { main { padding: 36px 40px; } }
+
+  /* ── GREETING ── */
+  .greeting { margin-bottom: 24px; }
+  .greeting h1 { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; }
+  @media(min-width:640px) { .greeting h1 { font-size: 2rem; } }
+  .greeting h1 span { color: var(--c-mood); }
+  .greeting p { color: var(--muted); font-size: 0.82rem; margin-top: 5px; }
+
+  /* ── DISNEY FRASE ── */
+  .disney-card {
+    background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(249,168,212,0.06));
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 16px; padding: 16px 20px; margin-bottom: 24px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .disney-emoji { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+  .disney-text { font-size: 0.82rem; line-height: 1.6; color: var(--text); font-style: italic; }
+  .disney-source { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── SECTION TITLE ── */
+  .section-title { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ── SCORE STRIP ── */
+  .score-strip { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 24px; }
+  @media(min-width:480px) { .score-strip { grid-template-columns: repeat(3,1fr); } }
+  @media(min-width:900px) { .score-strip { grid-template-columns: repeat(5,1fr); gap: 12px; } }
+  .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px 11px; position: relative; overflow: hidden; transition: transform .2s, border-color .2s; cursor: default; }
+  .score-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+  .score-card::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; background:var(--accent); }
+  .score-card .label { font-size: 0.62rem; text-transform: uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:7px; }
+  .score-card .value { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; color:var(--accent); line-height:1; }
+  @media(min-width:640px) { .score-card .value { font-size: 1.8rem; } }
+  .score-card .sub { font-size:0.62rem; color:var(--muted); margin-top:5px; }
+  .score-card .trend { position:absolute; top:12px; right:12px; font-size:0.65rem; font-weight:600; }
+  .up   { color: var(--c-health); }
+  .down { color: #f87171; }
+  .flat { color: var(--muted); }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+  @media(min-width:768px) { .grid-2 { grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; } }
+
+  /* ── CARD ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; transition: border-color .2s; }
+  @media(min-width:640px) { .card { padding: 22px; border-radius: 20px; } }
+  .card:hover { border-color: rgba(255,255,255,0.1); }
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-title { font-weight:600; font-size:0.85rem; display:flex; align-items:center; gap:8px; }
+  .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .card-badge { font-family:'DM Mono',monospace; font-size:0.62rem; padding:3px 10px; border-radius:100px; background:var(--surface2); color:var(--muted); }
+
+  /* ── MOOD CHART ── */
+  .mood-timeline { display:flex; gap:4px; align-items:flex-end; height:80px; }
+  .mood-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
+  .mood-bar { width:100%; border-radius:3px 3px 0 0; transition:height .8s cubic-bezier(.4,0,.2,1); min-height:3px; }
+  .mood-day { font-family:'DM Mono',monospace; font-size:0.52rem; color:var(--muted); }
+
+  /* ── SLEEP CHART ── */
+  .sleep-chart-wrap { position: relative; }
+  .sleep-chart { display:flex; gap:4px; align-items:flex-end; height:80px; }
+  .sleep-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; position: relative; }
+  .sleep-bar { width:100%; border-radius:3px 3px 0 0; transition:height .8s cubic-bezier(.4,0,.2,1); min-height:3px; }
+  .sleep-day { font-family:'DM Mono',monospace; font-size:0.52rem; color:var(--muted); }
+  .sleep-need-line { position: absolute; left:0; right:0; height: 1px; background: rgba(255,255,255,0.15); pointer-events: none; }
+  .sleep-legend { display:flex; gap:14px; margin-top:10px; }
+  .sleep-legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--muted); }
+  .sleep-legend-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* ── MINI BARS ── */
+  .bar-list { display:flex; flex-direction:column; gap:12px; }
+  .bar-meta { display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:5px; }
+  .bar-meta span:first-child { color:var(--muted); }
+  .bar-meta span:last-child { font-family:'DM Mono',monospace; font-weight:500; }
+  .bar-track { height:6px; background:var(--surface2); border-radius:100px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:100px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+
+  /* ── TREINO 7 DIAS ── */
+  .treino-week { display:flex; gap:6px; }
+  .treino-day { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .treino-day .day-label { font-family:'DM Mono',monospace; font-size:0.52rem; color:var(--muted); }
+  .treino-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.7rem; transition: all .2s; }
+  .treino-dot.ativo { background:var(--c-health); border-color:var(--c-health); box-shadow:0 0 8px rgba(52,211,153,0.4); }
+  .treino-dot.vazio { background: var(--surface2); }
+  .treino-tipo { font-size:0.55rem; color:var(--muted); text-align:center; max-width:36px; line-height:1.2; }
+
+  /* ── INSIGHTS ── */
+  .insights-list { display:flex; flex-direction:column; gap:10px; }
+  .insight { background:var(--surface2); border-radius:12px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start; border-left:3px solid var(--accent-i, var(--c-mood)); }
+  .insight-icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
+  .insight-text { font-size:0.78rem; line-height:1.5; color:var(--text); }
+  .insight-text strong { color:var(--accent-i, var(--c-mood)); }
+
+  /* ── EMPTY ── */
+  .empty { color:var(--muted); font-size:0.78rem; text-align:center; padding:24px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">life<span>.</span>dash</div>
+  <div class="header-right">
+    <div class="date-chip" id="dateChip"></div>
+    <button onclick="logout()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;padding:5px 12px;border-radius:8px;cursor:pointer">Sair</button>
+    <div class="status-dot" title="Online"></div>
+  </div>
+</header>
+
+<nav>
+  <a href="index.html" class="active">Visão Geral</a>
+  <a href="diariiiio.html">Diário</a>
+  <a href="financeiro.html">Financeiro</a>
+  <a href="treino.html">Treino</a>
+  <a href="gerar_insights.html">Insights</a>
+</nav>
+
+<main>
+
+  <!-- GREETING -->
+  <div class="greeting">
+    <h1>Olá, <span>você</span> 👋</h1>
+    <p id="greetSub">Carregando seus dados...</p>
+  </div>
+
+  <!-- FRASE DISNEY -->
+  <div class="disney-card">
+    <div class="disney-emoji" id="disneyEmoji">✨</div>
+    <div>
+      <div class="disney-text" id="disneyText">Carregando frase do dia...</div>
+      <div class="disney-source" id="disneySource"></div>
+    </div>
+  </div>
+
+  <!-- SCORES -->
+  <div class="section-title">resumo de hoje</div>
+  <div class="score-strip">
+    <div class="score-card" style="--accent:var(--c-mood)">
+      <div class="label">Humor</div>
+      <div class="value" id="sc-mood">—</div>
+      <div class="sub">hoje</div>
+      <div class="trend flat" id="trend-mood">—</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-energy)">
+      <div class="label">Energia</div>
+      <div class="value" id="sc-energy">—</div>
+      <div class="sub">hoje</div>
+      <div class="trend flat" id="trend-energy">—</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-sleep)">
+      <div class="label">Sono</div>
+      <div class="value" id="sc-sleep">—</div>
+      <div class="sub" id="sc-sleep-sub">ontem</div>
+      <div class="trend flat" id="trend-sleep">—</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-time)">
+      <div class="label">Foco</div>
+      <div class="value" id="sc-focus">—</div>
+      <div class="sub">hoje</div>
+      <div class="trend flat">—</div>
+    </div>
+    <div class="score-card" style="--accent:var(--c-cycle)">
+      <div class="label">Ciclo</div>
+      <div class="value" id="sc-cycle">—</div>
+      <div class="sub" id="sc-cycle-sub">fase</div>
+      <div class="trend flat" id="sc-cycle-dia">—</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: HUMOR + SONO -->
+  <div class="section-title">estado & recuperação</div>
+  <div class="grid-2">
+
+    <!-- HUMOR & ENERGIA -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Humor & Energia</div>
+        <span class="card-badge">7 dias</span>
+      </div>
+      <div class="mood-timeline" id="moodChart"></div>
+      <div style="display:flex;gap:14px;margin-top:12px">
+        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-mood)"></div>Humor</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-energy)"></div>Energia</div>
+      </div>
+    </div>
+
+    <!-- SONO 7 DIAS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>Sono — últimos 7 dias</div>
+        <span class="card-badge">Garmin</span>
+      </div>
+      <div class="sleep-chart-wrap">
+        <div class="sleep-chart" id="sleepChart"></div>
+        <div class="sleep-need-line" id="sleepNeedLine" style="display:none"></div>
+      </div>
+      <div class="sleep-legend">
+        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Duração</div>
+        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.3)"></div>Necessidade</div>
+        <div class="sleep-legend-item" id="sleepAvgLegend"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 2: TEMPO + TREINO -->
+  <div class="section-title">movimento & tempo</div>
+  <div class="grid-2">
+
+    <!-- TEMPO SEMANAL -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-time)"></div>Tempo (Toggl)</div>
+        <span class="card-badge">7 dias</span>
+      </div>
+      <div class="bar-list" id="timeList"></div>
+    </div>
+
+    <!-- TREINO 7 DIAS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Treinos da semana</div>
+        <span class="card-badge">7 dias</span>
+      </div>
+      <div class="treino-week" id="treinoWeek"></div>
+    </div>
+
+  </div>
+
+  <!-- INSIGHTS LARGO -->
+  <div class="section-title">insights</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-header">
+      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Insights da semana</div>
+      <span class="card-badge">✦ IA</span>
+    </div>
+    <div class="insights-list" id="insightsList"></div>
+  </div>
+
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://bszolfkwpqidoqzlzjci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
+const _supa = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Verifica sessão
+const { data: { session: _session } } = await _supa.auth.getSession();
+if (!_session) { window.location.href = 'login.html'; throw new Error(''); }
+const _token = _session.access_token;
+
+// Logout
+window.logout = async function(){ await _supa.auth.signOut(); window.location.href = 'login.html'; };
+
+
+const now        = new Date();
+const dayNames   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const monthNames = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const todayISO   = now.toISOString().slice(0,10);
+const hour       = now.getHours();
+const greet      = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+
+document.getElementById('dateChip').textContent =
+  `${dayNames[now.getDay()]}, ${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
+// últimos 7 dias
+const last7 = Array.from({length:7}, (_,i) => {
+  const d = new Date(now); d.setDate(d.getDate()-6+i);
+  return d.toISOString().slice(0,10);
+});
+const from7 = last7[0];
+
+async function sb(path){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_token}`, 'Content-Type': 'application/json' }
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function minToHM(min){ if(!min) return '—'; const h=Math.floor(min/60),m=min%60; return m>0?`${h}h${String(m).padStart(2,'0')}`:` ${h}h`; }
+function trendHTML(curr, prev){ if(curr==null||prev==null) return `<span class="flat">—</span>`; const d=+(curr-prev).toFixed(1); if(d>0) return `<span class="up">↑ ${d}</span>`; if(d<0) return `<span class="down">↓ ${Math.abs(d)}</span>`; return `<span class="flat">→ 0</span>`; }
+
+// ── DISNEY ────────────────────────────────────────────────
+const disneyQuotes = [
+  { text: "Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it.", source: "Rafiki — O Rei Leão", emoji: "🦁" },
+  { text: "All it takes is faith and trust.", source: "Peter Pan", emoji: "✨" },
+  { text: "The flower that blooms in adversity is the most rare and beautiful of all.", source: "Imperador — Mulan", emoji: "🌸" },
+  { text: "Even miracles take a little time.", source: "Fada Madrinha — Cinderela", emoji: "🪄" },
+  { text: "You control your destiny — you don't need magic to do it.", source: "Merida — Valente", emoji: "🏹" },
+  { text: "The past is in the past.", source: "Elsa — Frozen", emoji: "❄️" },
+  { text: "I was hiding under your porch because I love you.", source: "Dug — Up! Altas Aventuras", emoji: "🐶" },
+  { text: "Sometimes the right path is not the easiest one.", source: "Avó Willow — Pocahontas", emoji: "🌿" },
+  { text: "If you focus on what you left behind, you will never see what lies ahead.", source: "Gusteau — Ratatouille", emoji: "🍽️" },
+  { text: "Just keep swimming.", source: "Dory — Procurando Nemo", emoji: "🐟" },
+  { text: "Change is good.", source: "Rafiki — O Rei Leão", emoji: "🌀" },
+  { text: "Adventure is out there!", source: "Ellie — Up! Altas Aventuras", emoji: "🗺️" },
+  { text: "To infinity and beyond.", source: "Buzz Lightyear — Toy Story", emoji: "🚀" },
+  { text: "The things that make me different are the things that make me.", source: "Piglet — Ursinho Pooh", emoji: "🐷" },
+  { text: "A little consideration, a little thought for others, makes all the difference.", source: "Ursinho Pooh", emoji: "🍯" },
+  { text: "You are braver than you believe, stronger than you seem, and smarter than you think.", source: "Christopher Robin — Ursinho Pooh", emoji: "🌟" },
+  { text: "When life gets you down, you know what you gotta do? Just keep swimming.", source: "Dory — Procurando Nemo", emoji: "🐠" },
+  { text: "The greatest risk any of us will ever take is to be seen as we really are.", source: "Cinderela", emoji: "👠" },
+  { text: "Happiness is the richest thing we will ever own.", source: "Donald Duck", emoji: "🦆" },
+  { text: "I can't go back to yesterday because I was a different person then.", source: "Alice — Alice no País das Maravilhas", emoji: "🐇" },
+  { text: "All our dreams can come true, if we have the courage to pursue them.", source: "Walt Disney", emoji: "🌠" },
+  { text: "It's kind of fun to do the impossible.", source: "Walt Disney", emoji: "🎪" },
+  { text: "First, think. Second, believe. Third, dream. And finally, dare.", source: "Walt Disney", emoji: "💫" },
+  { text: "Why do we fall? So we can learn to pick ourselves up.", source: "Alfred — Batman", emoji: "🦇" },
+  { text: "Ohana means family. Family means nobody gets left behind.", source: "Lilo & Stitch", emoji: "🌺" },
+  { text: "Life's not a spectator sport.", source: "Laverne — O Corcunda de Notre Dame", emoji: "🎭" },
+  { text: "I am not afraid. I was born to do this.", source: "Joana d'Arc", emoji: "⚔️" },
+  { text: "Love is putting someone else's needs before yours.", source: "Olaf — Frozen", emoji: "⛄" },
+  { text: "The seaweed is always greener in somebody else's lake.", source: "Sebastian — A Pequena Sereia", emoji: "🧜" },
+  { text: "Our fate lives within us. You only have to be brave enough to see it.", source: "Merida — Valente", emoji: "🏔️" },
+  { text: "No matter how your heart is grieving, if you keep on believing, the dream that you wish will come true.", source: "Cinderela", emoji: "🌙" },
+];
+
+function renderDisney(){
+  // semente baseada no dia do ano para ser consistente no dia
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  const q = disneyQuotes[dayOfYear % disneyQuotes.length];
+  document.getElementById('disneyEmoji').textContent = q.emoji;
+  document.getElementById('disneyText').textContent  = `"${q.text}"`;
+  document.getElementById('disneySource').textContent = `— ${q.source}`;
+}
+
+// ── FASE DO CICLO ─────────────────────────────────────────
+function calcFaseCiclo(clue){
+  const starts = clue.filter(c => c.cycle_start).map(c => c.data).sort().reverse();
+  if(!starts.length) return null;
+  const ultimo = new Date(starts[0]+'T12:00:00');
+  const diaCiclo = Math.floor((now - ultimo) / 86400000) + 1;
+  let fase, emoji;
+  if(diaCiclo <= 5)       { fase = 'Menstrual';   emoji = '🔴'; }
+  else if(diaCiclo <= 13) { fase = 'Folicular';   emoji = '🌱'; }
+  else if(diaCiclo === 14){ fase = 'Ovulatória';  emoji = '⚡'; }
+  else                    { fase = 'Lútea';        emoji = '🌙'; }
+  return { fase, emoji, diaCiclo };
+}
+
+// ── SCORES ────────────────────────────────────────────────
+function renderScores(diario, sono, clue){
+  const hoje  = diario[0] || {};
+  const ontem = diario[1] || {};
+  const s     = sono[0]   || {};
+  const sp    = sono[1]   || {};
+
+  document.getElementById('sc-mood').textContent     = hoje.humor    != null ? hoje.humor    : '—';
+  document.getElementById('sc-energy').textContent   = hoje.energia  != null ? hoje.energia  : '—';
+  document.getElementById('sc-focus').textContent    = hoje.foco_geral != null ? `${hoje.foco_geral}/5` : '—';
+  const diffSono = s.duracao_min && sp.duracao_min ? s.duracao_min - sp.duracao_min : null;
+document.getElementById('trend-sleep').innerHTML = diffSono == null
+  ? `<span class="flat">—</span>`
+  : diffSono > 0
+    ? `<span class="up">↑ ${minToHM(diffSono)}</span>`
+    : diffSono < 0
+      ? `<span class="down">↓ ${minToHM(Math.abs(diffSono))}</span>`
+      : `<span class="flat">→ igual</span>`;
+  document.getElementById('sc-sleep-sub').textContent = s.sleep_score ? `score: ${s.sleep_score}` : 'ontem';
+
+  document.getElementById('trend-mood').innerHTML   = trendHTML(hoje.humor,    ontem.humor);
+  document.getElementById('trend-energy').innerHTML = trendHTML(hoje.energia,  ontem.energia);
+  document.getElementById('trend-sleep').innerHTML  = trendHTML(s.duracao_min, sp.duracao_min);
+
+  // ciclo
+  const ciclo = calcFaseCiclo(clue);
+  if(ciclo){
+    document.getElementById('sc-cycle').textContent     = ciclo.emoji;
+    document.getElementById('sc-cycle-sub').textContent = ciclo.fase;
+    document.getElementById('sc-cycle-dia').innerHTML   = `<span class="flat">dia ${ciclo.diaCiclo}</span>`;
+  }
+}
+
+// ── MOOD CHART ────────────────────────────────────────────
+function renderMoodChart(diario){
+  const mc   = document.getElementById('moodChart');
+  const data = [...diario].reverse().slice(-7);
+  if(!data.length){ mc.innerHTML='<div class="empty">Sem dados ainda</div>'; return; }
+  mc.innerHTML = data.map(d => {
+    const label = dayNames[new Date(d.data+'T12:00:00').getDay()];
+    return `
+      <div class="mood-bar-wrap">
+        <div class="mood-bar" style="height:${(d.humor||0)*16}px;background:var(--c-mood);opacity:.85" title="Humor: ${d.humor}"></div>
+        <div class="mood-bar" style="height:${(d.energia||0)*16}px;background:var(--c-energy);opacity:.7" title="Energia: ${d.energia}"></div>
+        <div class="mood-day">${label}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── SLEEP CHART ───────────────────────────────────────────
+function renderSleepChart(sono){
+  const sc = document.getElementById('sleepChart');
+  if(!sono.length){ sc.innerHTML='<div class="empty">Sem dados de sono</div>'; return; }
+
+  // pega os 7 mais recentes e reverte pra ordem cronológica
+  const data = [...sono].slice(0,7).reverse();
+  const maxDur  = Math.max(...data.map(s=>s.duracao_min||0), 600);
+  const avgNeed = data.reduce((a,s)=>a+(s.necessidade_min||480),0) / data.length;
+  const avgDur  = data.reduce((a,s)=>a+(s.duracao_min||0),0) / data.length;
+
+  // linha de necessidade em %
+  const needPct = (avgNeed / maxDur * 100).toFixed(1);
+  const line = document.getElementById('sleepNeedLine');
+  line.style.display = 'block';
+  line.style.bottom  = `calc(${needPct}% + 20px)`; // 20px = altura do label
+
+  sc.innerHTML = data.map(s => {
+    const dur   = s.duracao_min || 0;
+    const need  = s.necessidade_min || 480;
+    const hPct  = (dur / maxDur * 100).toFixed(1);
+    const color = dur >= need ? 'var(--c-sleep)' : '#f87171';
+    const label = dayNames[new Date(s.data+'T12:00:00').getDay()];
+    return `
+      <div class="sleep-bar-wrap">
+        <div class="sleep-bar" style="height:${hPct}%;background:${color};opacity:.85" title="${minToHM(dur)} (precisa: ${minToHM(need)})"></div>
+        <div class="sleep-day">${label}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('sleepAvgLegend').innerHTML =
+    `<div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Média: ${minToHM(Math.round(avgDur))}`;
+}
+
+// ── TEMPO SEMANAL ─────────────────────────────────────────
+function renderTime(toggl){
+  const tl = document.getElementById('timeList');
+  if(!toggl.length){ tl.innerHTML='<div class="empty">Sem registros de tempo esta semana</div>'; return; }
+
+  const cats  = {'Trabalho':'#f472b6','Estudo':'#a78bfa','Lazer':'#38bdf8','Exercício':'#34d399'};
+  // agrupa por categoria somando os 7 dias
+  const agrupado = {};
+  toggl.forEach(t => {
+    agrupado[t.categoria] = (agrupado[t.categoria]||0) + t.minutos;
+  });
+  const maxM = Math.max(...Object.values(agrupado));
+
+  tl.innerHTML = Object.entries(agrupado)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([cat, min]) => {
+      const c = cats[cat]||'#6b7280';
+      return `
+        <div>
+          <div class="bar-meta"><span>${cat}</span><span style="color:${c}">${minToHM(min)}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(min/maxM*100).toFixed(1)}%;background:${c}"></div></div>
+        </div>`;
+    }).join('');
+
+  // foco no score
+  const focoMin = (agrupado['Trabalho']||0) + (agrupado['Estudo']||0);
+  if(focoMin) document.getElementById('sc-focus').textContent = minToHM(focoMin);
+}
+
+// ── TREINO 7 DIAS ─────────────────────────────────────────
+function renderTreino(treinos){
+  const tw = document.getElementById('treinoWeek');
+
+  // mapa data → exercícios
+  const mapa = {};
+  treinos.forEach(t => {
+    if(!mapa[t.data]) mapa[t.data] = new Set();
+    if(t.exercicio) mapa[t.data].add(t.exercicio);
+  });
+
+  tw.innerHTML = last7.map(iso => {
+    const label  = dayNames[new Date(iso+'T12:00:00').getDay()];
+    const exs    = mapa[iso];
+    const treinou = exs && exs.size > 0;
+    const tipo   = treinou ? [...exs].slice(0,2).join(' · ') : '';
+    return `
+      <div class="treino-day">
+        <div class="day-label">${label}</div>
+        <div class="treino-dot ${treinou?'ativo':'vazio'}">${treinou?'💪':''}</div>
+        <div class="treino-tipo">${tipo}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── INSIGHTS ──────────────────────────────────────────────
+function renderInsights(insights){
+  const il = document.getElementById('insightsList');
+  if(!insights.length){ il.innerHTML='<div class="empty">Nenhum insight ainda — adicione dados por alguns dias!</div>'; return; }
+  il.innerHTML = insights.map(i=>`
+    <div class="insight" style="--accent-i:${i.cor||'#a78bfa'}">
+      <div class="insight-icon">${i.icone||'✦'}</div>
+      <div class="insight-text">${i.texto}</div>
+    </div>`).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+async function init(){
+  document.getElementById('greetSub').textContent = 'Carregando seus dados...';
+  renderDisney();
+
+  try {
+    const [diario, sono, toggl7, treino7, insights, clue] = await Promise.all([
+      sb(`diario_diario?order=data.desc&limit=35`),
+      sb(`sono?order=data.desc&limit=7`),
+      sb(`toggl_diario?data=gte.${from7}&order=data.desc`),
+      sb(`treino_forca?data=gte.${from7}&order=data.desc`),
+      sb(`insights?order=gerado_em.desc&limit=5`),
+      sb(`clue_diario?data=gte.2026-01-01&order=data.desc&limit=200`),
+    ]);
+
+    renderScores(diario, sono, clue);
+    renderMoodChart(diario);
+    renderSleepChart(sono);
+    renderTime(toggl7);
+    renderTreino(treino7);
+    renderInsights(insights);
+
+    document.getElementById('greetSub').textContent =
+      `${greet}! ${diario.length} dias de dados carregados.`;
+  } catch(e){
+    console.error(e);
+    document.getElementById('greetSub').textContent = '⚠️ Erro ao carregar dados. Veja o console.';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
