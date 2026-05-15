@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gerador de Insights</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#0e0f13; --surface:#16181f; --surface2:#1e2029;
+    --border:rgba(255,255,255,0.07); --text:#e8eaf0; --muted:#6b7280;
+    --purple:#a78bfa; --blue:#38bdf8; --green:#34d399;
+    --orange:#fb923c; --pink:#f472b6; --yellow:#facc15;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:80px}
+
+  header{padding:24px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;background:rgba(14,15,19,0.95);backdrop-filter:blur(12px)}
+  .logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800}
+  .logo span{color:var(--purple)}
+  .nav-links{display:flex;gap:12px}
+  .nav-links a{font-size:0.78rem;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s}
+  .nav-links a:hover{color:var(--text);border-color:rgba(255,255,255,0.15)}
+  .nav-links a.active{color:var(--purple);border-color:var(--purple)}
+
+  main{max-width:900px;margin:0 auto;padding:40px 32px}
+  @media(max-width:640px){main{padding:24px 16px}}
+
+  .page-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;margin-bottom:6px}
+  .page-title span{color:var(--purple)}
+  .page-sub{color:var(--muted);font-size:0.85rem;margin-bottom:40px;line-height:1.6}
+
+  /* ── STATS ── */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:32px}
+  @media(max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+  .stat-card .label{font-size:0.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+  .stat-card .val{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--purple)}
+  .stat-card .sub{font-size:0.68rem;color:var(--muted);margin-top:3px}
+
+  /* ── SECTION ── */
+  .section-title{font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* ── CORRELAÇÕES ── */
+  .corr-list{display:flex;flex-direction:column;gap:6px;margin-bottom:32px;max-height:400px;overflow-y:auto}
+  .corr-list::-webkit-scrollbar{width:4px}
+  .corr-list::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:100px}
+  .corr-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+  .corr-label{font-size:0.75rem;color:var(--muted);flex:1;min-width:0}
+  .corr-label strong{color:var(--text);font-weight:500}
+  .corr-bar-wrap{width:100px;height:5px;background:var(--surface2);border-radius:100px;overflow:hidden;flex-shrink:0}
+  .corr-bar{height:100%;border-radius:100px}
+  .corr-val{font-family:'DM Mono',monospace;font-size:0.72rem;width:44px;text-align:right;flex-shrink:0}
+  .corr-n{font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--muted);width:36px;text-align:right;flex-shrink:0}
+
+  /* ── FILTROS ── */
+  .filtros{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .filtro-label{font-size:0.75rem;color:var(--muted)}
+  .filtro-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;transition:all .2s}
+  .filtro-btn.active{background:rgba(167,139,250,0.15);border-color:var(--purple);color:var(--purple)}
+  input[type=range]{accent-color:var(--purple);width:80px}
+
+  /* ── BOTÃO ── */
+  .btn-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin:36px 0}
+  .btn-generate{background:linear-gradient(135deg,var(--purple),#7c3aed);color:white;border:none;border-radius:14px;padding:16px 40px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px;transition:opacity .2s,transform .2s;box-shadow:0 8px 24px rgba(167,139,250,.25)}
+  .btn-generate:hover{opacity:.9;transform:translateY(-1px)}
+  .btn-hint{font-size:0.75rem;color:var(--muted);text-align:center}
+
+  /* ── COPY BOX ── */
+  .copy-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);line-height:1.8;white-space:pre-wrap;word-break:break-word;cursor:pointer;display:none;margin-bottom:12px;max-height:300px;overflow-y:auto}
+  .copy-box.visible{display:block}
+  .copy-badge{text-align:center;padding:10px;color:var(--green);font-size:0.82rem;font-weight:500;display:none}
+  .copy-badge.visible{display:block}
+
+  /* ── INSTRUÇÃO ── */
+  .instrucao{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;font-size:0.82rem;color:var(--muted);line-height:1.9;display:none;margin-top:16px}
+  .instrucao.visible{display:block}
+  .instrucao strong{color:var(--text)}
+  .instrucao code{font-family:'DM Mono',monospace;color:var(--purple);background:rgba(167,139,250,0.08);padding:2px 6px;border-radius:4px;font-size:0.75rem}
+
+  /* ── EMPTY ── */
+  .empty{color:var(--muted);font-size:0.82rem;text-align:center;padding:32px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .empty .big{font-size:2rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">life<span>.</span>dash — insights</div>
+  <div class="nav-links">
+    <a href="index.html">Dashboard</a>
+    <a href="gerar_insights.html" class="active">Insights</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Gerador de <span>Insights</span></div>
+  <p class="page-sub">Cruza todas as variáveis numéricas de todas as fontes e gera insights baseados nas correlações mais fortes do seu histórico.</p>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Dias no diário</div><div class="val" id="statDiario">—</div><div class="sub">registros</div></div>
+    <div class="stat-card"><div class="label">Noites de sono</div><div class="val" id="statSono">—</div><div class="sub">Garmin</div></div>
+    <div class="stat-card"><div class="label">Dias Clue</div><div class="val" id="statClue">—</div><div class="sub">sintomas</div></div>
+    <div class="stat-card"><div class="label">Sessões treino</div><div class="val" id="statTreino">—</div><div class="sub">únicas</div></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="section-title">correlações encontradas</div>
+  <div class="filtros">
+    <span class="filtro-label">Mín. |r|:</span>
+    <input type="range" id="rMin" min="0.1" max="0.5" step="0.05" value="0.35" oninput="filtrarCorr()"/>
+    <span id="rMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">0.20</span>
+    <span class="filtro-label" style="margin-left:8px">Mín. n:</span>
+    <input type="range" id="nMin" min="3" max="15" step="1" value="10" oninput="filtrarCorr()"/>
+    <span id="nMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">5</span>
+    <span id="corrCount" style="font-size:0.72rem;color:var(--muted);margin-left:auto"></span>
+  </div>
+  <div class="corr-list" id="corrList">
+    <div class="empty"><div class="big">📊</div>Carregando dados...</div>
+  </div>
+
+  <!-- BOTÃO -->
+  <div class="btn-wrap">
+    <button class="btn-generate" onclick="copiarParaClaude()">
+      📋 Copiar dados para o Claude
+    </button>
+    <p class="btn-hint">Cole no chat do Claude e peça para gerar os insights em CSV</p>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="copy-box" id="copyBox" onclick="copiarTexto()"></div>
+  <div class="copy-badge" id="copyBadge">✓ Copiado! Cole no chat do Claude.</div>
+
+  <div class="instrucao" id="instrucao">
+    Após receber o CSV do Claude:<br>
+    1. Acesse <strong>Supabase → Table Editor → insights</strong><br>
+    2. Clique em <strong>Insert → Import data from CSV</strong><br>
+    3. Cole o CSV gerado<br>
+    4. Sua dash já exibe os novos insights automaticamente!<br><br>
+    <strong>Formato esperado do CSV:</strong><br>
+    <code>icone,titulo,texto,cor,correlacao</code>
+  </div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://bszolfkwpqidoqzlzjci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
+const _supa = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Verifica sessão
+const { data: { session: _session } } = await _supa.auth.getSession();
+if (!_session) { window.location.href = 'login.html'; throw new Error(''); }
+const _token = _session.access_token;
+
+// Logout
+window.logout = async function(){ await _supa.auth.signOut(); window.location.href = 'login.html'; };
+
+
+async function sb(path){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${_token}`,'Content-Type':'application/json'}
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── LABELS LEGÍVEIS ───────────────────────────────────────
+const LABELS = {
+  // diario_diario
+  energia:'Energia',humor:'Humor',clareza_mental:'Clareza Mental',
+  dia_bom:'Dia Bom',saude_fisica:'Saúde Física',dor_desconforto:'Dor/Desconforto',
+  foco_geral:'Foco',uso_excessivo_internet:'Uso Internet',procrastinacao:'Procrastinação',
+  alimentacao:'Alimentação',hidratacao:'Hidratação',casa_organizada:'Casa Organizada',
+  cuidado_dogs:'Cuidado Dogs',evento_negativo:'Evento Negativo',conflito:'Conflito',
+  evento_positivo:'Evento Positivo',social_bom:'Social Bom',
+  produtividade:'Produtividade',satisfacao:'Satisfação',
+  // sono
+  duracao_min:'Sono Duração',sleep_score:'Sleep Score Garmin',
+  fc_repouso:'FC Repouso',body_battery:'Body Battery',
+  oximetria:'Oximetria',respiracao:'Respiração',vfc_status:'VFC Status',
+  necessidade_min:'Necessidade Sono',
+  // derivados
+  dia_ciclo:'Dia do Ciclo',treinou:'Treinou (0/1)',
+  volume_treino:'Volume Treino (kg)',
+};
+
+function label(k){ return LABELS[k] || k; }
+
+// ── PEARSON ───────────────────────────────────────────────
+function pearson(xs, ys){
+  const n = xs.length;
+  if(n < 3) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){
+    num+=(xs[i]-mx)*(ys[i]-my);
+    dx +=(xs[i]-mx)**2;
+    dy +=(ys[i]-my)**2;
+  }
+  if(dx===0||dy===0) return null;
+  return num/Math.sqrt(dx*dy);
+}
+
+// ── DADOS GLOBAIS ─────────────────────────────────────────
+let _todasCorr = [];
+let _resumo    = null;
+
+// ── CARREGAR E CALCULAR ───────────────────────────────────
+async function carregar(){
+  const [diario, sono, clue, treino] = await Promise.all([
+    sb('diario_diario?order=data.desc&limit=365'),
+    sb('sono?order=data.desc&limit=365'),
+    sb('clue_diario?order=data.desc&limit=365'),
+    sb('treino_forca?order=data.desc&limit=1000'),
+  ]);
+
+  document.getElementById('statDiario').textContent  = diario.length;
+  document.getElementById('statSono').textContent    = sono.length;
+  document.getElementById('statClue').textContent    = clue.length;
+
+  // sessões únicas de treino
+  const sessoes = new Set(treino.map(t=>t.data));
+  document.getElementById('statTreino').textContent = sessoes.size;
+
+  // ── MONTA MAPA POR DATA ───────────────────────────────
+  const mapa = {}; // data → {variavel: valor}
+
+  // diario_diario
+  const colsDiario = ['energia','humor','clareza_mental','dia_bom','saude_fisica',
+    'dor_desconforto','foco_geral','uso_excessivo_internet','procrastinacao',
+    'alimentacao','hidratacao','casa_organizada','cuidado_dogs',
+    'evento_negativo','conflito','evento_positivo','social_bom','produtividade','satisfacao'];
+  diario.forEach(d => {
+    if(!mapa[d.data]) mapa[d.data] = {};
+    colsDiario.forEach(c => { if(d[c]!=null) mapa[d.data][c] = Number(d[c]); });
+  });
+
+  // sono
+  const colsSono = ['duracao_min','sleep_score','fc_repouso','body_battery',
+    'oximetria','respiracao','vfc_status','necessidade_min'];
+  sono.forEach(s => {
+    if(!mapa[s.data]) mapa[s.data] = {};
+    colsSono.forEach(c => { if(s[c]!=null) mapa[s.data][c] = Number(s[c]); });
+  });
+
+  // clue: dia do ciclo
+  const starts = clue.filter(c=>c.cycle_start).map(c=>c.data).sort();
+  clue.forEach(c => {
+    if(!mapa[c.data]) mapa[c.data] = {};
+    // dia do ciclo
+    const ultimo = starts.filter(s=>s<=c.data).at(-1);
+    if(ultimo){
+      const dias = Math.floor((new Date(c.data+'T12:00:00') - new Date(ultimo+'T12:00:00'))/86400000)+1;
+      mapa[c.data]['dia_ciclo'] = dias;
+    }
+  });
+
+  // treino: treinou (0/1) e volume por dia
+  treino.forEach(t => {
+    if(!mapa[t.data]) mapa[t.data] = {};
+    mapa[t.data]['treinou'] = 1;
+    const vol = (t.num_series||1)*(t.reps||0)*(t.peso_kg||0);
+    mapa[t.data]['volume_treino'] = (mapa[t.data]['volume_treino']||0) + vol;
+  });
+  // dias sem treino no diário → treinou=0
+  diario.forEach(d => {
+    if(mapa[d.data] && mapa[d.data]['treinou']==null) mapa[d.data]['treinou']=0;
+  });
+
+  // ── COLETA TODAS AS VARIÁVEIS ─────────────────────────
+  const todasVars = new Set();
+  Object.values(mapa).forEach(obj => Object.keys(obj).forEach(k=>todasVars.add(k)));
+  const vars = [...todasVars].sort();
+
+  // ── CALCULA TODAS AS CORRELAÇÕES ──────────────────────
+  const datas = Object.keys(mapa).sort();
+  const corrs = [];
+
+  for(let i=0;i<vars.length;i++){
+    for(let j=i+1;j<vars.length;j++){
+      const va = vars[i], vb = vars[j];
+      const pares = datas
+        .filter(d => mapa[d][va]!=null && mapa[d][vb]!=null)
+        .map(d => ({ a: mapa[d][va], b: mapa[d][vb] }));
+      if(pares.length < 3) continue;
+      const r = pearson(pares.map(p=>p.a), pares.map(p=>p.b));
+      if(r==null) continue;
+      corrs.push({ va, vb, r: +r.toFixed(3), n: pares.length });
+    }
+  }
+
+  // ordena por |r|
+  corrs.sort((a,b) => Math.abs(b.r)-Math.abs(a.r));
+  _todasCorr = corrs;
+
+  // resumo para o Claude
+  const medias = {};
+  vars.forEach(v => {
+    const vals = datas.map(d=>mapa[d][v]).filter(x=>x!=null);
+    if(vals.length) medias[v] = +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+  });
+  _resumo = { dias: datas.length, medias, vars };
+
+  filtrarCorr();
+}
+
+// ── RENDERIZAR CORRELAÇÕES ────────────────────────────────
+function filtrarCorr(){
+  const rMin = parseFloat(document.getElementById('rMin').value);
+  const nMin = parseInt(document.getElementById('nMin').value);
+  document.getElementById('rMinVal').textContent = rMin.toFixed(2);
+  document.getElementById('nMinVal').textContent = nMin;
+
+  const filtradas = _todasCorr.filter(c => Math.abs(c.r)>=rMin && c.n>=nMin);
+  document.getElementById('corrCount').textContent = `${filtradas.length} correlações`;
+
+  const cl = document.getElementById('corrList');
+  if(!filtradas.length){
+    cl.innerHTML='<div class="empty"><div class="big">📉</div>Nenhuma correlação com esses filtros.<br>Tente diminuir o mínimo.</div>';
+    return;
+  }
+
+  cl.innerHTML = filtradas.slice(0,100).map(c => {
+    const abs   = Math.abs(c.r);
+    const pct   = (abs*100).toFixed(0);
+    const color = abs>=0.6?'var(--green)':abs>=0.4?'var(--orange)':abs>=0.2?'var(--blue)':'var(--muted)';
+    const sinal = c.r>0?'+':'−';
+    const force = abs>=0.6?'forte':abs>=0.4?'moderada':abs>=0.2?'fraca':'';
+    return `
+      <div class="corr-item">
+        <div class="corr-label"><strong>${label(c.va)}</strong> × <strong>${label(c.vb)}</strong> <span style="font-size:0.62rem">(${force})</span></div>
+        <div class="corr-bar-wrap"><div class="corr-bar" style="width:${pct}%;background:${color}"></div></div>
+        <div class="corr-val" style="color:${color}">${sinal}${c.r.toFixed(2)}</div>
+        <div class="corr-n">n=${c.n}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── COPIAR PARA CLAUDE ────────────────────────────────────
+function copiarParaClaude(){
+  if(!_resumo){ alert('Aguarde os dados carregarem!'); return; }
+
+  const rMin = parseFloat(document.getElementById('rMin').value);
+  const nMin = parseInt(document.getElementById('nMin').value);
+  const filtradas = _todasCorr.filter(c=>Math.abs(c.r)>=rMin && c.n>=nMin).slice(0,50);
+
+  const mediasTexto = Object.entries(_resumo.medias)
+    .map(([k,v]) => `- ${label(k)}: ${v}`)
+    .join('\n');
+
+  const corrTexto = filtradas
+    .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
+    .join('\n');
+
+  const texto = `Aqui estão meus dados de life tracking dos últimos ${_resumo.dias} dias. Analise TODAS as correlações abaixo e gere TODOS os insights relevantes (mínimo 3 e máximo 5 — as mais relevantes).
+
+MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
+${mediasTexto}
+
+CORRELAÇÕES (r de Pearson, ordenadas por força):
+${corrTexto}
+
+Responda APENAS em formato CSV, sem markdown, sem texto fora do CSV.
+Primeira linha obrigatória: icone,titulo,texto,cor,correlacao
+
+Regras:
+- icone: um emoji representativo
+- titulo: máximo 8 palavras — sem vírgulas
+- texto: explicação em 2-3 frases naturais com os números — NUNCA use vírgula no texto; use ponto e vírgula para separar ideias
+- cor: hex baseado no tipo (#a78bfa=humor/ciclo, #38bdf8=sono, #fb923c=energia, #34d399=saúde/treino, #f472b6=foco/tempo, #facc15=produtividade)
+- correlacao: valor r numérico
+
+Exemplo de linha:
+💜,Sono melhora seu humor,Nos dias após dormir mais de 7h seu humor sobe em média; o padrão é consistente nas últimas semanas,#38bdf8,0.71`;
+
+  const box = document.getElementById('copyBox');
+  box.textContent = texto;
+  box.classList.add('visible');
+  document.getElementById('instrucao').classList.add('visible');
+
+  navigator.clipboard.writeText(texto).then(()=>{
+    const badge = document.getElementById('copyBadge');
+    badge.classList.add('visible');
+    setTimeout(()=>badge.classList.remove('visible'),3000);
+  }).catch(()=>{
+    document.getElementById('copyBadge').textContent='Selecione o texto acima e copie manualmente (Ctrl+C)';
+    document.getElementById('copyBadge').classList.add('visible');
+  });
+}
+
+function copiarTexto(){
+  const txt = document.getElementById('copyBox').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    document.getElementById('copyBadge').classList.add('visible');
+    setTimeout(()=>document.getElementById('copyBadge').classList.remove('visible'),2000);
+  });
+}
+
+// ── BOOT ─────────────────────────────────────────────────
+carregar().catch(e=>{
+  document.getElementById('corrList').innerHTML=
+    `<div class="empty"><div class="big">⚠️</div>Erro ao carregar: ${e.message}</div>`;
+});
+
+// ── EXPÕE FUNÇÕES GLOBAIS (necessário com type=module) ──
+window.copiarParaClaude = copiarParaClaude;
+window.copiarTexto = copiarTexto;
+window.filtrarCorr = filtrarCorr;
+</script>
+</body>
+</html>
