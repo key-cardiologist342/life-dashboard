@@ -99,12 +99,13 @@
   <p class="page-sub">Cruza todas as variáveis numéricas de todas as fontes e gera insights baseados nas correlações mais fortes do seu histórico.</p>
 
   <!-- STATS -->
-  <div class="stats-grid">
-    <div class="stat-card"><div class="label">Dias no diário</div><div class="val" id="statDiario">—</div><div class="sub">registros</div></div>
-    <div class="stat-card"><div class="label">Noites de sono</div><div class="val" id="statSono">—</div><div class="sub">Garmin</div></div>
-    <div class="stat-card"><div class="label">Dias Clue</div><div class="val" id="statClue">—</div><div class="sub">sintomas</div></div>
-    <div class="stat-card"><div class="label">Sessões treino</div><div class="val" id="statTreino">—</div><div class="sub">únicas</div></div>
-  </div>
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+  <div class="stat-card"><div class="label">Dias no diário</div><div class="val" id="statDiario">—</div><div class="sub">registros</div></div>
+  <div class="stat-card"><div class="label">Noites de sono</div><div class="val" id="statSono">—</div><div class="sub">Garmin</div></div>
+  <div class="stat-card"><div class="label">Dias Clue</div><div class="val" id="statClue">—</div><div class="sub">sintomas</div></div>
+  <div class="stat-card"><div class="label">Sessões treino</div><div class="val" id="statTreino">—</div><div class="sub">únicas</div></div>
+  <div class="stat-card"><div class="label">Dias Garmin</div><div class="val" id="statGarmin">—</div><div class="sub">atividade diária</div></div>
+</div>
 
   <!-- FILTROS -->
   <div class="section-title">correlações encontradas</div>
@@ -186,6 +187,14 @@ const LABELS = {
   // derivados
   dia_ciclo:'Dia do Ciclo',treinou:'Treinou (0/1)',
   volume_treino:'Volume Treino (kg)',
+  // garmin_diario
+passos:'Passos',passos_objetivo:'Passos Objetivo',
+calorias_ativas:'Calorias Ativas',calorias_repouso:'Calorias Repouso',
+calorias_total:'Calorias Total',
+estresse_diario:'Estresse Diário',vfc_noturna_ms:'VFC Noturna',
+vfc_media_7d:'VFC Média 7d',
+// garmin_atividades (derivados)
+qtd_atividades:'Qtd Atividades',te_aerobico_max:'TE Aeróbico',
 };
 
 function label(k){ return LABELS[k] || k; }
@@ -212,12 +221,14 @@ let _resumo    = null;
 
 // ── CARREGAR E CALCULAR ───────────────────────────────────
 async function carregar(){
-  const [diario, sono, clue, treino] = await Promise.all([
-    sb('diario_diario?order=data.desc&limit=365'),
-    sb('sono?order=data.desc&limit=365'),
-    sb('clue_diario?order=data.desc&limit=365'),
-    sb('treino_forca?order=data.desc&limit=1000'),
-  ]);
+const [diario, sono, clue, treino, garmin, garminAtiv] = await Promise.all([
+  sb('diario_diario?order=data.desc&limit=365'),
+  sb('sono?order=data.desc&limit=365'),
+  sb('clue_diario?order=data.desc&limit=365'),
+  sb('treino_forca?order=data.desc&limit=1000'),
+  sb('garmin_diario?order=data.desc&limit=365'),
+  sb('garmin_atividades?order=data.desc&limit=500'),
+]);
 
   document.getElementById('statDiario').textContent  = diario.length;
   document.getElementById('statSono').textContent    = sono.length;
@@ -226,6 +237,7 @@ async function carregar(){
   // sessões únicas de treino
   const sessoes = new Set(treino.map(t=>t.data));
   document.getElementById('statTreino').textContent = sessoes.size;
+  document.getElementById('statGarmin').textContent = garmin.length;
 
   // ── MONTA MAPA POR DATA ───────────────────────────────
   const mapa = {}; // data → {variavel: valor}
@@ -271,6 +283,25 @@ async function carregar(){
   diario.forEach(d => {
     if(mapa[d.data] && mapa[d.data]['treinou']==null) mapa[d.data]['treinou']=0;
   });
+
+  // garmin_diario
+const colsGarmin = ['passos','passos_objetivo','calorias_ativas',
+  'calorias_repouso','calorias_total','fc_repouso',
+  'estresse_diario','vfc_noturna_ms','vfc_media_7d'];
+garmin.forEach(g => {
+  if(!mapa[g.data]) mapa[g.data] = {};
+  colsGarmin.forEach(c => { if(g[c]!=null) mapa[g.data][c] = Number(g[c]); });
+});
+
+// garmin_atividades — agrega por dia
+garminAtiv.forEach(a => {
+  if(!mapa[a.data]) mapa[a.data] = {};
+  mapa[a.data]['qtd_atividades'] = (mapa[a.data]['qtd_atividades'] || 0) + 1;
+  if(a.te_aerobico != null){
+    const atual = mapa[a.data]['te_aerobico_max'] || 0;
+    mapa[a.data]['te_aerobico_max'] = Math.max(atual, Number(a.te_aerobico));
+  }
+});
 
   // ── COLETA TODAS AS VARIÁVEIS ─────────────────────────
   const todasVars = new Set();
