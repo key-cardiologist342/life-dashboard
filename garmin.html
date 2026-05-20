@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Garmin — Life Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#0e0f13; --surface:#16181f; --surface2:#1e2029;
+    --border:rgba(255,255,255,0.06); --text:#e8eaf0; --muted:#6b7280;
+    --c-mood:#a78bfa; --c-sleep:#38bdf8; --c-energy:#fb923c;
+    --c-health:#34d399; --c-time:#f472b6; --c-cycle:#f9a8d4;
+    --c-run:#fb923c; --c-strength:#a78bfa; --c-pilates:#f472b6;
+    --c-swim:#38bdf8; --c-walk:#34d399; --c-other:#6b7280;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:60px}
+
+  /* ── HEADER ── */
+  header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(14,15,19,0.95);backdrop-filter:blur(12px)}
+  .logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800}
+  .logo span{color:var(--c-health)}
+  .header-right{display:flex;align-items:center;gap:12px}
+  nav{padding:0 12px;display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  nav a{color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;padding:12px 14px;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;text-decoration:none;display:block}
+  nav a:hover{color:var(--text)}
+  nav a.active{color:var(--c-health);border-bottom-color:var(--c-health)}
+
+  /* ── MAIN ── */
+  main{padding:20px 16px;max-width:1400px;margin:0 auto}
+  @media(min-width:640px){main{padding:28px 24px}}
+  @media(min-width:1024px){main{padding:36px 40px}}
+
+  .page-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:4px}
+  @media(min-width:640px){.page-title{font-size:2rem}}
+  .page-title span{color:var(--c-health)}
+  .page-sub{color:var(--muted);font-size:0.82rem;margin-bottom:32px}
+
+  /* ── SECTION TITLE ── */
+  .section-title{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* ── GRID ── */
+  .grid-2{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+  @media(min-width:768px){.grid-2{grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}}
+  .grid-3{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+  @media(min-width:768px){.grid-3{grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}}
+
+  /* ── CARD ── */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;transition:border-color .2s;margin-bottom:16px}
+  @media(min-width:640px){.card{padding:22px;border-radius:20px}}
+  .card:hover{border-color:rgba(255,255,255,0.1)}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .card-title{font-weight:600;font-size:0.88rem;display:flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .card-badge{font-family:'DM Mono',monospace;font-size:0.62rem;padding:3px 10px;border-radius:100px;background:var(--surface2);color:var(--muted)}
+
+  /* ── STAT MINI ── */
+  .stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .stat-mini{display:flex;flex-direction:column;gap:3px}
+  .stat-mini .label{font-size:0.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .stat-mini .val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;line-height:1}
+  .stat-mini .sub{font-size:0.62rem;color:var(--muted)}
+
+  /* ── MINI CHART (SVG inline) ── */
+  .chart-wrap{width:100%;overflow:hidden;margin-bottom:8px}
+  .chart-wrap svg{width:100%;display:block}
+  .chart-label{display:flex;gap:14px;flex-wrap:wrap}
+  .chart-legend-item{display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)}
+  .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  /* ── ACTIVITY TABLE ── */
+  .act-table{width:100%;border-collapse:collapse}
+  .act-table th{font-size:0.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+  .act-table td{padding:10px 10px;font-size:0.78rem;border-bottom:1px solid var(--border)}
+  .act-table tr:last-child td{border-bottom:none}
+  .act-table tr:hover td{background:rgba(255,255,255,0.02)}
+  .act-type-chip{font-size:0.65rem;padding:3px 10px;border-radius:100px;font-weight:500;white-space:nowrap}
+
+  /* ── BAR CHART ── */
+  .bar-list{display:flex;flex-direction:column;gap:10px}
+  .bar-item-wrap{}
+  .bar-meta{display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px}
+  .bar-meta span:first-child{color:var(--muted)}
+  .bar-meta span:last-child{font-family:'DM Mono',monospace;font-weight:500}
+  .bar-track{height:6px;background:var(--surface2);border-radius:100px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+  .bar-fill-2{height:100%;border-radius:100px;position:absolute;top:0;left:0;opacity:0.4}
+
+  /* ── TREND BADGE ── */
+  .trend-up{color:var(--c-health);font-size:0.72rem;font-weight:600}
+  .trend-down{color:#f87171;font-size:0.72rem;font-weight:600}
+  .trend-flat{color:var(--muted);font-size:0.72rem}
+
+  /* ── EMPTY ── */
+  .empty{color:var(--muted);font-size:0.78rem;text-align:center;padding:32px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .empty .big{font-size:2rem}
+
+  /* ── LOADING ── */
+  .loading{color:var(--muted);font-size:0.82rem;text-align:center;padding:48px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">life<span>.</span>dash</div>
+  <div class="header-right">
+    <button onclick="logout()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:0.72rem;padding:5px 12px;border-radius:8px;cursor:pointer">Sair</button>
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--c-health);box-shadow:0 0 8px var(--c-health)"></div>
+  </div>
+</header>
+
+<nav>
+  <a href="index.html">Visão Geral</a>
+  <a href="diario.html">Diário</a>
+  <a href="financeiro.html">Financeiro</a>
+  <a href="treino.html">Treino</a>
+  <a href="garmin.html" class="active">Garmin</a>
+  <a href="gerar_insights.html">Insights</a>
+</nav>
+
+<main>
+  <div class="page-title">Garmin <span>Analytics</span></div>
+  <p class="page-sub" id="pageSubtitle">Carregando seus dados...</p>
+
+  <div id="mainContent"><div class="loading">⌛ Carregando dados do Garmin...</div></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://bszolfkwpqidoqzlzjci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
+const _supa = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const { data: { session } } = await _supa.auth.getSession();
+if (!session) { window.location.href = 'login.html'; throw new Error(''); }
+const _token = session.access_token;
+
+window.logout = async function(){ await _supa.auth.signOut(); window.location.href = 'login.html'; };
+
+async function sb(path){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${_token}`, 'Content-Type': 'application/json' }
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── CORES POR TIPO ────────────────────────────────────────
+function tipoConfig(tipo){
+  const t = (tipo||'').toLowerCase();
+  if(t.includes('corrida')||t.includes('base')||t.includes('esteira')) return {cor:'var(--c-run)',  emoji:'🏃', grupo:'Corrida'};
+  if(t.includes('força')||t.includes('forca')||t.includes('treino de f')) return {cor:'var(--c-mood)', emoji:'💪', grupo:'Força'};
+  if(t.includes('pilates'))  return {cor:'var(--c-time)',   emoji:'🧘', grupo:'Pilates'};
+  if(t.includes('natação')||t.includes('natacao')||t.includes('piscina')) return {cor:'var(--c-sleep)', emoji:'🏊', grupo:'Natação'};
+  if(t.includes('caminhada')) return {cor:'var(--c-health)', emoji:'🚶', grupo:'Caminhada'};
+  return {cor:'var(--muted)', emoji:'⚡', grupo:'Outros'};
+}
+
+function minToHM(seg){ if(!seg) return '—'; const h=Math.floor(seg/3600),m=Math.floor((seg%3600)/60); return h>0?`${h}h${String(m).padStart(2,'0')}min`:`${m}min`; }
+function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+function fmt(v,dec=0){ return v!=null ? (+v).toFixed(dec) : '—'; }
+function trendIcon(curr, prev){ if(!curr||!prev) return ''; const d=curr-prev; if(Math.abs(d)<0.01) return '<span class="trend-flat">→</span>'; return d<0?`<span class="trend-down">↓ ${Math.abs(d).toFixed(1)}</span>`:`<span class="trend-up">↑ ${d.toFixed(1)}</span>`; }
+
+// ── SVG SPARKLINE ─────────────────────────────────────────
+function sparkline(values, color, height=60, showDots=true){
+  if(!values || values.length < 2) return '<div class="empty" style="padding:16px"><span class="big">📊</span></div>';
+  const W=400, H=height, pad=8;
+  const min=Math.min(...values), max=Math.max(...values);
+  const range=max-min||1;
+  const pts = values.map((v,i)=>{
+    const x = pad + (i/(values.length-1))*(W-pad*2);
+    const y = H-pad-(((v-min)/range)*(H-pad*2));
+    return {x,y,v};
+  });
+  const path = pts.map((p,i)=>(i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`)).join(' ');
+  const area = `${path} L${pts[pts.length-1].x},${H} L${pts[0].x},${H} Z`;
+  const dots = showDots ? pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="${color}" stroke="var(--surface)" stroke-width="1.5"/>`).join('') : '';
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+    <defs><linearGradient id="g_${color.replace(/[^a-z0-9]/gi,'')}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#g_${color.replace(/[^a-z0-9]/gi,'')})" />
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+  </svg>`;
+}
+
+// ── DUAL SPARKLINE (dois datasets) ───────────────────────
+function dualSparkline(vals1, vals2, c1, c2, height=60){
+  if(!vals1||vals1.length<2) return '';
+  const W=400, H=height, pad=8;
+  const all=[...vals1,...(vals2||[])].filter(Boolean);
+  const min=Math.min(...all), max=Math.max(...all), range=max-min||1;
+  const toY=v=>H-pad-(((v-min)/range)*(H-pad*2));
+  const toX=(i,len)=>pad+(i/(len-1))*(W-pad*2);
+  const makePath=(vals,c)=>{
+    const pts=vals.map((v,i)=>({x:toX(i,vals.length),y:toY(v)}));
+    const p=pts.map((pt,i)=>(i===0?`M${pt.x},${pt.y}`:`L${pt.x},${pt.y}`)).join(' ');
+    return `<path d="${p}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${c===c2?'6,3':''}"/>`;
+  };
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${makePath(vals1,c1)}
+    ${vals2?makePath(vals2,c2):''}
+  </svg>`;
+}
+
+// ── CARD POR GRUPO DE ATIVIDADE ───────────────────────────
+function renderActivityCard(grupo, atividades, cor, emoji){
+  const sorted = [...atividades].sort((a,b)=>a.data.localeCompare(b.data));
+  const n = sorted.length;
+
+  // médias gerais
+  const avgFC    = avg(sorted.map(a=>a.fc_media).filter(Boolean));
+  const avgDur   = avg(sorted.map(a=>a.duracao_seg).filter(Boolean));
+  const avgCal   = avg(sorted.map(a=>a.calorias).filter(Boolean));
+  const avgBB    = avg(sorted.map(a=>a.body_battery_gasto).filter(Boolean));
+
+  // últimas 3 vs primeiras 3 (tendência)
+  const primeiras3FC = sorted.slice(0,3).map(a=>a.fc_media).filter(Boolean);
+  const ultimas3FC   = sorted.slice(-3).map(a=>a.fc_media).filter(Boolean);
+  const avgFC_ini = avg(primeiras3FC), avgFC_fim = avg(ultimas3FC);
+
+  // dados pra sparklines
+  const fcVals   = sorted.map(a=>a.fc_media).filter(Boolean);
+  const durVals  = sorted.map(a=>a.duracao_seg ? a.duracao_seg/60 : null).filter(Boolean);
+  const calVals  = sorted.map(a=>a.calorias).filter(Boolean);
+
+  // métricas específicas por grupo
+  let extraMetrics = '';
+  let extraChart   = '';
+
+  if(grupo === 'Corrida'){
+    // pace = duracao_seg / (distancia_km * 60) em min/km
+    const paceVals = sorted
+      .filter(a=>a.distancia_km>0.5 && a.duracao_seg)
+      .map(a=>a.duracao_seg/(a.distancia_km*60));
+    const avgPace = avg(paceVals);
+    const fmtPace = v=>{ if(!v) return '—'; const m=Math.floor(v); const s=Math.round((v-m)*60); return `${m}:${String(s).padStart(2,'0')}/km`; };
+    const distTotal = sorted.reduce((s,a)=>s+(+a.distancia_km||0),0);
+
+    extraMetrics = `
+      <div class="stat-mini">
+        <div class="label">Pace médio</div>
+        <div class="val" style="color:${cor}">${fmtPace(avgPace)}</div>
+        <div class="sub">min/km</div>
+      </div>
+      <div class="stat-mini">
+        <div class="label">Distância total</div>
+        <div class="val" style="color:${cor}">${distTotal.toFixed(1)}</div>
+        <div class="sub">km acumulados</div>
+      </div>`;
+
+    extraChart = paceVals.length >= 2 ? `
+      <div class="section-title" style="margin-top:16px">pace ao longo do tempo</div>
+      <div class="chart-wrap">${sparkline(paceVals, cor, 50, true)}</div>
+      <div class="chart-label">
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:${cor}"></div>Pace (min/km) — quanto menor melhor</div>
+      </div>` : '';
+  }
+
+  if(grupo === 'Força'){
+    const volVals = sorted.map(a=>a.total_repeticoes||0).filter(Boolean);
+    const avgVol  = avg(volVals);
+    extraMetrics = `
+      <div class="stat-mini">
+        <div class="label">Reps médias</div>
+        <div class="val" style="color:${cor}">${fmt(avgVol,0)}</div>
+        <div class="sub">por sessão</div>
+      </div>`;
+    extraChart = volVals.length >= 2 ? `
+      <div class="section-title" style="margin-top:16px">repetições por sessão</div>
+      <div class="chart-wrap">${sparkline(volVals, cor, 50, true)}</div>` : '';
+  }
+
+  if(grupo === 'Natação'){
+    const distVals = sorted.map(a=>+a.distancia_km||0).filter(v=>v>0);
+    const distTotal = sorted.reduce((s,a)=>s+(+a.distancia_km||0),0);
+    extraMetrics = `
+      <div class="stat-mini">
+        <div class="label">Distância total</div>
+        <div class="val" style="color:${cor}">${distTotal.toFixed(0)}</div>
+        <div class="sub">metros</div>
+      </div>`;
+    extraChart = distVals.length >= 2 ? `
+      <div class="section-title" style="margin-top:16px">distância por sessão (m)</div>
+      <div class="chart-wrap">${sparkline(distVals, cor, 50, true)}</div>` : '';
+  }
+
+  // tendência FC
+  const tendenciaFC = avgFC_ini && avgFC_fim
+    ? avgFC_fim < avgFC_ini
+      ? `<span class="trend-up">↓ FC ${Math.abs(avgFC_fim-avgFC_ini).toFixed(0)}bpm — eficiência melhorando</span>`
+      : avgFC_fim > avgFC_ini
+        ? `<span class="trend-down">↑ FC ${Math.abs(avgFC_fim-avgFC_ini).toFixed(0)}bpm — atenção à recuperação</span>`
+        : `<span class="trend-flat">→ FC estável</span>`
+    : '';
+
+  // tabela das últimas sessões
+  const ultimas = [...sorted].reverse().slice(0,5);
+  const tabelaRows = ultimas.map(a=>{
+    const data = new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    const dur  = minToHM(a.duracao_seg);
+    const fc   = a.fc_media ? `${a.fc_media}bpm` : '—';
+    const cal  = a.calorias ? `${a.calorias}kcal` : '—';
+    const bb   = a.body_battery_gasto != null ? `${a.body_battery_gasto}` : '—';
+    return `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:0.7rem">${data}</td>
+      <td>${dur}</td>
+      <td style="color:${cor}">${fc}</td>
+      <td>${cal}</td>
+      <td style="color:${avgBB<-10?'#f87171':'var(--muted)'}">${bb}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span style="font-size:1.1rem">${emoji}</span>
+          ${grupo}
+        </div>
+        <span class="card-badge">${n} sessões</span>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-mini">
+          <div class="label">FC média</div>
+          <div class="val" style="color:${cor}">${fmt(avgFC,0)}<span style="font-size:0.7rem;font-weight:400"> bpm</span></div>
+          <div class="sub">${tendenciaFC}</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">Duração média</div>
+          <div class="val" style="color:${cor}">${minToHM(Math.round(avgDur||0))}</div>
+          <div class="sub">por sessão</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">Calorias médias</div>
+          <div class="val" style="color:${cor}">${fmt(avgCal,0)}</div>
+          <div class="sub">kcal/sessão</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">Body Battery</div>
+          <div class="val" style="color:${avgBB<-10?'#f87171':cor}">${fmt(avgBB,0)}</div>
+          <div class="sub">gasto médio</div>
+        </div>
+        ${extraMetrics}
+      </div>
+
+      <!-- FC CHART -->
+      ${fcVals.length >= 2 ? `
+      <div class="section-title">fc média por sessão</div>
+      <div class="chart-wrap">${sparkline(fcVals, cor, 60, true)}</div>
+      <div class="chart-label">
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:${cor}"></div>FC média (bpm) — quanto menor melhor pra mesma intensidade</div>
+      </div>` : ''}
+
+      ${extraChart}
+
+      <!-- TABELA ÚLTIMAS SESSÕES -->
+      <div class="section-title" style="margin-top:20px">últimas sessões</div>
+      <div style="overflow-x:auto">
+        <table class="act-table">
+          <thead><tr>
+            <th>Data</th><th>Duração</th><th>FC média</th><th>Calorias</th><th>Body Battery</th>
+          </tr></thead>
+          <tbody>${tabelaRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── SEÇÃO RECUPERAÇÃO ─────────────────────────────────────
+function renderRecuperacao(diario){
+  if(!diario.length) return '<div class="empty"><div class="big">📊</div>Sem dados de recuperação ainda</div>';
+  const sorted = [...diario].sort((a,b)=>a.data.localeCompare(b.data));
+
+  const vfcVals = sorted.map(d=>d.vfc_noturna_ms).filter(Boolean);
+  const fcVals  = sorted.map(d=>d.fc_repouso).filter(Boolean);
+  const strVals = sorted.map(d=>d.estresse_diario).filter(Boolean);
+
+  const avgVFC = avg(vfcVals);
+  const avgFC  = avg(fcVals);
+  const avgStr = avg(strVals);
+
+  return `
+    <div class="grid-2">
+      <!-- VFC -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>VFC Noturna</div>
+          <span class="card-badge">${vfcVals.length} registros</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-mini">
+            <div class="label">Média</div>
+            <div class="val" style="color:var(--c-mood)">${fmt(avgVFC,0)}<span style="font-size:0.7rem;font-weight:400"> ms</span></div>
+            <div class="sub">VFC noturna</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">Última</div>
+            <div class="val" style="color:var(--c-mood)">${sorted.filter(d=>d.vfc_noturna_ms).at(-1)?.vfc_noturna_ms||'—'}<span style="font-size:0.7rem;font-weight:400"> ms</span></div>
+            <div class="sub">mais recente</div>
+          </div>
+        </div>
+        ${vfcVals.length>=2?`<div class="chart-wrap">${sparkline(vfcVals,'var(--c-mood)',70,false)}</div>`:''}
+        <div class="chart-label"><div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-mood)"></div>VFC (ms) — quanto maior melhor</div></div>
+      </div>
+
+      <!-- FC REPOUSO -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>FC Repouso</div>
+          <span class="card-badge">${fcVals.length} registros</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-mini">
+            <div class="label">Média</div>
+            <div class="val" style="color:var(--c-sleep)">${fmt(avgFC,0)}<span style="font-size:0.7rem;font-weight:400"> bpm</span></div>
+            <div class="sub">FC repouso</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">Última</div>
+            <div class="val" style="color:var(--c-sleep)">${sorted.filter(d=>d.fc_repouso).at(-1)?.fc_repouso||'—'}<span style="font-size:0.7rem;font-weight:400"> bpm</span></div>
+            <div class="sub">mais recente</div>
+          </div>
+        </div>
+        ${fcVals.length>=2?`<div class="chart-wrap">${sparkline(fcVals,'var(--c-sleep)',70,false)}</div>`:''}
+        <div class="chart-label"><div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-sleep)"></div>FC repouso (bpm) — quanto menor melhor</div></div>
+      </div>
+    </div>
+
+    <!-- ESTRESSE -->
+    ${strVals.length>=2?`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="dot" style="background:var(--c-energy)"></div>Estresse Diário</div>
+        <span class="card-badge">${strVals.length} registros</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-mini">
+          <div class="label">Média</div>
+          <div class="val" style="color:var(--c-energy)">${fmt(avgStr,0)}</div>
+          <div class="sub">0-100</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">Classificação</div>
+          <div class="val" style="font-size:1rem;color:${avgStr<25?'var(--c-health)':avgStr<50?'var(--c-energy)':'#f87171'}">${avgStr<25?'Baixo':avgStr<50?'Moderado':avgStr<75?'Alto':'Muito alto'}</div>
+        </div>
+      </div>
+      <div class="chart-wrap">${sparkline(strVals,'var(--c-energy)',70,false)}</div>
+      <div class="chart-label"><div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-energy)"></div>Estresse (0-100) — quanto menor melhor</div></div>
+    </div>`:''}`;
+}
+
+// ── SEÇÃO MOVIMENTO ───────────────────────────────────────
+function renderMovimento(diario){
+  if(!diario.length) return '';
+  const sorted = [...diario].sort((a,b)=>a.data.localeCompare(b.data)).slice(-30);
+
+  const passosVals  = sorted.map(d=>d.passos).filter(Boolean);
+  const passosObj   = sorted.map(d=>d.passos_objetivo).filter(Boolean);
+  const calAtVals   = sorted.map(d=>d.calorias_ativas).filter(Boolean);
+  const calTotVals  = sorted.map(d=>d.calorias_total).filter(Boolean);
+
+  if(!passosVals.length && !calAtVals.length) return '';
+
+  const avgPassos = avg(passosVals);
+  const avgCalAt  = avg(calAtVals);
+  const diasMeta  = sorted.filter(d=>d.passos && d.passos_objetivo && d.passos>=d.passos_objetivo).length;
+
+  return `
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Passos Diários</div>
+          <span class="card-badge">últimos 30 dias</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-mini">
+            <div class="label">Média diária</div>
+            <div class="val" style="color:var(--c-health)">${avgPassos?Math.round(avgPassos).toLocaleString('pt-BR'):'—'}</div>
+            <div class="sub">passos/dia</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">Meta atingida</div>
+            <div class="val" style="color:var(--c-health)">${diasMeta}/${sorted.filter(d=>d.passos_objetivo).length}</div>
+            <div class="sub">dias</div>
+          </div>
+        </div>
+        ${passosVals.length>=2?`<div class="chart-wrap">${dualSparkline(passosVals,passosObj,'var(--c-health)','rgba(255,255,255,0.2)',70)}</div>
+        <div class="chart-label">
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-health)"></div>Passos reais</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:rgba(255,255,255,0.2)"></div>Objetivo</div>
+        </div>`:''}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="dot" style="background:var(--c-cycle)"></div>Calorias</div>
+          <span class="card-badge">últimos 30 dias</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-mini">
+            <div class="label">Ativas médias</div>
+            <div class="val" style="color:var(--c-cycle)">${avgCalAt?Math.round(avgCalAt):'—'}</div>
+            <div class="sub">kcal/dia</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">Total médio</div>
+            <div class="val" style="color:var(--c-cycle)">${avg(calTotVals)?Math.round(avg(calTotVals)):'—'}</div>
+            <div class="sub">kcal/dia</div>
+          </div>
+        </div>
+        ${calAtVals.length>=2?`<div class="chart-wrap">${dualSparkline(calTotVals,calAtVals,'var(--c-cycle)','var(--c-energy)',70)}</div>
+        <div class="chart-label">
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-cycle)"></div>Total</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--c-energy)"></div>Ativas</div>
+        </div>`:''}
+      </div>
+    </div>`;
+}
+
+// ── MAIN ──────────────────────────────────────────────────
+async function init(){
+  try {
+    const [atividades, diario] = await Promise.all([
+      sb('garmin_atividades?order=data.desc&limit=500'),
+      sb('garmin_diario?order=data.desc&limit=90'),
+    ]);
+
+    document.getElementById('pageSubtitle').textContent =
+      `${atividades.length} atividades · ${diario.length} dias de dados diários`;
+
+    // Agrupa atividades por grupo
+    const grupos = {};
+    atividades.forEach(a => {
+      const cfg = tipoConfig(a.tipo);
+      if(!grupos[cfg.grupo]) grupos[cfg.grupo] = { atividades:[], cor:cfg.cor, emoji:cfg.emoji };
+      grupos[cfg.grupo].atividades.push(a);
+    });
+
+    // Ordena grupos por número de sessões
+    const gruposOrdenados = Object.entries(grupos)
+      .sort((a,b) => b[1].atividades.length - a[1].atividades.length);
+
+    let html = '';
+
+    // Recuperação
+    html += '<div class="section-title">recuperação</div>';
+    html += renderRecuperacao(diario);
+
+    // Movimento
+    const movHtml = renderMovimento(diario);
+    if(movHtml){
+      html += '<div class="section-title" style="margin-top:8px">movimento</div>';
+      html += movHtml;
+    }
+
+    // Cards por tipo de atividade
+    html += '<div class="section-title" style="margin-top:8px">por tipo de atividade</div>';
+    if(gruposOrdenados.length){
+      gruposOrdenados.forEach(([grupo, data]) => {
+        html += renderActivityCard(grupo, data.atividades, data.cor, data.emoji);
+      });
+    } else {
+      html += '<div class="empty"><div class="big">🏃</div>Sem atividades registradas ainda</div>';
+    }
+
+    document.getElementById('mainContent').innerHTML = html;
+
+  } catch(e){
+    console.error(e);
+    document.getElementById('mainContent').innerHTML =
+      `<div class="empty"><div class="big">⚠️</div>Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
