@@ -227,6 +227,97 @@
   }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   .toast.err { background:var(--red); }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display:flex; gap:4px; margin-bottom:32px;
+    border-bottom:1px solid var(--border); padding-bottom:0;
+  }
+  .tab-btn {
+    background:none; border:none; color:var(--muted);
+    font-family:'Syne',sans-serif; font-weight:700; font-size:0.8rem;
+    padding:10px 20px 12px; cursor:pointer; position:relative;
+    transition:color .2s; border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .tab-btn.active { color:var(--yellow); border-bottom-color:var(--yellow); }
+  .tab-btn:hover:not(.active){ color:var(--text); }
+
+  /* ── PLANO ── */
+  .plano-score-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  @media(max-width:600px){ .plano-score-strip{ grid-template-columns:1fr 1fr; } }
+
+  .plano-progress {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:14px 18px; margin-bottom:28px;
+  }
+  .plano-progress-label {
+    font-size:0.72rem; color:var(--muted); margin-bottom:8px;
+    display:flex; justify-content:space-between;
+  }
+  .plano-progress-track { height:6px; background:var(--surface2); border-radius:100px; overflow:hidden; }
+  .plano-progress-fill { height:100%; background:var(--green); border-radius:100px; transition:width .5s ease; width:0%; }
+
+  .plano-group {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px; overflow:hidden; margin-bottom:10px;
+  }
+  .plano-group.critical { border-color:rgba(248,113,113,0.35); }
+  .plano-group.tight    { border-color:rgba(251,146,60,0.3); }
+
+  .plano-date-header {
+    padding:11px 16px; background:var(--surface2);
+    display:flex; align-items:center; gap:10px;
+    border-bottom:1px solid var(--border);
+  }
+  .plano-date-badge {
+    font-family:'DM Mono',monospace; font-size:0.72rem;
+    background:rgba(255,255,255,0.07); padding:3px 10px; border-radius:8px; white-space:nowrap;
+  }
+  .plano-group.critical .plano-date-badge { background:rgba(248,113,113,0.15); color:var(--red); }
+  .plano-group.tight    .plano-date-badge { background:rgba(251,146,60,0.12); color:var(--orange); }
+
+  .plano-day-tag {
+    font-size:0.65rem; font-weight:700; color:var(--red);
+    background:rgba(248,113,113,0.1); padding:2px 8px; border-radius:5px;
+  }
+  .plano-spacer { flex:1; }
+  .plano-bal {
+    font-family:'DM Mono',monospace; font-size:0.78rem; font-weight:500; white-space:nowrap;
+  }
+  .plano-bal.ok       { color:var(--green); }
+  .plano-bal.low      { color:var(--orange); }
+  .plano-bal.critical { color:var(--red); }
+
+  .plano-item {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 16px; border-bottom:1px solid var(--border); transition:opacity .2s;
+  }
+  .plano-item:last-child { border-bottom:none; }
+  .plano-item.done { opacity:0.38; }
+
+  .plano-check {
+    width:18px; height:18px; flex-shrink:0;
+    border-radius:5px; border:2px solid var(--border);
+    background:transparent; cursor:pointer; appearance:none;
+    position:relative; transition:all .15s;
+  }
+  .plano-check:checked { background:var(--green); border-color:var(--green); }
+  .plano-check:checked::after {
+    content:'✓'; position:absolute; top:-1px; left:2px;
+    font-size:0.7rem; color:#0e0f13; font-weight:700;
+  }
+  .plano-icon { font-size:0.75rem; width:16px; text-align:center; flex-shrink:0; }
+  .plano-desc { flex:1; font-size:0.82rem; }
+  .plano-urgent-tag {
+    font-size:0.6rem; font-weight:700; color:var(--red);
+    background:rgba(248,113,113,0.12); padding:1px 6px;
+    border-radius:4px; margin-left:6px; vertical-align:middle;
+  }
+  .plano-val {
+    font-family:'DM Mono',monospace; font-size:0.82rem; font-weight:500; white-space:nowrap;
+  }
+  .plano-val.e { color:var(--green); }
+  .plano-val.s { color:var(--red); }
 </style>
 </head>
 <body>
@@ -242,6 +333,13 @@
 </header>
 
 <main>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-mensal" onclick="switchTab('mensal')">📅 Mensal</button>
+    <button class="tab-btn" id="tab-plano" onclick="switchTab('plano')">🗺️ Plano Survival</button>
+  </div>
+
+  <!-- ══ VIEW MENSAL ══════════════════════════════════════ -->
+  <div id="view-mensal">
   <div class="page-header">
     <div>
       <div class="page-title">Financeiro <span>💰</span></div>
@@ -401,9 +499,256 @@
       </tbody>
     </table>
   </div>
+  </div><!-- /view-mensal -->
+
+  <!-- ══ VIEW PLANO ═══════════════════════════════════════ -->
+  <div id="view-plano" style="display:none">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Plano <span>🗺️</span></div>
+        <div class="page-sub">Cronograma de sobrevivência — Maio a Julho 2026</div>
+      </div>
+    </div>
+
+    <div class="plano-score-strip">
+      <div class="score-card" style="--accent:var(--yellow)">
+        <div class="label">Saldo Agora</div>
+        <div class="val" id="psaldoReal">R$ 2.139,41</div>
+        <div class="sub">base: 26/05 após pagamentos</div>
+      </div>
+      <div class="score-card" style="--accent:var(--blue)">
+        <div class="label">Projetado Fim Jul</div>
+        <div class="val" id="psaldoFim" style="color:var(--blue)">R$ 3.200,20</div>
+        <div class="sub">se tudo ocorrer como planejado</div>
+      </div>
+      <div class="score-card" style="--accent:var(--orange)">
+        <div class="label">Reserva Emergência</div>
+        <div class="val" style="color:var(--orange)">R$ 500,00</div>
+        <div class="sub">não tocar — último recurso</div>
+      </div>
+    </div>
+
+    <div class="plano-progress">
+      <div class="plano-progress-label">
+        <span>Progresso do plano</span>
+        <span id="pprogText">0 / 44 concluídos</span>
+      </div>
+      <div class="plano-progress-track">
+        <div class="plano-progress-fill" id="pprogFill"></div>
+      </div>
+    </div>
+
+    <div id="plano-timeline"></div>
+  </div><!-- /view-plano -->
+
 </main>
 
 <div class="toast" id="toast"></div>
+
+<script>
+// ── PLANO DE SOBREVIVÊNCIA ────────────────────────────────
+const PLANO_INICIO = 2139.41;
+
+const PLANO = [
+  // MAIO
+  {id:'p1',  date:'2026-05-28',month:'Maio', type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p2',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Banho cachorro',                 value:130.00},
+  {id:'p3',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Almoço presencial',              value:40.00},
+  // JUNHO
+  {id:'p4',  date:'2026-06-04',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p5',  date:'2026-06-04',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
+  {id:'p6',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
+  {id:'p7',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Condomínio (corrente)',          value:516.00, critical:true},
+  {id:'p8',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Inter (fatura)',                value:616.23, critical:true},
+  {id:'p9',  date:'2026-06-10',month:'Junho',type:'saida',  desc:'Ração',                         value:200.00},
+  {id:'p10', date:'2026-06-11',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p11', date:'2026-06-11',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
+  {id:'p12', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Claro — maio atrasado',         value:68.43},
+  {id:'p13', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Vivo — maio atrasado',          value:144.35},
+  {id:'p14', date:'2026-06-15',month:'Junho',type:'entrada',desc:'Salário',                        value:3000.00},
+  {id:'p15', date:'2026-06-17',month:'Junho',type:'saida',  desc:'Condomínio (1 mês atrasado)',   value:516.00},
+  {id:'p16', date:'2026-06-18',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p17', date:'2026-06-18',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
+  {id:'p18', date:'2026-06-19',month:'Junho',type:'saida',  desc:'Claro — junho',                 value:68.43},
+  {id:'p19', date:'2026-06-20',month:'Junho',type:'saida',  desc:'Financiamento Itaú',            value:1476.33,critical:true},
+  {id:'p20', date:'2026-06-21',month:'Junho',type:'saida',  desc:'Vivo — junho',                  value:144.35},
+  {id:'p21', date:'2026-06-25',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p22', date:'2026-06-25',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
+  {id:'p23', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Enel',                          value:203.14},
+  {id:'p24', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Comgás',                        value:15.00},
+  // JULHO
+  {id:'p25', date:'2026-07-02',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p26', date:'2026-07-02',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
+  {id:'p27', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
+  {id:'p28', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Condomínio (corrente)',          value:516.00, critical:true},
+  {id:'p29', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Inter (fatura)',                value:343.56, critical:true},
+  {id:'p30', date:'2026-07-09',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p31', date:'2026-07-09',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
+  {id:'p32', date:'2026-07-15',month:'Julho',type:'entrada',desc:'Salário',                        value:3000.00},
+  {id:'p33', date:'2026-07-16',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p34', date:'2026-07-16',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
+  {id:'p35', date:'2026-07-17',month:'Julho',type:'saida',  desc:'Condomínio (2º mês atrasado)',  value:516.00},
+  {id:'p36', date:'2026-07-19',month:'Julho',type:'saida',  desc:'Claro — julho',                 value:68.43},
+  {id:'p37', date:'2026-07-20',month:'Julho',type:'saida',  desc:'Financiamento Itaú',            value:1476.33,critical:true},
+  {id:'p38', date:'2026-07-21',month:'Julho',type:'saida',  desc:'Vivo — julho',                  value:144.35},
+  {id:'p39', date:'2026-07-23',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p40', date:'2026-07-23',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
+  {id:'p41', date:'2026-07-26',month:'Julho',type:'saida',  desc:'Enel',                          value:203.14},
+  {id:'p42', date:'2026-07-26',month:'Julho',type:'saida',  desc:'Comgás',                        value:15.00},
+  {id:'p43', date:'2026-07-30',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
+  {id:'p44', date:'2026-07-30',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
+];
+
+let _done      = new Set(JSON.parse(localStorage.getItem('plano_done')||'[]'));
+let _overrides = JSON.parse(localStorage.getItem('plano_overrides')||'{}');
+
+function getVal(t){ return _overrides[t.id]!==undefined ? _overrides[t.id] : t.value; }
+
+function editVal(id){
+  const el = document.getElementById('pval_'+id);
+  if(!el) return;
+  const t   = PLANO.find(x=>x.id===id);
+  const cur = getVal(t);
+  const inp = document.createElement('input');
+  inp.type='number'; inp.step='0.01'; inp.value=cur;
+  inp.style.cssText='width:90px;background:var(--surface2);border:1px solid var(--yellow);color:var(--text);font-family:DM Mono,monospace;font-size:0.78rem;padding:2px 6px;border-radius:6px;outline:none;';
+  el.replaceWith(inp);
+  inp.focus(); inp.select();
+  function save(){
+    const v = parseFloat(inp.value);
+    if(!isNaN(v) && v>=0){
+      _overrides[id]=v;
+      localStorage.setItem('plano_overrides',JSON.stringify(_overrides));
+    }
+    renderPlano();
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ delete _overrides[id]; inp.blur(); } });
+}
+
+function pbrl(v){ return `R$ ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
+
+function switchTab(tab){
+  document.getElementById('view-mensal').style.display = tab==='mensal'?'':'none';
+  document.getElementById('view-plano').style.display  = tab==='plano' ?'':'none';
+  document.getElementById('tab-mensal').classList.toggle('active', tab==='mensal');
+  document.getElementById('tab-plano').classList.toggle('active',  tab==='plano');
+}
+
+function togglePlanoItem(id, cb){
+  cb.checked ? _done.add(id) : _done.delete(id);
+  localStorage.setItem('plano_done', JSON.stringify([..._done]));
+  renderPlano();
+}
+
+function calcSaldoReal(){
+  let b = PLANO_INICIO;
+  PLANO.forEach(t=>{ if(_done.has(t.id)) b += t.type==='entrada'?getVal(t):-getVal(t); });
+  return b;
+}
+
+function calcRunning(){
+  // Projected balance after each date (full plan)
+  const grouped={};
+  PLANO.forEach(t=>{ (grouped[t.date]=grouped[t.date]||[]).push(t); });
+  let b=PLANO_INICIO; const out={};
+  Object.keys(grouped).sort().forEach(d=>{
+    grouped[d].forEach(t=>{ b+=t.type==='entrada'?getVal(t):-getVal(t); });
+    out[d]=b;
+  });
+  return out;
+}
+
+function balClass(v){ return v<0?'critical':v<500?'low':'ok'; }
+
+function renderPlano(){
+  const real = calcSaldoReal();
+  const running = calcRunning();
+  const total = PLANO.length;
+  const done  = _done.size;
+  const projFim = Object.values(running).at(-1)||0;
+
+  // Score cards
+  const rEl = document.getElementById('psaldoReal');
+  rEl.textContent = pbrl(real);
+  rEl.style.color = real<500?'var(--red)':real<1200?'var(--orange)':'var(--yellow)';
+  document.getElementById('psaldoFim').textContent = pbrl(projFim);
+  document.getElementById('pprogText').textContent = `${done} / ${total} concluídos`;
+  document.getElementById('pprogFill').style.width  = `${(done/total*100).toFixed(1)}%`;
+
+  // Build timeline
+  const grouped={}, months={};
+  PLANO.forEach(t=>{
+    (grouped[t.date]=grouped[t.date]||[]).push(t);
+    months[t.date]=t.month;
+  });
+
+  const MONTH_LABELS = {Maio:'☀️ Maio',Junho:'🌿 Junho',Julho:'🌤️ Julho'};
+  let html='', lastMonth='';
+
+  Object.keys(grouped).sort().forEach(date=>{
+    const items    = grouped[date];
+    const bal      = running[date];
+    const month    = months[date];
+    const hasCrit  = items.some(t=>t.critical);
+    const allDone  = items.every(t=>_done.has(t.id));
+
+    // Date label
+    const d  = new Date(date+'T12:00:00');
+    const dd = d.getDate().toString().padStart(2,'0');
+    const mm = d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','');
+    const dw = d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+    const label = `${dd} ${mm.charAt(0).toUpperCase()+mm.slice(1)} · ${dw}`;
+
+    // Month separator
+    if(month!==lastMonth){
+      html+=`<div class="section-title" style="margin-top:${lastMonth?'32px':'0'}">${MONTH_LABELS[month]||month}</div>`;
+      lastMonth=month;
+    }
+
+    // Group style
+    const groupCls = hasCrit?'critical': bal<500?'tight':'';
+
+    // Items
+    const itemsHtml = items.map(t=>{
+      const isDone = _done.has(t.id);
+      const val    = getVal(t);
+      const icon   = t.type==='entrada'?'↑':'↓';
+      const icol   = t.type==='entrada'?'var(--green)':'var(--red)';
+      const prefix = t.type==='entrada'?'+':'-';
+      const urg    = t.critical?'<span class="plano-urgent-tag">urgente</span>':'';
+      const edited = _overrides[t.id]!==undefined ? ' title="Valor editado — clique pra mudar"' : ' title="Clique para editar o valor real"';
+      return `<div class="plano-item ${isDone?'done':''}">
+        <input type="checkbox" class="plano-check" ${isDone?'checked':''} onchange="togglePlanoItem('${t.id}',this)"/>
+        <div class="plano-icon" style="color:${icol}">${icon}</div>
+        <div class="plano-desc">${t.desc}${urg}</div>
+        <div class="plano-val ${t.type==='entrada'?'e':'s'}" id="pval_${t.id}" onclick="editVal('${t.id}')" style="cursor:pointer;border-bottom:1px dashed currentColor;padding-bottom:1px"${edited}>${prefix}${pbrl(val)}</div>
+      </div>`;
+    }).join('');
+
+    const critTag = hasCrit?'<span class="plano-day-tag">⚠️ DIA CRÍTICO</span>':'';
+    const bc = balClass(bal);
+
+    html+=`<div class="plano-group ${groupCls}">
+      <div class="plano-date-header">
+        <div class="plano-date-badge">${label}</div>
+        ${critTag}
+        <div class="plano-spacer"></div>
+        <div class="plano-bal ${bc}">Saldo: ${pbrl(bal)}</div>
+      </div>
+      ${itemsHtml}
+    </div>`;
+  });
+
+  document.getElementById('plano-timeline').innerHTML = html;
+}
+
+window.switchTab       = switchTab;
+window.togglePlanoItem = togglePlanoItem;
+window.renderPlano     = renderPlano;
+
+document.addEventListener('DOMContentLoaded', renderPlano);
+</script>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
