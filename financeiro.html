@@ -600,11 +600,9 @@
 const PLANO_INICIO = 2139.41;
 
 const PLANO = [
-  // MAIO
   {id:'p1',  date:'2026-05-28',month:'Maio', type:'entrada',desc:'Carro (semanal)',                value:600.00},
   {id:'p2',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Banho cachorro',                 value:130.00},
   {id:'p3',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Almoço presencial',              value:40.00},
-  // JUNHO
   {id:'p4',  date:'2026-06-04',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
   {id:'p5',  date:'2026-06-04',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
   {id:'p6',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
@@ -615,8 +613,8 @@ const PLANO = [
   {id:'p11', date:'2026-06-11',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
   {id:'p12', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Claro — maio atrasado',         value:68.43},
   {id:'p13', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Vivo — maio atrasado',          value:144.35},
-  {id:'p14', date:'2026-06-15',month:'Junho',type:'entrada',desc:'Salário',                        value:3000.00},
-  {id:'p15', date:'2026-06-17',month:'Junho',type:'saida',  desc:'Condomínio (1 mês atrasado)',   value:516.00},
+  {id:'p14', date:'2026-06-15',month:'Junho',type:'entrada',desc:'Salário + Plantão',              value:4000.00},
+  {id:'p15', date:'2026-06-17',month:'Junho',type:'saida',  desc:'Condomínio (2º mês atrasado)',  value:516.00},
   {id:'p16', date:'2026-06-18',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
   {id:'p17', date:'2026-06-18',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
   {id:'p18', date:'2026-06-19',month:'Junho',type:'saida',  desc:'Claro — junho',                 value:68.43},
@@ -626,7 +624,6 @@ const PLANO = [
   {id:'p22', date:'2026-06-25',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
   {id:'p23', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Enel',                          value:203.14},
   {id:'p24', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Comgás',                        value:15.00},
-  // JULHO
   {id:'p25', date:'2026-07-02',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
   {id:'p26', date:'2026-07-02',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
   {id:'p27', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
@@ -637,7 +634,7 @@ const PLANO = [
   {id:'p32', date:'2026-07-15',month:'Julho',type:'entrada',desc:'Salário',                        value:3000.00},
   {id:'p33', date:'2026-07-16',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
   {id:'p34', date:'2026-07-16',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-  {id:'p35', date:'2026-07-17',month:'Julho',type:'saida',  desc:'Condomínio (2º mês atrasado)',  value:516.00},
+  {id:'p35', date:'2026-07-17',month:'Julho',type:'saida',  desc:'Condomínio (3º mês atrasado)', value:516.00},
   {id:'p36', date:'2026-07-19',month:'Julho',type:'saida',  desc:'Claro — julho',                 value:68.43},
   {id:'p37', date:'2026-07-20',month:'Julho',type:'saida',  desc:'Financiamento Itaú',            value:1476.33,critical:true},
   {id:'p38', date:'2026-07-21',month:'Julho',type:'saida',  desc:'Vivo — julho',                  value:144.35},
@@ -649,36 +646,45 @@ const PLANO = [
   {id:'p44', date:'2026-07-30',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
 ];
 
-let _done      = new Set(JSON.parse(localStorage.getItem('plano_done')||'[]'));
-let _overrides = JSON.parse(localStorage.getItem('plano_overrides')||'{}');
-let _avulsos   = JSON.parse(localStorage.getItem('plano_avulsos')||'[]');
-
-function getVal(t){ return _overrides[t.id]!==undefined ? _overrides[t.id] : t.value; }
-
-function editVal(id){
-  const el = document.getElementById('pval_'+id);
-  if(!el) return;
-  const t   = PLANO.find(x=>x.id===id);
-  const cur = getVal(t);
-  const inp = document.createElement('input');
-  inp.type='number'; inp.step='0.01'; inp.value=cur;
-  inp.style.cssText='width:90px;background:var(--surface2);border:1px solid var(--yellow);color:var(--text);font-family:DM Mono,monospace;font-size:0.78rem;padding:2px 6px;border-radius:6px;outline:none;';
-  el.replaceWith(inp);
-  inp.focus(); inp.select();
-  function save(){
-    const v = parseFloat(inp.value);
-    if(!isNaN(v) && v>=0){
-      _overrides[id]=v;
-      localStorage.setItem('plano_overrides',JSON.stringify(_overrides));
-    }
-    renderPlano();
-  }
-  inp.addEventListener('blur', save);
-  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ delete _overrides[id]; inp.blur(); } });
-}
+let _done      = new Set();
+let _overrides = {};
+let _avulsos   = [];
 
 function pbrl(v){ return `R$ ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
+function getVal(t){ return _overrides[t.id]!==undefined ? _overrides[t.id] : t.value; }
 
+// ── SUPABASE SYNC ─────────────────────────────────────────
+async function sbSave(key, value){
+  if(!window._sb) return;
+  try {
+    await window._sb.from('plano_estado').upsert(
+      { chave: key, valor: JSON.stringify(value) },
+      { onConflict: 'chave' }
+    );
+  } catch(e){ console.warn('sbSave:', e); }
+}
+
+async function sbLoad(key, fallback){
+  if(!window._sb) return fallback;
+  try {
+    const { data } = await window._sb.from('plano_estado').select('valor').eq('chave', key).maybeSingle();
+    return data ? JSON.parse(data.valor) : fallback;
+  } catch(e){ return fallback; }
+}
+
+window.initPlano = async function(){
+  const [doneArr, ovr, avs] = await Promise.all([
+    sbLoad('done', []),
+    sbLoad('overrides', {}),
+    sbLoad('avulsos', [])
+  ]);
+  _done      = new Set(doneArr);
+  _overrides = ovr;
+  _avulsos   = avs;
+  renderPlano();
+};
+
+// ── TAB SWITCH ────────────────────────────────────────────
 function switchTab(tab){
   document.getElementById('view-mensal').style.display = tab==='mensal'?'':'none';
   document.getElementById('view-plano').style.display  = tab==='plano' ?'':'none';
@@ -686,59 +692,73 @@ function switchTab(tab){
   document.getElementById('tab-plano').classList.toggle('active',  tab==='plano');
 }
 
-function togglePlanoItem(id, cb){
+// ── TOGGLE ITEM ───────────────────────────────────────────
+async function togglePlanoItem(id, cb){
   cb.checked ? _done.add(id) : _done.delete(id);
-  localStorage.setItem('plano_done', JSON.stringify([..._done]));
   renderPlano();
+  await sbSave('done', [..._done]);
 }
 
-function calcSaldoReal(){
-  let b = PLANO_INICIO;
-  PLANO.forEach(t=>{ if(_done.has(t.id)) b += t.type==='entrada'?getVal(t):-getVal(t); });
-  _avulsos.forEach(a=>{ b -= a.valor; });
-  return b;
+// ── EDIT VALUE ────────────────────────────────────────────
+function editVal(id){
+  const el = document.getElementById('pval_'+id);
+  if(!el) return;
+  const t   = PLANO.find(x=>x.id===id);
+  const cur = getVal(t);
+  const inp = document.createElement('input');
+  inp.type='number'; inp.step='0.01'; inp.value=cur;
+  inp.style.cssText='width:90px;background:var(--surface2);border:1px solid var(--yellow);color:var(--text);font-family:"DM Mono",monospace;font-size:0.78rem;padding:2px 6px;border-radius:6px;outline:none;';
+  el.replaceWith(inp);
+  inp.focus(); inp.select();
+  async function save(){
+    const v = parseFloat(inp.value);
+    if(!isNaN(v) && v>=0) _overrides[id]=v; else delete _overrides[id];
+    await sbSave('overrides', _overrides);
+    renderPlano();
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='Enter') inp.blur();
+    if(e.key==='Escape'){ delete _overrides[id]; inp.blur(); }
+  });
 }
 
-function addAvulso(){
+// ── AVULSOS ───────────────────────────────────────────────
+async function addAvulso(){
   const valEl  = document.getElementById('avulsoVal');
   const descEl = document.getElementById('avulsoDesc');
   const v = parseFloat(valEl.value);
   const d = descEl.value.trim() || 'Gasto avulso';
   if(isNaN(v)||v<=0) return;
   _avulsos.push({ id: Date.now(), desc: d, valor: v, data: new Date().toLocaleDateString('pt-BR') });
-  localStorage.setItem('plano_avulsos', JSON.stringify(_avulsos));
+  renderPlano();
+  await sbSave('avulsos', _avulsos);
   valEl.value=''; descEl.value='';
-  renderPlano();
 }
 
-function delAvulso(id){
+async function delAvulso(id){
   _avulsos = _avulsos.filter(a=>a.id!==id);
-  localStorage.setItem('plano_avulsos', JSON.stringify(_avulsos));
   renderPlano();
+  await sbSave('avulsos', _avulsos);
 }
 
-function renderAvulsos(){
-  const el = document.getElementById('avulsoList');
-  if(!el) return;
-  if(!_avulsos.length){
-    el.innerHTML='<div class="avulso-empty">Nenhum gasto avulso registrado</div>';
-    return;
-  }
-  el.innerHTML = _avulsos.map(a=>`
-    <div class="avulso-item">
-      <button class="avulso-del" onclick="delAvulso(${a.id})">✕</button>
-      <span>${a.data} — ${a.desc}</span>
-      <span class="avulso-item-val">-${pbrl(a.valor)}</span>
-    </div>`).join('');
+// ── CÁLCULOS ─────────────────────────────────────────────
+function calcSaldoReal(){
+  let b = PLANO_INICIO;
+  PLANO.forEach(t=>{ if(_done.has(t.id)) b += t.type==='entrada' ? getVal(t) : -getVal(t); });
+  _avulsos.forEach(a=>{ b -= a.valor; });
+  return b;
 }
 
 function calcRunning(){
-  // Projected balance after each date (full plan)
+  // Projeta saldo em cada data — avulsos reduzem o ponto de partida
+  const avulsoTotal = _avulsos.reduce((s,a)=>s+a.valor, 0);
   const grouped={};
   PLANO.forEach(t=>{ (grouped[t.date]=grouped[t.date]||[]).push(t); });
-  let b=PLANO_INICIO; const out={};
+  let b = PLANO_INICIO - avulsoTotal;
+  const out={};
   Object.keys(grouped).sort().forEach(d=>{
-    grouped[d].forEach(t=>{ b+=t.type==='entrada'?getVal(t):-getVal(t); });
+    grouped[d].forEach(t=>{ b += t.type==='entrada' ? getVal(t) : -getVal(t); });
     out[d]=b;
   });
   return out;
@@ -746,55 +766,49 @@ function calcRunning(){
 
 function balClass(v){ return v<0?'critical':v<500?'low':'ok'; }
 
+// ── RENDER ───────────────────────────────────────────────
 function renderPlano(){
-  const real = calcSaldoReal();
+  const real    = calcSaldoReal();
   const running = calcRunning();
-  const total = PLANO.length;
-  const done  = _done.size;
+  const done    = _done.size;
   const projFim = Object.values(running).at(-1)||0;
 
-  // Score cards
   const rEl = document.getElementById('psaldoReal');
-  rEl.textContent = pbrl(real);
-  rEl.style.color = real<500?'var(--red)':real<1200?'var(--orange)':'var(--yellow)';
-  document.getElementById('psaldoFim').textContent = pbrl(projFim);
-  document.getElementById('pprogText').textContent = `${done} / ${total} concluídos`;
-  document.getElementById('pprogFill').style.width  = `${(done/total*100).toFixed(1)}%`;
+  if(rEl){ rEl.textContent=pbrl(real); rEl.style.color=real<500?'var(--red)':real<1200?'var(--orange)':'var(--yellow)'; }
+  const pEl = document.getElementById('psaldoFim');
+  if(pEl) pEl.textContent = pbrl(projFim);
+  const ptEl = document.getElementById('pprogText');
+  if(ptEl) ptEl.textContent = `${done} / ${PLANO.length} concluídos`;
+  const pfEl = document.getElementById('pprogFill');
+  if(pfEl) pfEl.style.width = `${(done/PLANO.length*100).toFixed(1)}%`;
 
-  // Build timeline
   const grouped={}, months={};
-  PLANO.forEach(t=>{
-    (grouped[t.date]=grouped[t.date]||[]).push(t);
-    months[t.date]=t.month;
-  });
+  PLANO.forEach(t=>{ (grouped[t.date]=grouped[t.date]||[]).push(t); months[t.date]=t.month; });
 
-  const MONTH_LABELS = {Maio:'☀️ Maio',Junho:'🌿 Junho',Julho:'🌤️ Julho'};
+  const MLABELS = {Maio:'☀️ Maio', Junho:'🌿 Junho', Julho:'🌤️ Julho'};
   let html='', lastMonth='';
 
   Object.keys(grouped).sort().forEach(date=>{
-    const items    = grouped[date];
-    const bal      = running[date];
-    const month    = months[date];
-    const hasCrit  = items.some(t=>t.critical);
-    const allDone  = items.every(t=>_done.has(t.id));
+    const items   = grouped[date];
+    const bal     = running[date];
+    const month   = months[date];
+    const hasCrit = items.some(t=>t.critical);
 
-    // Date label
     const d  = new Date(date+'T12:00:00');
     const dd = d.getDate().toString().padStart(2,'0');
     const mm = d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','');
     const dw = d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
     const label = `${dd} ${mm.charAt(0).toUpperCase()+mm.slice(1)} · ${dw}`;
 
-    // Month separator
     if(month!==lastMonth){
-      html+=`<div class="section-title" style="margin-top:${lastMonth?'32px':'0'}">${MONTH_LABELS[month]||month}</div>`;
+      html+=`<div class="section-title" style="margin-top:${lastMonth?'32px':'0'}">${MLABELS[month]||month}</div>`;
       lastMonth=month;
     }
 
-    // Group style
-    const groupCls = hasCrit?'critical': bal<500?'tight':'';
+    const groupCls = hasCrit?'critical':bal<500?'tight':'';
+    const critTag  = hasCrit?'<span class="plano-day-tag">⚠️ DIA CRÍTICO</span>':'';
+    const bc       = balClass(bal);
 
-    // Items
     const itemsHtml = items.map(t=>{
       const isDone = _done.has(t.id);
       const val    = getVal(t);
@@ -802,17 +816,14 @@ function renderPlano(){
       const icol   = t.type==='entrada'?'var(--green)':'var(--red)';
       const prefix = t.type==='entrada'?'+':'-';
       const urg    = t.critical?'<span class="plano-urgent-tag">urgente</span>':'';
-      const edited = _overrides[t.id]!==undefined ? ' title="Valor editado — clique pra mudar"' : ' title="Clique para editar o valor real"';
+      const hint   = _overrides[t.id]!==undefined?' title="Valor editado"':'';
       return `<div class="plano-item ${isDone?'done':''}">
         <input type="checkbox" class="plano-check" ${isDone?'checked':''} onchange="togglePlanoItem('${t.id}',this)"/>
         <div class="plano-icon" style="color:${icol}">${icon}</div>
         <div class="plano-desc">${t.desc}${urg}</div>
-        <div class="plano-val ${t.type==='entrada'?'e':'s'}" id="pval_${t.id}" onclick="editVal('${t.id}')" style="cursor:pointer;border-bottom:1px dashed currentColor;padding-bottom:1px"${edited}>${prefix}${pbrl(val)}</div>
+        <div class="plano-val ${t.type==='entrada'?'e':'s'}" id="pval_${t.id}" onclick="editVal('${t.id}')" style="cursor:pointer;border-bottom:1px dashed currentColor;padding-bottom:1px"${hint}>${prefix}${pbrl(val)}</div>
       </div>`;
     }).join('');
-
-    const critTag = hasCrit?'<span class="plano-day-tag">⚠️ DIA CRÍTICO</span>':'';
-    const bc = balClass(bal);
 
     html+=`<div class="plano-group ${groupCls}">
       <div class="plano-date-header">
@@ -825,17 +836,29 @@ function renderPlano(){
     </div>`;
   });
 
-  document.getElementById('plano-timeline').innerHTML = html;
+  const tl = document.getElementById('plano-timeline');
+  if(tl) tl.innerHTML = html;
   renderAvulsos();
+}
+
+function renderAvulsos(){
+  const el = document.getElementById('avulsoList');
+  if(!el) return;
+  if(!_avulsos.length){ el.innerHTML='<div class="avulso-empty">Nenhum gasto avulso registrado</div>'; return; }
+  el.innerHTML = _avulsos.map(a=>`
+    <div class="avulso-item">
+      <button class="avulso-del" onclick="delAvulso(${a.id})">✕</button>
+      <span>${a.data} — ${a.desc}</span>
+      <span class="avulso-item-val">-${pbrl(a.valor)}</span>
+    </div>`).join('');
 }
 
 window.switchTab       = switchTab;
 window.togglePlanoItem = togglePlanoItem;
-window.renderPlano     = renderPlano;
 window.addAvulso       = addAvulso;
 window.delAvulso       = delAvulso;
-
-document.addEventListener('DOMContentLoaded', renderPlano);
+window.editVal         = editVal;
+window.renderPlano     = renderPlano;
 </script>
 
 <script type="module">
@@ -844,10 +867,14 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://bszolfkwpqidoqzlzjci.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
 const _supa = createClient(SUPABASE_URL, SUPABASE_KEY);
+window._sb = _supa;
 
 // Verifica sessão
 const { data: { session: _session } } = await _supa.auth.getSession();
 if (!_session) { window.location.href = 'login.html'; throw new Error(''); }
+
+// Inicializa plano survival após auth
+if (window.initPlano) window.initPlano();
 const _token = _session.access_token;
 
 // Logout
