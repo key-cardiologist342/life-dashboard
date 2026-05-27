@@ -318,6 +318,46 @@
   }
   .plano-val.e { color:var(--green); }
   .plano-val.s { color:var(--red); }
+
+  /* ── GASTOS AVULSOS ── */
+  .avulso-box {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:16px 18px; margin-bottom:24px;
+  }
+  .avulso-title {
+    font-family:'Syne',sans-serif; font-size:0.72rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.1em; color:var(--muted);
+    margin-bottom:12px;
+  }
+  .avulso-form {
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .avulso-form input[type=number], .avulso-form input[type=text] {
+    background:var(--surface2); border:1px solid var(--border);
+    color:var(--text); font-family:'DM Mono',monospace; font-size:0.82rem;
+    padding:8px 12px; border-radius:9px; outline:none;
+    transition:border-color .2s;
+  }
+  .avulso-form input[type=number] { width:110px; }
+  .avulso-form input[type=text]   { flex:1; min-width:130px; }
+  .avulso-form input:focus { border-color:var(--yellow); }
+  .avulso-btn {
+    background:var(--yellow); color:#0e0f13; border:none;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:0.78rem;
+    padding:8px 16px; border-radius:9px; cursor:pointer; white-space:nowrap;
+  }
+  .avulso-list { display:flex; flex-direction:column; gap:6px; }
+  .avulso-item {
+    display:flex; align-items:center; gap:10px;
+    font-size:0.8rem; color:var(--muted);
+  }
+  .avulso-item-val { font-family:'DM Mono',monospace; color:var(--red); margin-left:auto; white-space:nowrap; }
+  .avulso-del {
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    font-size:0.9rem; padding:0 4px; line-height:1;
+  }
+  .avulso-del:hover { color:var(--red); }
+  .avulso-empty { font-size:0.78rem; color:var(--border); }
 </style>
 </head>
 <body>
@@ -538,6 +578,16 @@
       </div>
     </div>
 
+    <div class="avulso-box">
+      <div class="avulso-title">⚡ Gastos avulsos (PIX não planejado)</div>
+      <div class="avulso-form">
+        <input type="number" id="avulsoVal" placeholder="R$ valor" step="0.01" min="0"/>
+        <input type="text"   id="avulsoDesc" placeholder="descrição"/>
+        <button class="avulso-btn" onclick="addAvulso()">+ Adicionar</button>
+      </div>
+      <div class="avulso-list" id="avulsoList"></div>
+    </div>
+
     <div id="plano-timeline"></div>
   </div><!-- /view-plano -->
 
@@ -601,6 +651,7 @@ const PLANO = [
 
 let _done      = new Set(JSON.parse(localStorage.getItem('plano_done')||'[]'));
 let _overrides = JSON.parse(localStorage.getItem('plano_overrides')||'{}');
+let _avulsos   = JSON.parse(localStorage.getItem('plano_avulsos')||'[]');
 
 function getVal(t){ return _overrides[t.id]!==undefined ? _overrides[t.id] : t.value; }
 
@@ -644,7 +695,41 @@ function togglePlanoItem(id, cb){
 function calcSaldoReal(){
   let b = PLANO_INICIO;
   PLANO.forEach(t=>{ if(_done.has(t.id)) b += t.type==='entrada'?getVal(t):-getVal(t); });
+  _avulsos.forEach(a=>{ b -= a.valor; });
   return b;
+}
+
+function addAvulso(){
+  const valEl  = document.getElementById('avulsoVal');
+  const descEl = document.getElementById('avulsoDesc');
+  const v = parseFloat(valEl.value);
+  const d = descEl.value.trim() || 'Gasto avulso';
+  if(isNaN(v)||v<=0) return;
+  _avulsos.push({ id: Date.now(), desc: d, valor: v, data: new Date().toLocaleDateString('pt-BR') });
+  localStorage.setItem('plano_avulsos', JSON.stringify(_avulsos));
+  valEl.value=''; descEl.value='';
+  renderPlano();
+}
+
+function delAvulso(id){
+  _avulsos = _avulsos.filter(a=>a.id!==id);
+  localStorage.setItem('plano_avulsos', JSON.stringify(_avulsos));
+  renderPlano();
+}
+
+function renderAvulsos(){
+  const el = document.getElementById('avulsoList');
+  if(!el) return;
+  if(!_avulsos.length){
+    el.innerHTML='<div class="avulso-empty">Nenhum gasto avulso registrado</div>';
+    return;
+  }
+  el.innerHTML = _avulsos.map(a=>`
+    <div class="avulso-item">
+      <button class="avulso-del" onclick="delAvulso(${a.id})">✕</button>
+      <span>${a.data} — ${a.desc}</span>
+      <span class="avulso-item-val">-${pbrl(a.valor)}</span>
+    </div>`).join('');
 }
 
 function calcRunning(){
@@ -741,11 +826,14 @@ function renderPlano(){
   });
 
   document.getElementById('plano-timeline').innerHTML = html;
+  renderAvulsos();
 }
 
 window.switchTab       = switchTab;
 window.togglePlanoItem = togglePlanoItem;
 window.renderPlano     = renderPlano;
+window.addAvulso       = addAvulso;
+window.delAvulso       = delAvulso;
 
 document.addEventListener('DOMContentLoaded', renderPlano);
 </script>
