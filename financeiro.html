@@ -596,95 +596,174 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── PLANO DE SOBREVIVÊNCIA ────────────────────────────────
+// ══════════════════════════════════════════════
+//  PLANO SURVIVAL — lê/grava direto no Supabase
+// ══════════════════════════════════════════════
 const PLANO_INICIO = 2139.41;
 
-const PLANO = [
-  {id:'p1',  date:'2026-05-28',month:'Maio', type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p2',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Banho cachorro',                 value:130.00},
-  {id:'p3',  date:'2026-05-28',month:'Maio', type:'saida',  desc:'Almoço presencial',              value:40.00},
-  {id:'p4',  date:'2026-06-04',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p5',  date:'2026-06-04',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
-  {id:'p6',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
-  {id:'p7',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Condomínio (corrente)',          value:516.00, critical:true},
-  {id:'p8',  date:'2026-06-07',month:'Junho',type:'saida',  desc:'Inter (fatura)',                value:616.23, critical:true},
-  {id:'p9',  date:'2026-06-10',month:'Junho',type:'saida',  desc:'Ração',                         value:200.00},
-  {id:'p10', date:'2026-06-11',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p11', date:'2026-06-11',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
-  {id:'p12', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Claro — maio atrasado',         value:68.43},
-  {id:'p13', date:'2026-06-12',month:'Junho',type:'saida',  desc:'Vivo — maio atrasado',          value:144.35},
-  {id:'p14', date:'2026-06-15',month:'Junho',type:'entrada',desc:'Salário + Plantão',              value:4000.00},
-  {id:'p15', date:'2026-06-17',month:'Junho',type:'saida',  desc:'Condomínio (2º mês atrasado)',  value:516.00},
-  {id:'p16', date:'2026-06-18',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p17', date:'2026-06-18',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
-  {id:'p18', date:'2026-06-19',month:'Junho',type:'saida',  desc:'Claro — junho',                 value:68.43},
-  {id:'p19', date:'2026-06-20',month:'Junho',type:'saida',  desc:'Financiamento Itaú',            value:1476.33,critical:true},
-  {id:'p20', date:'2026-06-21',month:'Junho',type:'saida',  desc:'Vivo — junho',                  value:144.35},
-  {id:'p21', date:'2026-06-25',month:'Junho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p22', date:'2026-06-25',month:'Junho',type:'saida',  desc:'Almoço presencial',              value:40.00},
-  {id:'p23', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Enel',                          value:203.14},
-  {id:'p24', date:'2026-06-26',month:'Junho',type:'saida',  desc:'Comgás',                        value:15.00},
-  {id:'p25', date:'2026-07-02',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p26', date:'2026-07-02',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-  {id:'p27', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Aluguel',                       value:1551.07,critical:true},
-  {id:'p28', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Condomínio (corrente)',          value:516.00, critical:true},
-  {id:'p29', date:'2026-07-07',month:'Julho',type:'saida',  desc:'Inter (fatura)',                value:343.56, critical:true},
-  {id:'p30', date:'2026-07-09',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p31', date:'2026-07-09',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-  {id:'p32', date:'2026-07-15',month:'Julho',type:'entrada',desc:'Salário',                        value:3000.00},
-  {id:'p33', date:'2026-07-16',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p34', date:'2026-07-16',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-  {id:'p35', date:'2026-07-17',month:'Julho',type:'saida',  desc:'Condomínio (3º mês atrasado)', value:516.00},
-  {id:'p36', date:'2026-07-19',month:'Julho',type:'saida',  desc:'Claro — julho',                 value:68.43},
-  {id:'p37', date:'2026-07-20',month:'Julho',type:'saida',  desc:'Financiamento Itaú',            value:1476.33,critical:true},
-  {id:'p38', date:'2026-07-21',month:'Julho',type:'saida',  desc:'Vivo — julho',                  value:144.35},
-  {id:'p39', date:'2026-07-23',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p40', date:'2026-07-23',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-  {id:'p41', date:'2026-07-26',month:'Julho',type:'saida',  desc:'Enel',                          value:203.14},
-  {id:'p42', date:'2026-07-26',month:'Julho',type:'saida',  desc:'Comgás',                        value:15.00},
-  {id:'p43', date:'2026-07-30',month:'Julho',type:'entrada',desc:'Carro (semanal)',                value:600.00},
-  {id:'p44', date:'2026-07-30',month:'Julho',type:'saida',  desc:'Almoço + transporte',            value:51.20},
-];
-
-let _done      = new Set();
-let _overrides = {};
-let _avulsos   = [];
+let _planoItems = [];   // itens carregados do Supabase
+let _avulsos    = [];   // gastos avulsos (subconjunto de _planoItems)
 
 function pbrl(v){ return `R$ ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
-function getVal(t){ return _overrides[t.id]!==undefined ? _overrides[t.id] : t.value; }
 
-// ── SUPABASE SYNC ─────────────────────────────────────────
-async function sbSave(key, value){
-  if(!window._sb) return;
-  try {
-    await window._sb.from('plano_estado').upsert(
-      { chave: key, valor: JSON.stringify(value) },
-      { onConflict: 'chave' }
-    );
-  } catch(e){ console.warn('sbSave:', e); }
+// ── SUPABASE helpers ─────────────────────────
+async function sbQ(table, filters={}){
+  const sb = window._sb; if(!sb) return [];
+  let q = sb.from(table).select('*');
+  Object.entries(filters).forEach(([k,v])=>{ q = q.filter(k,'like',v); });
+  const { data, error } = await q;
+  if(error) console.error(table, error);
+  return data||[];
 }
 
-async function sbLoad(key, fallback){
-  if(!window._sb) return fallback;
-  try {
-    const { data } = await window._sb.from('plano_estado').select('valor').eq('chave', key).maybeSingle();
-    return data ? JSON.parse(data.valor) : fallback;
-  } catch(e){ return fallback; }
+async function sbUpdate(table, id, patch){
+  const sb = window._sb; if(!sb) return;
+  const { error } = await sb.from(table).update(patch).eq('id', id);
+  if(error) console.error('update', error);
 }
 
-window.initPlano = async function(){
-  const [doneArr, ovr, avs] = await Promise.all([
-    sbLoad('done', []),
-    sbLoad('overrides', {}),
-    sbLoad('avulsos', [])
+async function sbInsert(table, row){
+  const sb = window._sb; if(!sb) return null;
+  const { data, error } = await sb.from(table).insert(row).select().single();
+  if(error) console.error('insert', error);
+  return data;
+}
+
+async function sbDelete(table, id){
+  const sb = window._sb; if(!sb) return;
+  await sb.from(table).delete().eq('id', id);
+}
+
+// ── LOAD ─────────────────────────────────────
+async function loadPlano(){
+  const [gastos, entradas] = await Promise.all([
+    sbQ('financeiro_gastos',  {'observacao': 'plano%'}),
+    sbQ('financeiro_entradas',{'observacao': 'plano%'})
   ]);
-  _done      = new Set(doneArr);
-  _overrides = ovr;
-  _avulsos   = avs;
-  renderPlano();
-};
 
-// ── TAB SWITCH ────────────────────────────────────────────
+  const toItem = (r, type) => ({
+    id:       r.id,
+    table:    type === 'saida' ? 'financeiro_gastos' : 'financeiro_entradas',
+    date:     type === 'saida' ? r.data_vencimento : r.data_recebimento,
+    desc:     r.descricao,
+    value:    parseFloat(r.valor),
+    type,
+    done:     !!r.pago,
+    critical: (r.observacao||'').includes('critico'),
+    isAvulso: r.observacao === 'plano_avulso',
+  });
+
+  _planoItems = [
+    ...gastos.map(r => toItem(r, 'saida')),
+    ...entradas.map(r => toItem(r, 'entrada')),
+  ].sort((a,b) => a.date.localeCompare(b.date));
+
+  _avulsos = _planoItems.filter(i => i.isAvulso);
+  renderPlano();
+}
+
+// ── TOGGLE pago ───────────────────────────────
+async function togglePlanoItem(id, cb){
+  const item = _planoItems.find(i => i.id === id);
+  if(!item) return;
+  item.done = cb.checked;
+  renderPlano(); // resposta visual imediata
+
+  const patch = { pago: cb.checked };
+  if(item.type === 'saida')
+    patch.data_pagamento = cb.checked ? new Date().toISOString().slice(0,10) : null;
+  await sbUpdate(item.table, id, patch);
+}
+
+// ── EDITAR VALOR ─────────────────────────────
+function editVal(id){
+  const el = document.getElementById('pval_'+id);
+  if(!el) return;
+  const item = _planoItems.find(i => i.id === id);
+  if(!item) return;
+  const inp = document.createElement('input');
+  inp.type='number'; inp.step='0.01'; inp.value=item.value;
+  inp.style.cssText='width:90px;background:var(--surface2);border:1px solid var(--yellow);color:var(--text);font-family:"DM Mono",monospace;font-size:0.78rem;padding:2px 6px;border-radius:6px;outline:none;';
+  el.replaceWith(inp);
+  inp.focus(); inp.select();
+  async function save(){
+    const v = parseFloat(inp.value);
+    if(!isNaN(v) && v > 0){
+      item.value = v;
+      await sbUpdate(item.table, id, { valor: v });
+    }
+    renderPlano();
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') renderPlano(); });
+}
+
+// ── AVULSOS ───────────────────────────────────
+async function addAvulso(){
+  const valEl  = document.getElementById('avulsoVal');
+  const descEl = document.getElementById('avulsoDesc');
+  const v = parseFloat(valEl.value);
+  const d = (descEl.value||'').trim() || 'Gasto avulso';
+  if(isNaN(v)||v<=0) return;
+
+  const today = new Date().toISOString().slice(0,10);
+  const row = {
+    descricao: d, categoria: 'Outros', valor: v,
+    data_vencimento: today, pago: true, recorrente: false,
+    forma_pagamento: 'PIX',
+    mes_referencia: today.slice(0,7),
+    observacao: 'plano_avulso',
+    data_pagamento: today
+  };
+  valEl.value=''; descEl.value='';
+
+  const saved = await sbInsert('financeiro_gastos', row);
+  if(saved) _planoItems.push({
+    id: saved.id, table:'financeiro_gastos',
+    date: today, desc: d, value: v,
+    type:'saida', done:true, critical:false, isAvulso:true
+  });
+  _avulsos = _planoItems.filter(i => i.isAvulso);
+  renderPlano();
+}
+
+async function delAvulso(id){
+  await sbDelete('financeiro_gastos', id);
+  _planoItems = _planoItems.filter(i => i.id !== id);
+  _avulsos    = _planoItems.filter(i => i.isAvulso);
+  renderPlano();
+}
+
+// ── CÁLCULOS ─────────────────────────────────
+function calcSaldoReal(){
+  let b = PLANO_INICIO;
+  _planoItems.forEach(i => {
+    if(i.done) b += i.type==='entrada' ? i.value : -i.value;
+  });
+  return b;
+}
+
+function calcRunning(){
+  // Projetado: PLANO_INICIO + todos os itens de plano (não avulso) na ordem
+  // Avulsos já marcados como done reduzem o saldo real, mas as projeções
+  // usam só o plano original
+  const avulsosDone = _planoItems.filter(i=>i.isAvulso&&i.done).reduce((s,i)=>s+i.value,0);
+  const grouped = {};
+  _planoItems.filter(i=>!i.isAvulso).forEach(i=>{
+    (grouped[i.date]=grouped[i.date]||[]).push(i);
+  });
+  let b = PLANO_INICIO - avulsosDone;
+  const out = {};
+  Object.keys(grouped).sort().forEach(d=>{
+    grouped[d].forEach(i=>{ b += i.type==='entrada' ? i.value : -i.value; });
+    out[d] = b;
+  });
+  return out;
+}
+
+function balClass(v){ return v<0?'critical':v<500?'low':'ok'; }
+
+// ── TAB ───────────────────────────────────────
 function switchTab(tab){
   document.getElementById('view-mensal').style.display = tab==='mensal'?'':'none';
   document.getElementById('view-plano').style.display  = tab==='plano' ?'':'none';
@@ -692,107 +771,40 @@ function switchTab(tab){
   document.getElementById('tab-plano').classList.toggle('active',  tab==='plano');
 }
 
-// ── TOGGLE ITEM ───────────────────────────────────────────
-async function togglePlanoItem(id, cb){
-  cb.checked ? _done.add(id) : _done.delete(id);
-  renderPlano();
-  await sbSave('done', [..._done]);
-}
-
-// ── EDIT VALUE ────────────────────────────────────────────
-function editVal(id){
-  const el = document.getElementById('pval_'+id);
-  if(!el) return;
-  const t   = PLANO.find(x=>x.id===id);
-  const cur = getVal(t);
-  const inp = document.createElement('input');
-  inp.type='number'; inp.step='0.01'; inp.value=cur;
-  inp.style.cssText='width:90px;background:var(--surface2);border:1px solid var(--yellow);color:var(--text);font-family:"DM Mono",monospace;font-size:0.78rem;padding:2px 6px;border-radius:6px;outline:none;';
-  el.replaceWith(inp);
-  inp.focus(); inp.select();
-  async function save(){
-    const v = parseFloat(inp.value);
-    if(!isNaN(v) && v>=0) _overrides[id]=v; else delete _overrides[id];
-    await sbSave('overrides', _overrides);
-    renderPlano();
-  }
-  inp.addEventListener('blur', save);
-  inp.addEventListener('keydown', e=>{
-    if(e.key==='Enter') inp.blur();
-    if(e.key==='Escape'){ delete _overrides[id]; inp.blur(); }
-  });
-}
-
-// ── AVULSOS ───────────────────────────────────────────────
-async function addAvulso(){
-  const valEl  = document.getElementById('avulsoVal');
-  const descEl = document.getElementById('avulsoDesc');
-  const v = parseFloat(valEl.value);
-  const d = descEl.value.trim() || 'Gasto avulso';
-  if(isNaN(v)||v<=0) return;
-  _avulsos.push({ id: Date.now(), desc: d, valor: v, data: new Date().toLocaleDateString('pt-BR') });
-  renderPlano();
-  await sbSave('avulsos', _avulsos);
-  valEl.value=''; descEl.value='';
-}
-
-async function delAvulso(id){
-  _avulsos = _avulsos.filter(a=>a.id!==id);
-  renderPlano();
-  await sbSave('avulsos', _avulsos);
-}
-
-// ── CÁLCULOS ─────────────────────────────────────────────
-function calcSaldoReal(){
-  let b = PLANO_INICIO;
-  PLANO.forEach(t=>{ if(_done.has(t.id)) b += t.type==='entrada' ? getVal(t) : -getVal(t); });
-  _avulsos.forEach(a=>{ b -= a.valor; });
-  return b;
-}
-
-function calcRunning(){
-  // Projeta saldo em cada data — avulsos reduzem o ponto de partida
-  const avulsoTotal = _avulsos.reduce((s,a)=>s+a.valor, 0);
-  const grouped={};
-  PLANO.forEach(t=>{ (grouped[t.date]=grouped[t.date]||[]).push(t); });
-  let b = PLANO_INICIO - avulsoTotal;
-  const out={};
-  Object.keys(grouped).sort().forEach(d=>{
-    grouped[d].forEach(t=>{ b += t.type==='entrada' ? getVal(t) : -getVal(t); });
-    out[d]=b;
-  });
-  return out;
-}
-
-function balClass(v){ return v<0?'critical':v<500?'low':'ok'; }
-
-// ── RENDER ───────────────────────────────────────────────
+// ── RENDER ───────────────────────────────────
 function renderPlano(){
   const real    = calcSaldoReal();
   const running = calcRunning();
-  const done    = _done.size;
+  const items   = _planoItems.filter(i=>!i.isAvulso);
+  const done    = items.filter(i=>i.done).length;
+  const total   = items.length;
   const projFim = Object.values(running).at(-1)||0;
 
+  // Score cards
   const rEl = document.getElementById('psaldoReal');
   if(rEl){ rEl.textContent=pbrl(real); rEl.style.color=real<500?'var(--red)':real<1200?'var(--orange)':'var(--yellow)'; }
   const pEl = document.getElementById('psaldoFim');
   if(pEl) pEl.textContent = pbrl(projFim);
   const ptEl = document.getElementById('pprogText');
-  if(ptEl) ptEl.textContent = `${done} / ${PLANO.length} concluídos`;
+  if(ptEl) ptEl.textContent = `${done} / ${total} concluídos`;
   const pfEl = document.getElementById('pprogFill');
-  if(pfEl) pfEl.style.width = `${(done/PLANO.length*100).toFixed(1)}%`;
+  if(pfEl) pfEl.style.width = `${total?((done/total)*100).toFixed(1):0}%`;
 
-  const grouped={}, months={};
-  PLANO.forEach(t=>{ (grouped[t.date]=grouped[t.date]||[]).push(t); months[t.date]=t.month; });
+  // Timeline
+  const grouped={};
+  items.forEach(i=>{ (grouped[i.date]=grouped[i.date]||[]).push(i); });
 
-  const MLABELS = {Maio:'☀️ Maio', Junho:'🌿 Junho', Julho:'🌤️ Julho'};
+  const MLABELS = {'2026-05':'☀️ Maio','2026-06':'🌿 Junho','2026-07':'🌤️ Julho'};
+  const today = new Date().toISOString().slice(0,10);
   let html='', lastMonth='';
 
   Object.keys(grouped).sort().forEach(date=>{
-    const items   = grouped[date];
-    const bal     = running[date];
-    const month   = months[date];
-    const hasCrit = items.some(t=>t.critical);
+    const dayItems = grouped[date];
+    const bal      = running[date];
+    const monthKey = date.slice(0,7);
+    const hasCrit  = dayItems.some(i=>i.critical);
+    const isPast   = date < today;
+    const isToday  = date === today;
 
     const d  = new Date(date+'T12:00:00');
     const dd = d.getDate().toString().padStart(2,'0');
@@ -800,35 +812,37 @@ function renderPlano(){
     const dw = d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
     const label = `${dd} ${mm.charAt(0).toUpperCase()+mm.slice(1)} · ${dw}`;
 
-    if(month!==lastMonth){
-      html+=`<div class="section-title" style="margin-top:${lastMonth?'32px':'0'}">${MLABELS[month]||month}</div>`;
-      lastMonth=month;
+    if(monthKey!==lastMonth){
+      html+=`<div class="section-title" style="margin-top:${lastMonth?'32px':'0'}">${MLABELS[monthKey]||monthKey}</div>`;
+      lastMonth=monthKey;
     }
 
-    const groupCls = hasCrit?'critical':bal<500?'tight':'';
-    const critTag  = hasCrit?'<span class="plano-day-tag">⚠️ DIA CRÍTICO</span>':'';
+    const allDone  = dayItems.every(i=>i.done);
+    const groupCls = hasCrit?'critical': bal<500?'tight': allDone?'all-done':'';
+    const critTag  = hasCrit?'<span class="plano-day-tag">⚠️ CRÍTICO</span>':'';
+    const todayTag = isToday?'<span class="plano-day-tag" style="background:rgba(251,191,36,.15);color:var(--yellow)">HOJE</span>':'';
     const bc       = balClass(bal);
 
-    const itemsHtml = items.map(t=>{
-      const isDone = _done.has(t.id);
-      const val    = getVal(t);
-      const icon   = t.type==='entrada'?'↑':'↓';
-      const icol   = t.type==='entrada'?'var(--green)':'var(--red)';
-      const prefix = t.type==='entrada'?'+':'-';
-      const urg    = t.critical?'<span class="plano-urgent-tag">urgente</span>':'';
-      const hint   = _overrides[t.id]!==undefined?' title="Valor editado"':'';
-      return `<div class="plano-item ${isDone?'done':''}">
-        <input type="checkbox" class="plano-check" ${isDone?'checked':''} onchange="togglePlanoItem('${t.id}',this)"/>
+    const itemsHtml = dayItems.map(i=>{
+      const icon   = i.type==='entrada'?'↑':'↓';
+      const icol   = i.type==='entrada'?'var(--green)':'var(--red)';
+      const prefix = i.type==='entrada'?'+':'-';
+      const urg    = i.critical?'<span class="plano-urgent-tag">urgente</span>':'';
+      return `<div class="plano-item ${i.done?'done':''}">
+        <input type="checkbox" class="plano-check" ${i.done?'checked':''} onchange="togglePlanoItem('${i.id}',this)"/>
         <div class="plano-icon" style="color:${icol}">${icon}</div>
-        <div class="plano-desc">${t.desc}${urg}</div>
-        <div class="plano-val ${t.type==='entrada'?'e':'s'}" id="pval_${t.id}" onclick="editVal('${t.id}')" style="cursor:pointer;border-bottom:1px dashed currentColor;padding-bottom:1px"${hint}>${prefix}${pbrl(val)}</div>
+        <div class="plano-desc">${i.desc}${urg}</div>
+        <div class="plano-val ${i.type==='entrada'?'e':'s'}" id="pval_${i.id}"
+             onclick="editVal('${i.id}')"
+             style="cursor:pointer;border-bottom:1px dashed currentColor;padding-bottom:1px"
+             title="Clique para editar o valor real">${prefix}${pbrl(i.value)}</div>
       </div>`;
     }).join('');
 
-    html+=`<div class="plano-group ${groupCls}">
+    html+=`<div class="plano-group ${groupCls}" style="${isPast&&allDone?'opacity:.55':''}">
       <div class="plano-date-header">
         <div class="plano-date-badge">${label}</div>
-        ${critTag}
+        ${critTag}${todayTag}
         <div class="plano-spacer"></div>
         <div class="plano-bal ${bc}">Saldo: ${pbrl(bal)}</div>
       </div>
@@ -837,21 +851,33 @@ function renderPlano(){
   });
 
   const tl = document.getElementById('plano-timeline');
-  if(tl) tl.innerHTML = html;
+  if(tl) tl.innerHTML = html || '<div style="color:var(--muted);font-size:.85rem;text-align:center;padding:40px">Carregando plano...</div>';
+
+  // Avulsos
   renderAvulsos();
 }
 
 function renderAvulsos(){
   const el = document.getElementById('avulsoList');
   if(!el) return;
-  if(!_avulsos.length){ el.innerHTML='<div class="avulso-empty">Nenhum gasto avulso registrado</div>'; return; }
+  if(!_avulsos.length){
+    el.innerHTML='<div class="avulso-empty">Nenhum gasto avulso registrado</div>';
+    return;
+  }
   el.innerHTML = _avulsos.map(a=>`
     <div class="avulso-item">
-      <button class="avulso-del" onclick="delAvulso(${a.id})">✕</button>
-      <span>${a.data} — ${a.desc}</span>
-      <span class="avulso-item-val">-${pbrl(a.valor)}</span>
+      <button class="avulso-del" onclick="delAvulso('${a.id}')">✕</button>
+      <span>${a.date} — ${a.desc}</span>
+      <span class="avulso-item-val">-${pbrl(a.value)}</span>
     </div>`).join('');
 }
+
+// ── INIT (chamado pelo módulo após auth) ──────
+window.initPlano = async function(){
+  const tl = document.getElementById('plano-timeline');
+  if(tl) tl.innerHTML='<div style="color:var(--muted);font-size:.85rem;text-align:center;padding:40px">Carregando do Supabase...</div>';
+  await loadPlano();
+};
 
 window.switchTab       = switchTab;
 window.togglePlanoItem = togglePlanoItem;
