@@ -560,7 +560,7 @@ function renderInsights(insights){
 function renderRadarAnalysis(analises){
   const el = document.getElementById('radarAnalysisContent');
   if(!analises || !analises.length){
-    el.innerHTML='<div class="empty">Nenhuma análise do Radar salva ainda. Gere o resumo na página Insights e importe o CSV na tabela radar_analises do Supabase.</div>';
+    el.innerHTML='<div class="empty">Nenhuma análise do Radar salva ainda. Gere a análise na página Insights e importe o bloco RADAR_CSV na tabela radar_analises do Supabase.</div>';
     return;
   }
   const a = analises[0];
@@ -572,42 +572,58 @@ function renderRadarAnalysis(analises){
   meta.textContent=(periodo?'Período: '+periodo+' · ':'')+'Salvo em '+salvo;
   el.appendChild(meta);
 
-  const raw=String(a.texto||'Análise sem texto.').replace(/\r/g,'').trim();
-  const sections=[];
-  let current=null;
-  raw.split('\n').forEach(line=>{
-    const t=line.trim();
-    if(!t){if(current&&current.body&&!current.body.endsWith('\n'))current.body+='\n';return;}
-    const heading=t.match(/^#{1,3}\s+(.+)$/)||t.match(/^\*\*(.{1,90}?)\*\*:?$/);
-    if(heading){
-      current={title:heading[1].replace(/\*\*/g,'').replace(/:$/,'').trim(),body:''};
-      sections.push(current);
-    }else{
-      if(!current){current={title:'Resumo da análise',body:''};sections.push(current);}
-      current.body+=(current.body?'\n':'')+t.replace(/^[-•]\s*/,'');
-    }
-  });
-  if(!sections.length)sections.push({title:'Resumo da análise',body:raw});
-  const palette=[
-    {match:/limita|incertez|ausênc|cobertura|dados insuficientes|ruído/i,icon:'🔎',color:'var(--muted)'},
-    {match:/ação|experimento|próximo passo|teste/i,icon:'🧪',color:'var(--c-energy)'},
-    {match:/humor|emoc|satisfa|dia bom|interação social/i,icon:'💜',color:'var(--c-mood)'},
-    {match:/energia|sono|fadiga|descanso/i,icon:'🌙',color:'var(--c-sleep)'},
-    {match:/atividade|treino|corrida|movimento|saúde física/i,icon:'🏃',color:'var(--c-activity)'},
-    {match:/foco|produtividade|procrastina|clareza mental/i,icon:'🎯',color:'var(--c-focus)'},
-    {match:/tendência|sinal|achado|resultado|conclusão|resumo/i,icon:'✨',color:'var(--c-mood)'}
-  ];
+  // Novos registros usam colunas próprias; registros antigos continuam compatíveis via texto.
+  const structured=[
+    {title:'Resumo',body:a.resumo||'',icon:'✨',color:'var(--c-mood)'},
+    {title:'Sinais observados',body:a.sinais_observados||'',icon:'🔎',color:'var(--c-activity)'},
+    {title:'Limitações e incerteza',body:a.limitacoes||'',icon:'🧭',color:'var(--muted)'},
+    {title:'Ações para testar',body:a.acoes||'',icon:'🧪',color:'var(--c-energy)'}
+  ].filter(s=>String(s.body).trim());
+
+  let sections=structured;
+  if(!sections.length){
+    const raw=String(a.texto||'Análise sem texto.').replace(/\r/g,'').trim();
+    sections=[];let current=null;
+    raw.split('\n').forEach(line=>{
+      const t=line.trim();
+      if(!t)return;
+      const heading=t.match(/^#{1,3}\s+(.+)$/)||t.match(/^\*\*(.{1,90}?)\*\*:?$/)||t.match(/^(Resumo|Sinais observados|Limitações(?: e incerteza)?|Ações para testar):\s*(.*)$/i);
+      if(heading){
+        const title=heading[1].replace(/\*\*/g,'').replace(/:$/,'').trim();
+        const inlineBody=heading[2]||'';
+        current={title,body:inlineBody,icon:'',color:'var(--c-mood)'};
+        sections.push(current);
+      }else{
+        if(!current){current={title:'Resumo da análise',body:'',icon:'✨',color:'var(--c-mood)'};sections.push(current);}
+        current.body+=(current.body?'\n':'')+t.replace(/^[-•]\s*/,'');
+      }
+    });
+    if(!sections.length)sections.push({title:'Resumo da análise',body:raw,icon:'✨',color:'var(--c-mood)'});
+    const palette=[
+      {match:/limita|incertez|ausênc|cobertura|dados insuficientes|ruído/i,icon:'🧭',color:'var(--muted)'},
+      {match:/ação|experimento|próximo passo|teste/i,icon:'🧪',color:'var(--c-energy)'},
+      {match:/humor|emoc|satisfa|dia bom|interação social/i,icon:'💜',color:'var(--c-mood)'},
+      {match:/energia|sono|fadiga|descanso/i,icon:'🌙',color:'var(--c-sleep)'},
+      {match:/atividade|treino|corrida|movimento|saúde física/i,icon:'🏃',color:'var(--c-activity)'},
+      {match:/foco|produtividade|procrastina|clareza mental/i,icon:'🎯',color:'var(--c-focus)'},
+      {match:/tendência|sinal|achado|resultado|conclusão|resumo/i,icon:'✨',color:'var(--c-mood)'}
+    ];
+    sections=sections.map(s=>{
+      const cfg=palette.find(p=>p.match.test(s.title));
+      return {...s,icon:s.icon||(cfg?cfg.icon:'🪄'),color:s.color||(cfg?cfg.color:'var(--c-mood)')};
+    });
+  }
+
   const list=document.createElement('div');list.className='radar-analysis-list';
   sections.forEach(section=>{
-    const cfg=palette.find(p=>p.match.test(section.title))||{icon:'🪄',color:'var(--c-mood)'};
-    const card=document.createElement('section');card.className='radar-analysis-card';card.style.setProperty('--radar-color',cfg.color);
+    const card=document.createElement('section');card.className='radar-analysis-card';card.style.setProperty('--radar-color',section.color||'var(--c-mood)');
     const heading=document.createElement('div');heading.className='radar-analysis-heading';
-    const icon=document.createElement('span');icon.className='radar-analysis-icon';icon.textContent=cfg.icon;
+    const icon=document.createElement('span');icon.className='radar-analysis-icon';icon.textContent=section.icon||'🪄';
     const title=document.createElement('span');title.textContent=section.title;
     heading.append(icon,title);
     const body=document.createElement('div');body.className='radar-analysis-body';
-    const full=section.body.trim();const limit=420;
-    body.textContent=full.length>limit?full.slice(0,limit).trimEnd()+'…':full;
+    const full=String(section.body||'').trim();const limit=420;
+    body.textContent=full.length>limit?full.slice(0,limit).trimEnd()+'…':(full||'Sem informação suficiente nesta seção.');
     card.append(heading,body);
     if(full.length>limit){
       const more=document.createElement('button');more.type='button';more.className='radar-analysis-more';more.textContent='Ler mais';
@@ -620,7 +636,7 @@ function renderRadarAnalysis(analises){
     list.appendChild(card);
   });
   el.appendChild(list);
-  const note=document.createElement('div');note.className='radar-analysis-note';note.textContent='Cada bloco mostra até 420 caracteres inicialmente; o texto completo continua salvo. Cores e emojis organizam a leitura, não indicam gravidade ou certeza.';
+  const note=document.createElement('div');note.className='radar-analysis-note';note.textContent='Cada cartão mostra até 420 caracteres inicialmente; o texto completo fica salvo. Cores e emojis organizam a leitura e não indicam gravidade ou certeza.';
   el.appendChild(note);
 }
 
