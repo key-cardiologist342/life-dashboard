@@ -140,8 +140,14 @@
   .insight-icon { font-size:1rem; flex-shrink:0; margin-top:1px; }
   .insight-text { font-size:0.78rem; line-height:1.5; color:var(--text); }
   .insight-text strong { color:var(--accent-i, var(--c-mood)); }
-  .radar-saved-meta{font-size:.7rem;color:var(--muted);margin-bottom:10px}
-  .radar-saved-text{font-size:.8rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+  .radar-saved-meta{font-size:.7rem;color:var(--muted);margin-bottom:12px}
+  .radar-analysis-list{display:flex;flex-direction:column;gap:10px}
+  .radar-analysis-card{background:var(--surface2);border-radius:12px;padding:12px 14px;border-left:3px solid var(--radar-color,var(--c-mood))}
+  .radar-analysis-heading{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.82rem;font-weight:700;color:var(--radar-color,var(--c-mood))}
+  .radar-analysis-icon{font-size:1rem;flex-shrink:0}
+  .radar-analysis-body{font-size:.78rem;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+  .radar-analysis-more{margin-top:8px;background:none;border:0;padding:0;color:var(--radar-color,var(--c-mood));font:inherit;font-size:.72rem;cursor:pointer}
+  .radar-analysis-note{font-size:.7rem;color:var(--muted);margin-top:8px}
 
 
   /* ── EMPTY ── */
@@ -558,13 +564,65 @@ function renderRadarAnalysis(analises){
     return;
   }
   const a = analises[0];
-  el.innerHTML='<div class="radar-saved-meta"></div><div class="radar-saved-text"></div>';
-  const periodo = [a.data_inicio, a.data_fim].filter(Boolean).join(' a ');
-  const salvo = a.gerado_em ? new Date(a.gerado_em).toLocaleString('pt-BR') : 'data não informada';
-  el.querySelector('.radar-saved-meta').textContent = (periodo ? 'Período: '+periodo+' · ' : '')+'Salvo em '+salvo;
-  el.querySelector('.radar-saved-text').textContent = a.texto || 'Análise sem texto.';
-}
+  el.replaceChildren();
+  const meta=document.createElement('div');
+  meta.className='radar-saved-meta';
+  const periodo=[a.data_inicio,a.data_fim].filter(Boolean).join(' a ');
+  const salvo=a.gerado_em?new Date(a.gerado_em).toLocaleString('pt-BR'):'data não informada';
+  meta.textContent=(periodo?'Período: '+periodo+' · ':'')+'Salvo em '+salvo;
+  el.appendChild(meta);
 
+  const raw=String(a.texto||'Análise sem texto.').replace(/\r/g,'').trim();
+  const sections=[];
+  let current=null;
+  raw.split('\n').forEach(line=>{
+    const t=line.trim();
+    if(!t){if(current&&current.body&&!current.body.endsWith('\n'))current.body+='\n';return;}
+    const heading=t.match(/^#{1,3}\s+(.+)$/)||t.match(/^\*\*(.{1,90}?)\*\*:?$/);
+    if(heading){
+      current={title:heading[1].replace(/\*\*/g,'').replace(/:$/,'').trim(),body:''};
+      sections.push(current);
+    }else{
+      if(!current){current={title:'Resumo da análise',body:''};sections.push(current);}
+      current.body+=(current.body?'\n':'')+t.replace(/^[-•]\s*/,'');
+    }
+  });
+  if(!sections.length)sections.push({title:'Resumo da análise',body:raw});
+  const palette=[
+    {match:/limita|incertez|ausênc|cobertura|dados insuficientes|ruído/i,icon:'🔎',color:'var(--muted)'},
+    {match:/ação|experimento|próximo passo|teste/i,icon:'🧪',color:'var(--c-energy)'},
+    {match:/humor|emoc|satisfa|dia bom|interação social/i,icon:'💜',color:'var(--c-mood)'},
+    {match:/energia|sono|fadiga|descanso/i,icon:'🌙',color:'var(--c-sleep)'},
+    {match:/atividade|treino|corrida|movimento|saúde física/i,icon:'🏃',color:'var(--c-activity)'},
+    {match:/foco|produtividade|procrastina|clareza mental/i,icon:'🎯',color:'var(--c-focus)'},
+    {match:/tendência|sinal|achado|resultado|conclusão|resumo/i,icon:'✨',color:'var(--c-mood)'}
+  ];
+  const list=document.createElement('div');list.className='radar-analysis-list';
+  sections.forEach(section=>{
+    const cfg=palette.find(p=>p.match.test(section.title))||{icon:'🪄',color:'var(--c-mood)'};
+    const card=document.createElement('section');card.className='radar-analysis-card';card.style.setProperty('--radar-color',cfg.color);
+    const heading=document.createElement('div');heading.className='radar-analysis-heading';
+    const icon=document.createElement('span');icon.className='radar-analysis-icon';icon.textContent=cfg.icon;
+    const title=document.createElement('span');title.textContent=section.title;
+    heading.append(icon,title);
+    const body=document.createElement('div');body.className='radar-analysis-body';
+    const full=section.body.trim();const limit=420;
+    body.textContent=full.length>limit?full.slice(0,limit).trimEnd()+'…':full;
+    card.append(heading,body);
+    if(full.length>limit){
+      const more=document.createElement('button');more.type='button';more.className='radar-analysis-more';more.textContent='Ler mais';
+      let expanded=false;
+      more.addEventListener('click',()=>{
+        expanded=!expanded;body.textContent=expanded?full:full.slice(0,limit).trimEnd()+'…';more.textContent=expanded?'Mostrar menos':'Ler mais';
+      });
+      card.appendChild(more);
+    }
+    list.appendChild(card);
+  });
+  el.appendChild(list);
+  const note=document.createElement('div');note.className='radar-analysis-note';note.textContent='Cada bloco mostra até 420 caracteres inicialmente; o texto completo continua salvo. Cores e emojis organizam a leitura, não indicam gravidade ou certeza.';
+  el.appendChild(note);
+}
 
 // ── INIT ──────────────────────────────────────────────────
 async function init(){
