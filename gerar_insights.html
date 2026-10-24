@@ -586,7 +586,31 @@ function prepareRadarPrompt(){
     '- Sono complementar: '+ctx.sono+' registros consultados; registro mais recente: '+(ctx.sonoLatest||'nenhum')+(ctx.sonoError?' (falha ao consultar)':'')+'. Não bloqueia o Radar.',
     '- Garmin complementar: '+ctx.garmin+' registros consultados; registro mais recente: '+(ctx.garminLatest||'nenhum')+(ctx.garminError?' (falha ao consultar)':'')+'. Pode ser atualizado mensalmente e não bloqueia o Radar.'
   ];
-  const prompt = 'Atue como investigador cuidadoso de padrões pessoais no meu Life Dashboard, não apenas como resumidor de médias. As comparações semanais calculadas vêm apenas do Diário; Sono e Garmin são complementares e podem estar desatualizados. Não diagnostique nem trate associações como causalidade. Diferencie: (1) sinais descritivos sustentados; (2) relações entre métricas observadas nos mesmos dias; (3) hipóteses exploratórias; (4) perguntas ainda sem resposta. Considere dados ausentes, quantidade de observações, variação diária e a possibilidade de coincidências. Não preveja datas futuras sem evidência validada. Gere até 3 ações pequenas, concretas e testáveis apenas quando forem úteis; cada uma deve dizer o que fazer, quando/por quanto tempo e qual resultado observar. Não invente ações para preencher espaço.\n\nDADOS DO RADAR PESSOAL\n\nJanela recente: '+ctx.recentStart+' até '+radarDateOffset(0)+'. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nRESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):\n'+ctxLines.join('\n')+'\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nCOBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:\n'+coverage.join('\n')+'\n\nREGISTROS DIÁRIOS DO DIÁRIO (valores por data; campos ausentes foram omitidos, não são zero):\n'+(dailyLines.join('\n')||'Nenhum registro diário disponível.')+'\n\nINVESTIGAÇÃO SOLICITADA:\n- Compare métricas observadas nos mesmos dias e procure relações exploratórias que ajudem a formular uma pergunta útil. Informe quantos dias sustentam cada observação.\n- Procure exceções: dias que destoam e quais outros indicadores estavam diferentes nesses dias. Não transforme um único dia em tendência.\n- Priorize até 3 descobertas úteis, ordenadas pela força e utilidade; se não houver evidência suficiente, diga isso.\n- Diferenças entre janelas não são o mesmo que associação entre métricas. Como muitas métricas são comparadas, relações aparentes podem surgir por acaso; trate-as como exploratórias, não como prova.\n- Use Sono/Garmin apenas se houver sobreposição temporal adequada. Uma data mais recente isolada não basta para inferir relação.\n- Se houver uma pergunta interessante ainda sem resposta, explique qual observação ajudaria a investigá-la. Ações devem derivar de um sinal ou ser identificadas como experimento exploratório. Não faça previsões.';
+  const prompt = `Atue como investigador cuidadoso de padrões pessoais no meu Life Dashboard, não apenas como resumidor de médias. As comparações semanais calculadas vêm apenas do Diário; Sono e Garmin são complementares e podem estar desatualizados. Não diagnostique nem trate associações como causalidade. Diferencie: (1) sinais descritivos sustentados; (2) relações entre métricas observadas nos mesmos dias; (3) hipóteses exploratórias; (4) perguntas ainda sem resposta. Considere dados ausentes, quantidade de observações, variação diária e a possibilidade de coincidências. Não preveja datas futuras sem evidência validada. Gere até 3 ações pequenas, concretas e testáveis apenas quando forem úteis; cada uma deve dizer o que fazer, quando/por quanto tempo e qual resultado observar. Não invente ações para preencher espaço.
+
+DADOS DO RADAR PESSOAL
+
+Janela recente: ${ctx.recentStart} até ${radarDateOffset(0)}. Base: ${ctx.baselineStart} a ${ctx.baselineEnd}.
+
+RESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):
+${ctxLines.join('\n')}
+
+TENDÊNCIAS DETECTADAS:
+${lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.'}
+
+COBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:
+${coverage.join('\n')}
+
+REGISTROS DIÁRIOS DO DIÁRIO (valores por data; campos ausentes foram omitidos, não são zero):
+${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
+
+INVESTIGAÇÃO SOLICITADA:
+- Compare métricas observadas nos mesmos dias e procure relações exploratórias que ajudem a formular uma pergunta útil. Informe quantos dias sustentam cada observação.
+- Procure exceções: dias que destoam e quais outros indicadores estavam diferentes nesses dias. Não transforme um único dia em tendência.
+- Priorize até 3 descobertas úteis, ordenadas pela força e utilidade; se não houver evidência suficiente, diga isso.
+- Diferenças entre janelas não são o mesmo que associação entre métricas. Como muitas métricas são comparadas, relações aparentes podem surgir por acaso; trate-as como exploratórias, não como prova.
+- Use Sono/Garmin apenas se houver sobreposição temporal adequada. Uma data mais recente isolada não basta para inferir relação.
+- Se houver uma pergunta interessante ainda sem resposta, explique qual observação ajudaria a investigá-la. Ações devem derivar de um sinal ou ser identificadas como experimento exploratório. Não faça previsões.`;
   const promptFinal = prompt + '\n\nFORMATO OBRIGATÓRIO PARA IMPORTAR NO SUPABASE:\nSe eu também enviar DADOS DE CORRELAÇÕES (INSIGHTS), devolva DOIS blocos separados: INSIGHTS_CSV e RADAR_CSV. Se receber apenas o Radar, devolva somente RADAR_CSV. O RADAR_CSV deve conter CSV puro, sem cercas Markdown, com exatamente este cabeçalho e nesta ordem: data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes. Gere exatamente uma linha de dados. Use data_inicio '+ctx.recentStart+' e data_fim '+radarDateOffset(0)+'.\n\nPreencha as quatro seções de forma MUITO CONCISA, em linguagem cotidiana, sem jargão estatístico e sem repetir a mesma informação em campos diferentes.
 
 LIMITES DE TAMANHO:
