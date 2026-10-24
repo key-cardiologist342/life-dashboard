@@ -426,27 +426,52 @@ function copiarParaClaude(){
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
     .join('\n');
 
-  const texto = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do life tracking dos últimos ${_resumo.dias} dias. Analise as correlações com cautela, sem afirmar causalidade. Gere de 3 a 5 insights relevantes quando os dados sustentarem isso; se não sustentarem, não invente.
+  const texto = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
 
 MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
 ${mediasTexto}
 
-CORRELAÇÕES (r de Pearson, ordenadas por força):
+CORRELAÇÕES (r de Pearson; valores mais próximos de -1 ou +1 indicam associação mais forte):
 ${corrTexto}
 
-Se eu também enviar um bloco chamado DADOS DO RADAR PESSOAL, devolva DOIS blocos separados e rotulados INSIGHTS_CSV e RADAR_CSV, na mesma resposta. Se receber apenas estes dados de correlação, devolva somente INSIGHTS_CSV. O RADAR_CSV deve usar exatamente o cabeçalho data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes e uma única linha de dados. Em cada bloco, entregue CSV puro, sem cercas Markdown.
+ESCOLHA DOS INSIGHTS:
+- Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
+- Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
+- Não priorize automaticamente o maior número. Prefira relações que sejam compreensíveis e possam me ajudar a entender minha rotina. Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
+- Não crie vários insights que digam quase a mesma coisa. Combine relações relacionadas quando isso deixar a explicação mais útil.
+- Use as médias apenas para dar contexto quando ajudarem. Não transforme médias ou correlações em afirmações sobre uma sequência temporal que os dados não mostram.
+- A correlação é uma associação entre registros: não prova que uma coisa provoque a outra nem revela sozinha o motivo do padrão.
 
-INSIGHTS_CSV deve conter CSV puro, sem markdown, com primeira linha obrigatória: icone,titulo,texto,cor,correlacao.
+COMO ESCREVER CADA INSIGHT:
+- Escreva como se estivesse explicando a descoberta para mim em uma conversa clara e respeitosa. Não presuma que eu conheço estatística.
+- Comece pelo significado cotidiano. Por exemplo: "Quando meu foco está melhor também costumo registrar mais produtividade" em vez de "Foco e Produtividade têm r=0.804".
+- Explique o que os dados mostram e por que pode ser interessante observar isso na minha vida. Quando fizer sentido, termine com uma pergunta ou algo concreto para observar; não invente uma ação se os dados não indicarem uma.
+- Prefira expressões como "costumam variar juntos", "aparecem associados nos registros" ou "vale observar se". Não diga "faz com que", "provoca", "leva a" ou "depois de" a menos que exista evidência temporal específica.
+- Não diga que uma coisa "melhora" outra só porque estão associadas. Não interprete correlações de passos, calorias, sono, VFC ou frequência cardíaca como prova isolada de saúde melhor ou pior.
+- Evite jargões como "correlação positiva forte", "n observações", "r de Pearson" e números estatísticos no texto. Os números já estão nos dados e o campo correlacao guarda o valor da associação. Só mencione uma quantidade de registros se isso for essencial para explicar uma limitação.
+- Não faça diagnóstico psicológico ou médico nem atribua intenções a mim.
+- O texto deve ter 2 ou 3 frases naturais, curtas e fáceis de entender. Não use vírgulas dentro do campo texto; se precisar separar ideias use ponto e vírgula. Não use listas nem frases excessivamente longas.
 
-Regras:
-- icone: um emoji representativo
-- titulo: máximo 8 palavras — sem vírgulas
-- texto: explicação em 2-3 frases naturais com os números — NUNCA use vírgula no texto; use ponto e vírgula para separar ideias
-- cor: hex baseado no tipo (#a78bfa=humor/ciclo, #38bdf8=sono, #fb923c=energia, #34d399=saúde/treino, #f472b6=foco/tempo, #facc15=produtividade)
-- correlacao: valor r numérico
+FORMATO DE SAÍDA:
+Se eu também enviar um bloco chamado DADOS DO RADAR PESSOAL, devolva DOIS blocos separados e rotulados INSIGHTS_CSV e RADAR_CSV. Se receber apenas estes dados de correlação, devolva somente INSIGHTS_CSV. Para o Radar mantenha exatamente o cabeçalho data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes e uma única linha de dados.
 
-Exemplo de linha:
-💜,Sono melhora seu humor,Nos dias após dormir mais de 7h seu humor sobe em média; o padrão é consistente nas últimas semanas,#38bdf8,0.71`;
+INSIGHTS_CSV deve conter CSV puro, sem cercas Markdown, com exatamente este cabeçalho:
+icone,titulo,texto,cor,correlacao
+
+Regras dos campos:
+- icone: um emoji representativo.
+- titulo: máximo de 8 palavras e sem vírgulas. Deve comunicar a descoberta em linguagem cotidiana.
+- texto: 2 ou 3 frases claras e práticas seguindo as regras acima; sem vírgulas.
+- cor: código hex conforme o tema (#a78bfa=humor/ciclo; #38bdf8=sono; #fb923c=energia; #34d399=saúde/treino; #f472b6=foco/tempo; #facc15=produtividade).
+- correlacao: valor numérico da correlação escolhida para representar o insight. Preserve o sinal negativo quando houver.
+- Escolha a cor pelo tema principal do insight.
+- Coloque todos os cinco campos entre aspas duplas para manter o CSV consistente. No campo correlacao use apenas o número entre aspas. Se houver aspas dentro de um campo textual duplique-as.
+- Cada insight deve ocupar exatamente uma linha. Não adicione comentários ou explicações fora dos blocos CSV.
+
+Exemplo do nível de clareza esperado (use somente se os dados reais sustentarem o padrão):
+"🎯","Foco e produtividade caminham juntos","Nos seus registros os dias com melhor foco também costumam ser os dias mais produtivos; vale observar o que ajuda você a se concentrar nesses dias.", "#f472b6","0.80"
+
+Não copie o exemplo como resultado. Use apenas os padrões realmente sustentados pelos dados fornecidos.`;
 
   const box = document.getElementById('copyBox');
   box.textContent = texto;
