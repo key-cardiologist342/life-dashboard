@@ -79,6 +79,22 @@
   .instrucao strong{color:var(--text)}
   .instrucao code{font-family:'DM Mono',monospace;color:var(--purple);background:rgba(167,139,250,0.08);padding:2px 6px;border-radius:4px;font-size:0.75rem}
 
+  /* ── RADAR PESSOAL ── */
+  .radar-intro{color:var(--muted);font-size:.78rem;line-height:1.6;margin:-4px 0 14px}
+  .radar-list{display:flex;flex-direction:column;gap:8px}
+  .radar-item{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+  .radar-item strong{font-size:.8rem;display:block;margin-bottom:4px}
+  .radar-item p{font-size:.74rem;color:var(--muted);line-height:1.5}
+  .radar-delta{font-family:'DM Mono',monospace;font-size:.75rem;white-space:nowrap}
+  .radar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .radar-btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font:500 .75rem 'DM Sans',sans-serif;cursor:pointer}
+  .radar-btn.primary{background:rgba(167,139,250,.16);border-color:var(--c-mood);color:var(--c-mood)}
+  .radar-note{font-size:.68rem;color:var(--muted);line-height:1.5;margin-top:12px}
+  .radar-status{font-size:.74rem;color:var(--muted);margin-bottom:10px}
+  .radar-output{display:none;width:100%;min-height:160px;margin-top:12px;padding:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;font: .72rem 'DM Mono',monospace;line-height:1.6}
+  .radar-output.visible{display:block}
+
+
   /* ── EMPTY ── */
   .empty{color:var(--muted);font-size:0.82rem;text-align:center;padding:32px;display:flex;flex-direction:column;align-items:center;gap:8px}
   .empty .big{font-size:2rem}
@@ -125,17 +141,17 @@
   <!-- BOTÃO -->
   <div class="btn-wrap">
     <button class="btn-generate" onclick="copiarParaClaude()">
-      📋 Copiar dados para o Claude
+      📋 Preparar dados de correlações para ChatGPT
     </button>
-    <p class="btn-hint">Cole no chat do Claude e peça para gerar os insights em CSV</p>
+    <p class="btn-hint">Cole no mesmo chat em que enviará os dados do Radar; depois importe o CSV de insights no Supabase</p>
   </div>
 
   <!-- OUTPUT -->
   <div class="copy-box" id="copyBox" onclick="copiarTexto()"></div>
-  <div class="copy-badge" id="copyBadge">✓ Copiado! Cole no chat do Claude.</div>
+  <div class="copy-badge" id="copyBadge">✓ Copiado! Cole no ChatGPT.</div>
 
   <div class="instrucao" id="instrucao">
-    Após receber o CSV do Claude:<br>
+    Após receber o CSV de insights do ChatGPT:<br>
     1. Acesse <strong>Supabase → Table Editor → insights</strong><br>
     2. Clique em <strong>Insert → Import data from CSV</strong><br>
     3. Cole o CSV gerado<br>
@@ -143,6 +159,28 @@
     <strong>Formato esperado do CSV:</strong><br>
     <code>icone,titulo,texto,cor,correlacao</code>
   </div>
+
+
+  <div class="section-title" style="margin-top:40px">radar pessoal · tendências semanais</div>
+  <p class="page-sub" style="margin-bottom:18px">Compara os últimos 7 dias com os 21 anteriores usando o Diário. Sono e Garmin são contexto complementar e podem estar desatualizados.</p>
+  <!-- RADAR PESSOAL: primeira versão baseada em regras transparentes -->
+  <div class="section-title">radar pessoal</div>
+  <div class="card" style="margin-bottom:24px" id="radarCard">
+    <div class="card-header">
+      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Tendências do seu histórico</div>
+      <span class="card-badge">diário · 7 vs. 21 dias</span>
+    </div>
+    <p class="radar-intro">O Radar principal usa apenas o Diário: compara os últimos 7 dias com os 21 anteriores. Sono e Garmin são fontes complementares e não bloqueiam a análise quando estiverem desatualizados; os dados importados podem ser usados como contexto, não como tendência semanal se não houver cobertura suficiente.</p>
+    <div class="radar-status" id="radarStatus">Analisando seus registros…</div>
+    <div class="radar-list" id="radarList"><div class="empty">Carregando tendências…</div></div>
+    <div class="radar-actions">
+      <button class="radar-btn primary" id="radarCopyBtn" type="button">Preparar análise com ChatGPT</button>
+      <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar radar</button>
+    </div>
+    <textarea class="radar-output" id="radarOutput" readonly aria-label="Dados para análise no ChatGPT"></textarea>
+    <p class="radar-note">A análise assistida não envia dados automaticamente para o ChatGPT. Revise o texto e copie-o para uma conversa quando quiser. Métricas com poucos registros ficam fora da comparação.</p>
+  </div>
+
 </main>
 
 <script type="module">
@@ -388,7 +426,7 @@ function copiarParaClaude(){
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
     .join('\n');
 
-  const texto = `Aqui estão meus dados de life tracking dos últimos ${_resumo.dias} dias. Analise TODAS as correlações abaixo e gere TODOS os insights relevantes (mínimo 3 e máximo 5 — as mais relevantes).
+  const texto = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do life tracking dos últimos ${_resumo.dias} dias. Analise as correlações com cautela, sem afirmar causalidade. Gere de 3 a 5 insights relevantes quando os dados sustentarem isso; se não sustentarem, não invente.
 
 MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
 ${mediasTexto}
@@ -396,8 +434,9 @@ ${mediasTexto}
 CORRELAÇÕES (r de Pearson, ordenadas por força):
 ${corrTexto}
 
-Responda APENAS em formato CSV, sem markdown, sem texto fora do CSV.
-Primeira linha obrigatória: icone,titulo,texto,cor,correlacao
+Se eu também enviar um bloco chamado DADOS DO RADAR PESSOAL, devolva DOIS blocos separados e rotulados INSIGHTS_CSV e RADAR_CSV, na mesma resposta. Se receber apenas estes dados de correlação, devolva somente INSIGHTS_CSV.
+
+INSIGHTS_CSV deve conter CSV puro, sem markdown, com primeira linha obrigatória: icone,titulo,texto,cor,correlacao.
 
 Regras:
 - icone: um emoji representativo
@@ -432,7 +471,132 @@ function copiarTexto(){
   });
 }
 
+// ── RADAR PESSOAL (v1: tendências descritivas, sem inferência causal) ──
+const RADAR_METRICS = [
+  {table:'diario_diario', field:'humor', label:'Humor', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'energia', label:'Energia', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'clareza_mental', label:'Clareza mental', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'dia_bom', label:'Dia bom', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'saude_fisica', label:'Saúde física', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'dor_desconforto', label:'Dor/desconforto', higherGood:false, group:'Diário'},
+  {table:'diario_diario', field:'foco_geral', label:'Foco', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'procrastinacao', label:'Procrastinação', higherGood:false, group:'Diário'},
+  {table:'diario_diario', field:'alimentacao', label:'Alimentação', higherGood:true, group:'Hábitos'},
+  {table:'diario_diario', field:'hidratacao', label:'Hidratação', higherGood:true, group:'Hábitos'},
+  {table:'diario_diario', field:'casa_organizada', label:'Casa organizada', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'cuidado_dogs', label:'Cuidado dos dogs', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'evento_negativo', label:'Eventos negativos', higherGood:false, group:'Contexto'},
+  {table:'diario_diario', field:'conflito', label:'Conflitos', higherGood:false, group:'Contexto'},
+  {table:'diario_diario', field:'evento_positivo', label:'Eventos positivos', higherGood:true, group:'Contexto'},
+  {table:'diario_diario', field:'social_bom', label:'Interações sociais boas', higherGood:true, group:'Contexto'},
+  {table:'diario_diario', field:'produtividade', label:'Produtividade', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'satisfacao', label:'Satisfação', higherGood:true, group:'Diário'},
+
+];
+
+function radarDateOffset(daysAgo){
+  const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-daysAgo);
+  return d.toISOString().slice(0,10);
+}
+function radarMean(rows, field){
+  const vals = rows
+    .map(x=>x[field])
+    .filter(v=>v!==null && v!==undefined && v!=='' && typeof v!=='boolean')
+    .map(Number)
+    .filter(x=>Number.isFinite(x));
+  return vals.length ? {mean:vals.reduce((a,b)=>a+b,0)/vals.length,n:vals.length} : {mean:null,n:0};
+}
+function radarFmt(value, metric){
+  if(value==null) return '—';
+  const v = metric.field==='duracao_min' ? (value/60).toFixed(1)+' h' : (Math.abs(value)>=1000 ? Math.round(value).toLocaleString('pt-BR') : value.toFixed(1))+(metric.unit||'');
+  return v;
+}
+async function renderRadar(){
+  const status = document.getElementById('radarStatus');
+  const list = document.getElementById('radarList');
+  try{
+    const from = radarDateOffset(27);
+    // O Diário é a única fonte obrigatória. Sono e Garmin podem ser atualizados com menor frequência.
+    const diario = await sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365');
+    const [sonoResult, garminResult] = await Promise.allSettled([
+      sb('sono?order=data.desc&limit=90'),
+      sb('garmin_diario?order=data.desc&limit=90')
+    ]);
+    const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
+    const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
+    const dataByTable = {diario_diario:diario};
+    const recentStart = radarDateOffset(6);
+    const baselineStart = radarDateOffset(27);
+    const baselineEnd = radarDateOffset(7);
+    const results = [];
+    const coverage = [];
+    RADAR_METRICS.forEach(m=>{
+      const rows = dataByTable[m.table]||[];
+      const recent = rows.filter(r=>r.data>=recentStart && r.data<=radarDateOffset(0));
+      const baseline = rows.filter(r=>r.data>=baselineStart && r.data<=baselineEnd);
+      const a = radarMean(recent,m.field), b = radarMean(baseline,m.field);
+      const entry = {...m,recentN:a.n,baselineN:b.n,recentMean:a.mean,baselineMean:b.mean,status:'insufficient'};
+      if(a.n<3 || b.n<5 || a.mean==null || b.mean==null){
+        coverage.push({...entry,reason:'Poucos registros válidos (mínimo: 3 recentes e 5 na base)'});
+        return;
+      }
+      const delta = a.mean-b.mean;
+      const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='duracao_min'?20:0.5);
+      if(Math.abs(delta)<threshold){
+        coverage.push({...entry,delta,threshold,status:'below_threshold',reason:'Diferença abaixo do limite de sinal'});
+        return;
+      }
+      const result = {...m,recentMean:a.mean,baselineMean:b.mean,delta,recentN:a.n,baselineN:b.n,
+        direction:delta>0?'subiu':'caiu',
+        interpretation: (delta>0)===m.higherGood?'favorável':'desfavorável'};
+      results.push(result);
+      coverage.push({...result,status:'trend',reason:'Sinal acima do limite definido'});
+    });
+    results.sort((a,b)=>Math.abs(b.delta)/Math.max(Math.abs(b.baselineMean),1)-Math.abs(a.delta)/Math.max(Math.abs(a.baselineMean),1));
+    window._radarResults = results;
+    window._radarCoverage = coverage;
+    const latestDate = rows => rows.length ? rows.map(r=>r.data).filter(Boolean).sort().reverse()[0] : null;
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
+    status.textContent = 'Radar principal: Diário · janela recente '+recentStart+' a '+radarDateOffset(0)+' · base '+baselineStart+' a '+baselineEnd+'. Sono/Garmin são complementares.';
+    if(!results.length){
+      list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
+      return;
+    }
+    list.innerHTML = results.slice(0,8).map(r=>{
+      const color = r.interpretation==='favorável'?'var(--c-health)':r.interpretation==='desfavorável'?'#f87171':'var(--muted)';
+      const deltaText = (r.delta>0?'+':'')+radarFmt(r.delta,r);
+      return '<div class="radar-item"><div><strong>'+r.label+' <span style="color:var(--muted);font-weight:400">· '+r.group+'</span></strong><p>Últimos 7 dias: '+radarFmt(r.recentMean,r)+' ('+r.recentN+' registros). Base anterior: '+radarFmt(r.baselineMean,r)+' ('+r.baselineN+' registros).</p></div><div class="radar-delta" style="color:'+color+'">'+deltaText+'</div></div>';
+    }).join('');
+  }catch(e){
+    console.error('Radar pessoal:',e);
+    status.textContent='Não foi possível calcular as tendências agora.';
+    list.innerHTML='<div class="empty">Erro ao carregar o Radar. O restante do dashboard continua disponível.</div>';
+  }
+}
+function prepareRadarPrompt(){
+  const results = window._radarResults || [];
+  const ctx = window._radarContext;
+  if(!ctx){ alert('Aguarde o Radar terminar de carregar.'); return; }
+  const lines = results.map(r=>'- '+r.label+': últimos 7 dias '+radarFmt(r.recentMean,r)+' (n='+r.recentN+') vs base anterior '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'); diferença '+radarFmt(r.delta,r)+'.');
+  const coverage = (window._radarCoverage||[]).map(r=>'- '+r.label+': registros válidos recentes '+r.recentN+'/7; base '+r.baselineN+'/21. '+r.reason+'.');
+  const ctxLines = [
+    '- Diário: '+ctx.diario+' linhas carregadas na janela consultada; é a fonte principal das tendências.',
+    '- Sono complementar: '+ctx.sono+' registros consultados; registro mais recente: '+(ctx.sonoLatest||'nenhum')+(ctx.sonoError?' (falha ao consultar)':'')+'. Não bloqueia o Radar.',
+    '- Garmin complementar: '+ctx.garmin+' registros consultados; registro mais recente: '+(ctx.garminLatest||'nenhum')+(ctx.garminError?' (falha ao consultar)':'')+'. Pode ser atualizado mensalmente e não bloqueia o Radar.'
+  ];
+  const prompt = 'Ajude-me a interpretar tendências do meu Life Dashboard de forma cuidadosa e assistida. As tendências semanais calculadas vêm apenas do Diário; Sono e Garmin são fontes complementares e podem estar desatualizados por serem importados com menor frequência. Não diagnostique e não trate associações como causalidade. Diferencie sinais robustos de ruído e considere dados ausentes. Se não houver dados suficientes, diga isso. Sugira no máximo 3 ações pequenas e testáveis, ligadas aos meus próprios dados, e explique a incerteza. Não preveja datas futuras sem evidência validada.\n\nJanela recente: '+ctx.recentStart+' até '+radarDateOffset(0)+'. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nRESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):\n'+ctxLines.join('\n')+'\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nCOBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:\n'+coverage.join('\n')+'\n\nInterprete apenas as métricas com dados suficientes. Se nenhuma tendência foi detectada, explique se o motivo parece ser falta de registros ou diferenças pequenas; não invente tendências. Trate sono, ciclo, atividade e contexto emocional como fatores potencialmente relacionados, não como explicações confirmadas.';
+  const promptFinal = prompt + '\\n\\nFORMATO DE RETORNO PARA O SUPABASE:\\nSe eu também enviar um bloco chamado DADOS DE CORRELAÇÕES (INSIGHTS), devolva DOIS blocos separados e rotulados INSIGHTS_CSV e RADAR_CSV, na mesma resposta. O bloco INSIGHTS_CSV deve conter o CSV de insights solicitado no outro prompt. O bloco RADAR_CSV deve conter CSV puro, sem markdown, com cabeçalho data_inicio,data_fim,texto e exatamente uma linha. Use data_inicio '+ctx.recentStart+' e data_fim '+radarDateOffset(0)+'. No campo texto, salve a análise completa em um único campo CSV entre aspas; escape aspas internas duplicando-as e mantenha o conteúdo em uma única linha. Se receber apenas os dados do Radar, devolva somente RADAR_CSV. Inclua limitações e no máximo 3 ações testáveis dentro do texto; não invente tendências.';
+  const out=document.getElementById('radarOutput');
+  out.value=promptFinal;out.classList.add('visible');out.focus();out.select();
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(promptFinal).then(()=>{document.getElementById('radarCopyBtn').textContent='Texto copiado · abrir ChatGPT';}).catch(()=>{});
+}
+document.getElementById('radarCopyBtn').addEventListener('click',prepareRadarPrompt);
+document.getElementById('radarRefreshBtn').addEventListener('click',()=>{document.getElementById('radarCopyBtn').textContent='Preparar análise com ChatGPT';renderRadar();});
+
+
+
 // ── BOOT ─────────────────────────────────────────────────
+renderRadar();
 carregar().catch(e=>{
   document.getElementById('corrList').innerHTML=
     `<div class="empty"><div class="big">⚠️</div>Erro ao carregar: ${e.message}</div>`;
