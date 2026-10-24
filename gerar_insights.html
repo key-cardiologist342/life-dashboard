@@ -611,54 +611,67 @@ function prepareRadarPrompt(){
     '- Sono complementar: '+ctx.sono+' registros consultados; registro mais recente: '+(ctx.sonoLatest||'nenhum')+(ctx.sonoError?' (falha ao consultar)':'')+'. Não bloqueia o Radar.',
     '- Garmin complementar: '+ctx.garmin+' registros consultados; registro mais recente: '+(ctx.garminLatest||'nenhum')+(ctx.garminError?' (falha ao consultar)':'')+'. Pode ser atualizado mensalmente e não bloqueia o Radar.'
   ];
-  const prompt = `Atue como investigador cuidadoso de padrões pessoais no meu Life Dashboard, não apenas como resumidor de médias. As comparações semanais calculadas vêm apenas do Diário; Sono e Garmin são complementares e podem estar desatualizados. Não diagnostique nem trate associações como causalidade. Diferencie: (1) sinais descritivos sustentados; (2) relações entre métricas observadas nos mesmos dias; (3) hipóteses exploratórias; (4) perguntas ainda sem resposta. Considere dados ausentes, quantidade de observações, variação diária e a possibilidade de coincidências. Não preveja datas futuras sem evidência validada. Gere até 3 ações pequenas, concretas e testáveis apenas quando forem úteis; cada uma deve dizer o que fazer, quando/por quanto tempo e qual resultado observar. Não invente ações para preencher espaço.
+  const prompt = `Atue como investigador cuidadoso dos meus padrões pessoais. O Radar NÃO deve ser apenas um relatório de médias semanais: ele deve investigar o que os dados recentes ajudam a confirmar, questionar ou não conseguem explicar.
+
+Use as correlações históricas dos INSIGHTS, se elas estiverem presentes nesta conversa, como hipóteses a testar — nunca como verdades garantidas. Para cada padrão histórico que for relevante, verifique se ele aparece nos últimos 7 dias usando os registros diários e, quando houver dados suficientes, compare com os 21 dias anteriores. Classifique o resultado como: (a) padrão histórico também aparece agora; (b) não apareceu claramente no período recente; ou (c) dados insuficientes. Não force uma correspondência.
+
+Se os DADOS DE CORRELAÇÕES (INSIGHTS) não estiverem disponíveis nesta conversa, não diga que os consultou nem invente padrões históricos. Investigue os registros diários por conta própria e deixe claro que a análise não pôde testar as correlações históricas.
+
+Priorize uma ou duas perguntas que realmente ajudem a entender meu cotidiano. Procure relações entre métricas nos mesmos dias e exceções úteis, mas não transforme coincidências em causa. Não afirme que uma coisa acontece antes ou depois de outra sem análise temporal específica. Não deduza piora ou melhora do humor a partir de foco, produtividade, internet ou outra métrica: descreva a direção do humor apenas se os próprios dados de humor a sustentarem.
+
+Considere os dados ausentes, a quantidade de observações, mudanças de preenchimento e a possibilidade de coincidências por testar muitas métricas. Não diagnostique, não invente acontecimentos nem preferências e não faça previsões. Diferencie observação direta, hipótese e falta de evidência. Se nada útil puder ser concluído, diga isso claramente. Sugira no máximo 2 experimentos pequenos e realistas, somente quando ligados a um sinal observado; diga o que testar e o que observar.
 
 DADOS DO RADAR PESSOAL
 
 Janela recente: ${ctx.recentStart} até ${radarDateOffset(0)}. Base: ${ctx.baselineStart} a ${ctx.baselineEnd}.
 
 RESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):
-${ctxLines.join('\n')}
+${ctxLines.join('\\n')}
 
 TENDÊNCIAS DETECTADAS:
-${lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.'}
+${lines.join('\\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.'}
 
 COBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:
-${coverage.join('\n')}
+${coverage.join('\\n')}
 
 REGISTROS DIÁRIOS DO DIÁRIO (valores por data; campos ausentes foram omitidos, não são zero):
-${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
+${dailyLines.join('\\n')||'Nenhum registro diário disponível.'}
 
 INVESTIGAÇÃO SOLICITADA:
-- Compare métricas observadas nos mesmos dias e procure relações exploratórias que ajudem a formular uma pergunta útil. Informe quantos dias sustentam cada observação.
-- Procure exceções: dias que destoam e quais outros indicadores estavam diferentes nesses dias. Não transforme um único dia em tendência.
-- Priorize até 3 descobertas úteis, ordenadas pela força e utilidade; se não houver evidência suficiente, diga isso.
-- Diferenças entre janelas não são o mesmo que associação entre métricas. Como muitas métricas são comparadas, relações aparentes podem surgir por acaso; trate-as como exploratórias, não como prova.
-- Use Sono/Garmin apenas se houver sobreposição temporal adequada. Uma data mais recente isolada não basta para inferir relação.
-- Se houver uma pergunta interessante ainda sem resposta, explique qual observação ajudaria a investigá-la. Ações devem derivar de um sinal ou ser identificadas como experimento exploratório. Não faça previsões.`;
+- Se os Insights históricos estiverem na conversa, selecione no máximo 2 padrões relevantes e teste-os nos registros recentes; indique se aparecem, não aparecem ou não podem ser avaliados.
+- Para cada conclusão principal, use evidências concretas e conte quantos dias sustentam a observação quando isso for possível. Evite despejar todos os valores.
+- Procure uma exceção que refine ou contradiga o padrão, se houver. Um dia isolado não prova tendência.
+- Mudança entre janelas e associação entre métricas são coisas diferentes. Não confunda as duas.
+- Use Sono/Garmin apenas se houver sobreposição temporal adequada com os dias analisados. Se estiverem desatualizados, não os use para explicar o período recente.
+- Se não houver correlações históricas disponíveis, investigue os registros diários sem fingir que testou Insights. Se os dados forem fracos, essa é uma conclusão válida.`;
   const promptFinal = `${prompt}
 
 FORMATO OBRIGATÓRIO PARA IMPORTAR NO SUPABASE:
 Se eu também enviar DADOS DE CORRELAÇÕES (INSIGHTS), devolva DOIS blocos separados: INSIGHTS_CSV e RADAR_CSV. Se receber apenas o Radar, devolva somente RADAR_CSV. O RADAR_CSV deve conter CSV puro, sem cercas Markdown, com exatamente este cabeçalho e nesta ordem: data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes. Gere exatamente uma linha de dados. Use data_inicio ${ctx.recentStart} e data_fim ${radarDateOffset(0)}.
 
-Preencha as quatro seções de forma MUITO CONCISA, em linguagem cotidiana, sem jargão estatístico e sem repetir a mesma informação em campos diferentes.
+Preencha os campos com funções diferentes, em linguagem cotidiana e sem jargão estatístico:
+- resumo: responda diretamente à principal pergunta investigada e diga o que os dados permitem concluir.
+- sinais_observados: até 3 evidências concretas que sustentam ou enfraquecem a conclusão; inclua número de dias apenas quando ajudar a interpretar.
+- limitacoes: diga o que não foi possível confirmar, incluindo correlações históricas ausentes ou dados insuficientes, se for o caso.
+- acoes: no máximo 2 experimentos pequenos e específicos, derivados de uma evidência. Se não houver ação útil, escreva 'Nenhuma ação indicada'.
+- texto: reúna Resumo:, Sinais observados:, Limitações: e Ações para testar:, sem repetir a mesma ideia e com no máximo 120 palavras no total.
 
 LIMITES DE TAMANHO:
-- resumo: no máximo 2 frases curtas (até 35 palavras).
-- sinais_observados: no máximo 3 sinais; cada um em uma frase curta. NÃO liste valores de cada dia nem reconte toda a semana.
-- limitacoes: no máximo 2 frases curtas (até 30 palavras), apenas limitações que realmente mudem a interpretação.
-- acoes: no máximo 2 ações; uma frase curta por ação, com o que fazer e por quanto tempo.
-- texto: juntar as quatro seções com os rótulos Resumo:, Sinais observados:, Limitações: e Ações para testar:, com no máximo 120 palavras no total.
-- Cada campo deve ser escaneável em poucos segundos. Prefira palavras simples e frases curtas.
+- resumo: até 35 palavras.
+- sinais_observados: até 3 frases curtas.
+- limitacoes: até 30 palavras.
+- acoes: até 2 frases curtas.
+- texto: até 120 palavras no total; escaneável em poucos segundos.
 
 REGRAS DE CONTEÚDO:
-- Não despeje números, listas de médias, datas ou valores diários. Use no máximo 1 ou 2 números agregados quando forem essenciais para entender o principal sinal; não cite exemplos dia a dia.
-- Não repita o resumo em sinais_observados nem copie os sinais novamente em limitações e ações.
-- Priorize no máximo 2 descobertas realmente úteis. Se não houver padrão confiável, diga isso brevemente sem inventar uma descoberta.
-- Diferencie mudança observada de hipótese exploratória. Coocorrência não prova causa.
-- Use Sono/Garmin apenas se houver sobreposição temporal adequada. Se estiverem desatualizados, mencione isso em uma frase curta.
-- Proponha no máximo 2 ações pequenas, práticas e testáveis, ligadas a um sinal observado ou identificadas claramente como experimento exploratório. Não invente causas, acontecimentos ou preferências.
-- Não diagnostique. Não inclua explicações, comentários ou texto fora dos blocos CSV.
+- Não despeje médias, listas de valores diários ou datas em excesso. Use números apenas quando forem evidência útil.
+- Não diga que um padrão histórico se confirmou sem comparar os dados de Insights com os registros diários recentes. Se não recebeu os Insights, declare essa limitação.
+- Não repita o resumo em sinais_observados nem copie sinais novamente em limitações e ações.
+- Não force descobertas: 'não aparece no período recente' e 'dados insuficientes' são resultados válidos.
+- Não infira a direção do humor a partir de outras métricas; use dados de humor diretamente.
+- Não trate coocorrência como causa nem invente sequência temporal.
+- Não use Sono/Garmin desatualizados para explicar os últimos dias.
+- Não inclua explicações, comentários ou texto fora dos blocos CSV.
 
 Todos os campos textuais devem estar entre aspas duplas; se um texto contiver aspas, duplique-as. Mantenha cada campo em uma única linha, sem quebras de linha dentro dos valores. Vírgulas dentro dos textos são permitidas porque os campos estarão entre aspas.`;
   const out=document.getElementById('radarOutput');
