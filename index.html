@@ -578,7 +578,7 @@ async function init(){
       sb(`treino_forca?data=gte.${from7}&order=data.desc`),
       sb(`insights?order=gerado_em.desc&limit=5`),
       sb(`clue_diario?data=gte.2026-01-01&order=data.desc&limit=200`),
-      sb(`radar_analises?order=gerado_em.desc&limit=1`),
+      sb(`radar_analises?order=gerado_em.desc&limit=1`).catch(e=>{ console.warn('Análises do Radar ainda não disponíveis:',e); return []; }),
     ]);
 
     renderScores(diario, sono, clue);
