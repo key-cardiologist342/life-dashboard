@@ -161,20 +161,20 @@
   </div>
 
 
-  <div class="section-title" style="margin-top:40px">radar pessoal · tendências semanais</div>
-  <p class="page-sub" style="margin-bottom:18px">Compara os últimos 7 dias com os 21 anteriores usando o Diário. Sono e Garmin são contexto complementar e podem estar desatualizados.</p>
+  <div class="section-title" style="margin-top:40px">radar investigativo · padrões pessoais</div>
+  <p class="page-sub" style="margin-bottom:18px">Além de comparar semanas, a análise assistida investiga relações entre registros diários, exceções e perguntas que os dados permitem explorar — sem confundir associação com causa.</p>
   <!-- RADAR PESSOAL: primeira versão baseada em regras transparentes -->
   <div class="section-title">radar pessoal</div>
   <div class="card" style="margin-bottom:24px" id="radarCard">
     <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Tendências do seu histórico</div>
+      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Pistas do seu histórico</div>
       <span class="card-badge">diário · 7 vs. 21 dias</span>
     </div>
-    <p class="radar-intro">O Radar principal usa apenas o Diário: compara os últimos 7 dias com os 21 anteriores. Sono e Garmin são fontes complementares e não bloqueiam a análise quando estiverem desatualizados; os dados importados podem ser usados como contexto, não como tendência semanal se não houver cobertura suficiente.</p>
+    <p class="radar-intro">O Diário é a fonte principal. A análise compara os últimos 7 dias com os 21 anteriores e também recebe os registros diários para investigar o que pode variar junto, quais dias destoam e quais perguntas ainda estão abertas. Sono e Garmin são complementares e podem estar desatualizados.</p>
     <div class="radar-status" id="radarStatus">Analisando seus registros…</div>
     <div class="radar-list" id="radarList"><div class="empty">Carregando tendências…</div></div>
     <div class="radar-actions">
-      <button class="radar-btn primary" id="radarCopyBtn" type="button">Preparar análise com ChatGPT</button>
+      <button class="radar-btn primary" id="radarCopyBtn" type="button">Investigar padrões com ChatGPT</button>
       <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar radar</button>
     </div>
     <textarea class="radar-output" id="radarOutput" readonly aria-label="Dados para análise no ChatGPT"></textarea>
@@ -481,6 +481,7 @@ const RADAR_METRICS = [
   {table:'diario_diario', field:'dor_desconforto', label:'Dor/desconforto', higherGood:false, group:'Diário'},
   {table:'diario_diario', field:'foco_geral', label:'Foco', higherGood:true, group:'Diário'},
   {table:'diario_diario', field:'procrastinacao', label:'Procrastinação', higherGood:false, group:'Diário'},
+  {table:'diario_diario', field:'uso_excessivo_internet', label:'Uso excessivo de internet', higherGood:false, group:'Hábitos'},
   {table:'diario_diario', field:'alimentacao', label:'Alimentação', higherGood:true, group:'Hábitos'},
   {table:'diario_diario', field:'hidratacao', label:'Hidratação', higherGood:true, group:'Hábitos'},
   {table:'diario_diario', field:'casa_organizada', label:'Casa organizada', higherGood:true, group:'Rotina'},
@@ -556,7 +557,7 @@ async function renderRadar(){
     window._radarResults = results;
     window._radarCoverage = coverage;
     const latestDate = rows => rows.length ? rows.map(r=>r.data).filter(Boolean).sort().reverse()[0] : null;
-    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:diario.map(row=>{const clean={data:row.data};RADAR_METRICS.forEach(m=>{if(row[m.field]!==null&&row[m.field]!==undefined&&row[m.field]!==''&&Number.isFinite(Number(row[m.field])))clean[m.field]=Number(row[m.field]);});return clean;}),sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
     status.textContent = 'Radar principal: Diário · janela recente '+recentStart+' a '+radarDateOffset(0)+' · base '+baselineStart+' a '+baselineEnd+'. Sono/Garmin são complementares.';
     if(!results.length){
       list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
@@ -579,12 +580,13 @@ function prepareRadarPrompt(){
   if(!ctx){ alert('Aguarde o Radar terminar de carregar.'); return; }
   const lines = results.map(r=>'- '+r.label+': últimos 7 dias '+radarFmt(r.recentMean,r)+' (n='+r.recentN+') vs base anterior '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'); diferença '+radarFmt(r.delta,r)+'.');
   const coverage = (window._radarCoverage||[]).map(r=>'- '+r.label+': média recente '+radarFmt(r.recentMean,r)+' (n='+r.recentN+'/7); média da base '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'/21); '+(r.delta!=null?'diferença '+(r.delta>0?'+':'')+radarFmt(r.delta,r)+'; ':'')+r.reason+'.');
+  const dailyLines = (ctx.diarioRows||[]).map(row=>'- '+row.data+': '+RADAR_METRICS.filter(m=>row[m.field]!==undefined).map(m=>m.label+'='+row[m.field]).join('; '));
   const ctxLines = [
-    '- Diário: '+ctx.diario+' linhas carregadas na janela consultada; é a fonte principal das tendências.',
+    '- Diário: '+ctx.diario+' linhas carregadas na janela consultada; é a fonte principal das tendências e da investigação diária.',
     '- Sono complementar: '+ctx.sono+' registros consultados; registro mais recente: '+(ctx.sonoLatest||'nenhum')+(ctx.sonoError?' (falha ao consultar)':'')+'. Não bloqueia o Radar.',
     '- Garmin complementar: '+ctx.garmin+' registros consultados; registro mais recente: '+(ctx.garminLatest||'nenhum')+(ctx.garminError?' (falha ao consultar)':'')+'. Pode ser atualizado mensalmente e não bloqueia o Radar.'
   ];
-  const prompt = 'Ajude-me a interpretar tendências do meu Life Dashboard de forma cuidadosa, proativa e assistida. As tendências semanais calculadas vêm apenas do Diário; Sono e Garmin são fontes complementares e podem estar desatualizados por serem importados com menor frequência. Não diagnostique e não trate associações como causalidade. Diferencie sinais sustentados pelos dados, observações descritivas e hipóteses exploratórias. Considere dados ausentes e explique a incerteza. Não preveja datas futuras sem evidência validada. Gere até 3 ações pequenas, concretas e testáveis. Evite recomendações genéricas como apenas continuar registrando ou observar os dados. Cada ação deve dizer o que fazer, em qual situação ou por quanto tempo, e o que observar depois.\n\nDADOS DO RADAR PESSOAL\n\nJanela recente: '+ctx.recentStart+' até '+radarDateOffset(0)+'. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nRESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):\n'+ctxLines.join('\n')+'\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nCOBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:\n'+coverage.join('\n')+'\n\nInterprete apenas as métricas com dados suficientes. Se nenhuma tendência foi detectada, explique se o motivo parece ser falta de registros ou diferenças pequenas; não invente tendências. Trate sono, ciclo, atividade e contexto emocional como fatores potencialmente relacionados, não como explicações confirmadas.';
+  const prompt = 'Atue como investigador cuidadoso de padrões pessoais no meu Life Dashboard, não apenas como resumidor de médias. As comparações semanais calculadas vêm apenas do Diário; Sono e Garmin são complementares e podem estar desatualizados. Não diagnostique nem trate associações como causalidade. Diferencie: (1) sinais descritivos sustentados; (2) relações entre métricas observadas nos mesmos dias; (3) hipóteses exploratórias; (4) perguntas ainda sem resposta. Considere dados ausentes, quantidade de observações, variação diária e a possibilidade de coincidências. Não preveja datas futuras sem evidência validada. Gere até 3 ações pequenas, concretas e testáveis apenas quando forem úteis; cada uma deve dizer o que fazer, quando/por quanto tempo e qual resultado observar. Não invente ações para preencher espaço.\n\nDADOS DO RADAR PESSOAL\n\nJanela recente: '+ctx.recentStart+' até '+radarDateOffset(0)+'. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nRESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):\n'+ctxLines.join('\n')+'\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nCOBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:\n'+coverage.join('\n')+'\n\nREGISTROS DIÁRIOS DO DIÁRIO (valores por data; campos ausentes foram omitidos, não são zero):\n'+(dailyLines.join('\n')||'Nenhum registro diário disponível.')+'\n\nINVESTIGAÇÃO SOLICITADA:\n- Compare métricas observadas nos mesmos dias e procure relações exploratórias que ajudem a formular uma pergunta útil. Informe quantos dias sustentam cada observação.\n- Procure exceções: dias que destoam e quais outros indicadores estavam diferentes nesses dias. Não transforme um único dia em tendência.\n- Priorize até 3 descobertas úteis, ordenadas pela força e utilidade; se não houver evidência suficiente, diga isso.\n- Diferenças entre janelas não são o mesmo que associação entre métricas. Como muitas métricas são comparadas, relações aparentes podem surgir por acaso; trate-as como exploratórias, não como prova.\n- Use Sono/Garmin apenas se houver sobreposição temporal adequada. Uma data mais recente isolada não basta para inferir relação.\n- Se houver uma pergunta interessante ainda sem resposta, explique qual observação ajudaria a investigá-la. Ações devem derivar de um sinal ou ser identificadas como experimento exploratório. Não faça previsões.';
   const promptFinal = prompt + '\n\nFORMATO OBRIGATÓRIO PARA IMPORTAR NO SUPABASE:\nSe eu também enviar DADOS DE CORRELAÇÕES (INSIGHTS), devolva DOIS blocos separados: INSIGHTS_CSV e RADAR_CSV. Se receber apenas o Radar, devolva somente RADAR_CSV. O RADAR_CSV deve conter CSV puro, sem cercas Markdown, com exatamente este cabeçalho e nesta ordem: data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes. Gere exatamente uma linha de dados. Use data_inicio '+ctx.recentStart+' e data_fim '+radarDateOffset(0)+'.\n\nPreencha as quatro seções de análise separadamente: resumo (síntese curta); sinais_observados (padrões sustentados pelos dados, diferenças entre janelas e observações descritivas relevantes, distinguindo magnitude de significância); limitacoes (dados ausentes, cobertura insuficiente, ruído e incertezas); acoes (até 3 ações pequenas, específicas e testáveis). Não diagnostique nem trate associação como causalidade.
 
 REGRAS OBRIGATÓRIAS PARA AS AÇÕES:
