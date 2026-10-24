@@ -141,6 +141,22 @@
   .insight-text { font-size:0.78rem; line-height:1.5; color:var(--text); }
   .insight-text strong { color:var(--accent-i, var(--c-mood)); }
 
+
+  /* ── RADAR PESSOAL ── */
+  .radar-intro{color:var(--muted);font-size:.78rem;line-height:1.6;margin:-4px 0 14px}
+  .radar-list{display:flex;flex-direction:column;gap:8px}
+  .radar-item{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+  .radar-item strong{font-size:.8rem;display:block;margin-bottom:4px}
+  .radar-item p{font-size:.74rem;color:var(--muted);line-height:1.5}
+  .radar-delta{font-family:'DM Mono',monospace;font-size:.75rem;white-space:nowrap}
+  .radar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .radar-btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font:500 .75rem 'DM Sans',sans-serif;cursor:pointer}
+  .radar-btn.primary{background:rgba(167,139,250,.16);border-color:var(--c-mood);color:var(--c-mood)}
+  .radar-note{font-size:.68rem;color:var(--muted);line-height:1.5;margin-top:12px}
+  .radar-status{font-size:.74rem;color:var(--muted);margin-bottom:10px}
+  .radar-output{display:none;width:100%;min-height:160px;margin-top:12px;padding:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;font: .72rem 'DM Mono',monospace;line-height:1.6}
+  .radar-output.visible{display:block}
+
   /* ── EMPTY ── */
   .empty { color:var(--muted); font-size:0.78rem; text-align:center; padding:24px 0; }
 </style>
@@ -274,6 +290,25 @@
       <div class="treino-week" id="treinoWeek"></div>
     </div>
 
+  </div>
+
+
+  <!-- RADAR PESSOAL: primeira versão baseada em regras transparentes -->
+  <div class="section-title">radar pessoal</div>
+  <div class="card" style="margin-bottom:24px" id="radarCard">
+    <div class="card-header">
+      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Tendências do seu histórico</div>
+      <span class="card-badge">beta · 7 vs. 21 dias</span>
+    </div>
+    <p class="radar-intro">Compara os últimos 7 dias com os 21 dias anteriores. As tendências são sinais para investigar — não diagnósticos nem relações de causa e efeito.</p>
+    <div class="radar-status" id="radarStatus">Analisando seus registros…</div>
+    <div class="radar-list" id="radarList"><div class="empty">Carregando tendências…</div></div>
+    <div class="radar-actions">
+      <button class="radar-btn primary" id="radarCopyBtn" type="button">Preparar análise com ChatGPT</button>
+      <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar radar</button>
+    </div>
+    <textarea class="radar-output" id="radarOutput" readonly aria-label="Dados para análise no ChatGPT"></textarea>
+    <p class="radar-note">A análise assistida não envia dados automaticamente para o ChatGPT. Revise o texto e copie-o para uma conversa quando quiser. Métricas com poucos registros ficam fora da comparação.</p>
   </div>
 
   <!-- INSIGHTS LARGO -->
@@ -538,10 +573,116 @@ function renderInsights(insights){
     </div>`).join('');
 }
 
+
+// ── RADAR PESSOAL (v1: tendências descritivas, sem inferência causal) ──
+const RADAR_METRICS = [
+  {table:'diario_diario', field:'humor', label:'Humor', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'energia', label:'Energia', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'clareza_mental', label:'Clareza mental', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'dia_bom', label:'Dia bom', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'saude_fisica', label:'Saúde física', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'dor_desconforto', label:'Dor/desconforto', higherGood:false, group:'Diário'},
+  {table:'diario_diario', field:'foco_geral', label:'Foco', higherGood:true, group:'Diário'},
+  {table:'diario_diario', field:'procrastinacao', label:'Procrastinação', higherGood:false, group:'Diário'},
+  {table:'diario_diario', field:'alimentacao', label:'Alimentação', higherGood:true, group:'Hábitos'},
+  {table:'diario_diario', field:'hidratacao', label:'Hidratação', higherGood:true, group:'Hábitos'},
+  {table:'diario_diario', field:'casa_organizada', label:'Casa organizada', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'cuidado_dogs', label:'Cuidado dos dogs', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'evento_negativo', label:'Eventos negativos', higherGood:false, group:'Contexto'},
+  {table:'diario_diario', field:'conflito', label:'Conflitos', higherGood:false, group:'Contexto'},
+  {table:'diario_diario', field:'evento_positivo', label:'Eventos positivos', higherGood:true, group:'Contexto'},
+  {table:'diario_diario', field:'social_bom', label:'Interações sociais boas', higherGood:true, group:'Contexto'},
+  {table:'diario_diario', field:'produtividade', label:'Produtividade', higherGood:true, group:'Rotina'},
+  {table:'diario_diario', field:'satisfacao', label:'Satisfação', higherGood:true, group:'Diário'},
+  {table:'sono', field:'duracao_min', label:'Duração do sono', higherGood:true, group:'Sono', unit:' min'},
+  {table:'sono', field:'sleep_score', label:'Sleep Score', higherGood:true, group:'Sono'},
+  {table:'sono', field:'body_battery', label:'Body Battery', higherGood:true, group:'Recuperação'},
+  {table:'sono', field:'fc_repouso', label:'FC de repouso', higherGood:false, group:'Recuperação', unit:' bpm'},
+  {table:'sono', field:'vfc_status', label:'Status da VFC', higherGood:true, group:'Recuperação'},
+  {table:'garmin_diario', field:'passos', label:'Passos', higherGood:true, group:'Movimento'},
+  {table:'garmin_diario', field:'calorias_ativas', label:'Calorias ativas', higherGood:true, group:'Movimento'},
+  {table:'garmin_diario', field:'estresse_diario', label:'Estresse diário', higherGood:false, group:'Recuperação'},
+  {table:'garmin_diario', field:'vfc_noturna_ms', label:'VFC noturna', higherGood:true, group:'Recuperação', unit:' ms'}
+];
+
+function radarDateOffset(daysAgo){
+  const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-daysAgo);
+  return d.toISOString().slice(0,10);
+}
+function radarMean(rows, field){
+  const vals = rows.map(x=>Number(x[field])).filter(x=>Number.isFinite(x));
+  return vals.length ? {mean:vals.reduce((a,b)=>a+b,0)/vals.length,n:vals.length} : {mean:null,n:0};
+}
+function radarFmt(value, metric){
+  if(value==null) return '—';
+  const v = metric.field==='duracao_min' ? (value/60).toFixed(1)+' h' : (Math.abs(value)>=1000 ? Math.round(value).toLocaleString('pt-BR') : value.toFixed(1))+(metric.unit||'');
+  return v;
+}
+async function renderRadar(){
+  const status = document.getElementById('radarStatus');
+  const list = document.getElementById('radarList');
+  try{
+    const from = radarDateOffset(27);
+    const [diario, sono, garmin] = await Promise.all([
+      sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365')
+    ]);
+    const dataByTable = {diario_diario:diario,sono,garmin_diario:garmin};
+    const recentStart = radarDateOffset(6);
+    const baselineStart = radarDateOffset(27);
+    const baselineEnd = radarDateOffset(7);
+    const results = [];
+    RADAR_METRICS.forEach(m=>{
+      const rows = dataByTable[m.table]||[];
+      const recent = rows.filter(r=>r.data>=recentStart && r.data<=radarDateOffset(0));
+      const baseline = rows.filter(r=>r.data>=baselineStart && r.data<=baselineEnd);
+      const a = radarMean(recent,m.field), b = radarMean(baseline,m.field);
+      if(a.n<3 || b.n<5 || a.mean==null || b.mean==null) return;
+      const delta = a.mean-b.mean;
+      const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='duracao_min'?20:0.5);
+      if(Math.abs(delta)<threshold) return;
+      results.push({...m,recentMean:a.mean,baselineMean:b.mean,delta,recentN:a.n,baselineN:b.n,
+        direction:delta>0?'subiu':'caiu',
+        interpretation: (delta>0)===m.higherGood?'favorável':'desfavorável'});
+    });
+    results.sort((a,b)=>Math.abs(b.delta)/Math.max(Math.abs(b.baselineMean),1)-Math.abs(a.delta)/Math.max(Math.abs(a.baselineMean),1));
+    window._radarResults = results;
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,sono:sono.length,garmin:garmin.length};
+    status.textContent = 'Janela recente: '+recentStart+' a '+radarDateOffset(0)+' · base: '+baselineStart+' a '+baselineEnd+'.';
+    if(!results.length){
+      list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
+      return;
+    }
+    list.innerHTML = results.slice(0,8).map(r=>{
+      const color = r.interpretation==='favorável'?'var(--c-health)':r.interpretation==='desfavorável'?'#f87171':'var(--muted)';
+      const deltaText = (r.delta>0?'+':'')+radarFmt(r.delta,r);
+      return '<div class="radar-item"><div><strong>'+r.label+' <span style="color:var(--muted);font-weight:400">· '+r.group+'</span></strong><p>Últimos 7 dias: '+radarFmt(r.recentMean,r)+' ('+r.recentN+' registros). Base anterior: '+radarFmt(r.baselineMean,r)+' ('+r.baselineN+' registros).</p></div><div class="radar-delta" style="color:'+color+'">'+deltaText+'</div></div>';
+    }).join('');
+  }catch(e){
+    console.error('Radar pessoal:',e);
+    status.textContent='Não foi possível calcular as tendências agora.';
+    list.innerHTML='<div class="empty">Erro ao carregar o Radar. O restante do dashboard continua disponível.</div>';
+  }
+}
+function prepareRadarPrompt(){
+  const results = window._radarResults || [];
+  const ctx = window._radarContext;
+  if(!ctx){ alert('Aguarde o Radar terminar de carregar.'); return; }
+  const lines = results.map(r=>'- '+r.label+': últimos 7 dias '+radarFmt(r.recentMean,r)+' (n='+r.recentN+') vs base anterior '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'); diferença '+radarFmt(r.delta,r)+'.');
+  const prompt = 'Ajude-me a interpretar tendências do meu Life Dashboard de forma cuidadosa e assistida. Não diagnostique e não trate associações como causalidade. Diferencie sinais robustos de ruído e considere dados ausentes. Se não houver dados suficientes, diga isso. Sugira no máximo 3 ações pequenas e testáveis, ligadas aos meus próprios dados, e explique a incerteza. Não preveja datas futuras sem evidência validada.\n\nJanela recente: '+ctx.recentStart+' até hoje. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nPeça os dados adicionais necessários antes de inferir algo. Trate sono, ciclo, atividade e contexto emocional como fatores potencialmente relacionados, não como explicações confirmadas.';
+  const out=document.getElementById('radarOutput');
+  out.value=prompt;out.classList.add('visible');out.focus();out.select();
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(prompt).then(()=>{document.getElementById('radarCopyBtn').textContent='Texto copiado · abrir ChatGPT';}).catch(()=>{});
+}
+document.getElementById('radarCopyBtn').addEventListener('click',prepareRadarPrompt);
+document.getElementById('radarRefreshBtn').addEventListener('click',()=>{document.getElementById('radarCopyBtn').textContent='Preparar análise com ChatGPT';renderRadar();});
+
 // ── INIT ──────────────────────────────────────────────────
 async function init(){
   document.getElementById('greetSub').textContent = 'Carregando seus dados...';
   renderDisney();
+  renderRadar();
 
   try {
     const [diario, sono, toggl7, treino7, insights, clue] = await Promise.all([
