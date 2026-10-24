@@ -598,7 +598,6 @@ const RADAR_METRICS = [
   {table:'sono', field:'sleep_score', label:'Sleep Score', higherGood:true, group:'Sono'},
   {table:'sono', field:'body_battery', label:'Body Battery', higherGood:true, group:'Recuperação'},
   {table:'sono', field:'fc_repouso', label:'FC de repouso', higherGood:false, group:'Recuperação', unit:' bpm'},
-  {table:'sono', field:'vfc_status', label:'Status da VFC', higherGood:true, group:'Recuperação'},
   {table:'garmin_diario', field:'passos', label:'Passos', higherGood:true, group:'Movimento'},
   {table:'garmin_diario', field:'calorias_ativas', label:'Calorias ativas', higherGood:true, group:'Movimento'},
   {table:'garmin_diario', field:'estresse_diario', label:'Estresse diário', higherGood:false, group:'Recuperação'},
@@ -610,7 +609,11 @@ function radarDateOffset(daysAgo){
   return d.toISOString().slice(0,10);
 }
 function radarMean(rows, field){
-  const vals = rows.map(x=>Number(x[field])).filter(x=>Number.isFinite(x));
+  const vals = rows
+    .map(x=>x[field])
+    .filter(v=>v!==null && v!==undefined && v!=='' && typeof v!=='boolean')
+    .map(Number)
+    .filter(x=>Number.isFinite(x));
   return vals.length ? {mean:vals.reduce((a,b)=>a+b,0)/vals.length,n:vals.length} : {mean:null,n:0};
 }
 function radarFmt(value, metric){
@@ -633,21 +636,32 @@ async function renderRadar(){
     const baselineStart = radarDateOffset(27);
     const baselineEnd = radarDateOffset(7);
     const results = [];
+    const coverage = [];
     RADAR_METRICS.forEach(m=>{
       const rows = dataByTable[m.table]||[];
       const recent = rows.filter(r=>r.data>=recentStart && r.data<=radarDateOffset(0));
       const baseline = rows.filter(r=>r.data>=baselineStart && r.data<=baselineEnd);
       const a = radarMean(recent,m.field), b = radarMean(baseline,m.field);
-      if(a.n<3 || b.n<5 || a.mean==null || b.mean==null) return;
+      const entry = {...m,recentN:a.n,baselineN:b.n,recentMean:a.mean,baselineMean:b.mean,status:'insufficient'};
+      if(a.n<3 || b.n<5 || a.mean==null || b.mean==null){
+        coverage.push({...entry,reason:'Poucos registros válidos (mínimo: 3 recentes e 5 na base)'});
+        return;
+      }
       const delta = a.mean-b.mean;
       const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='duracao_min'?20:0.5);
-      if(Math.abs(delta)<threshold) return;
-      results.push({...m,recentMean:a.mean,baselineMean:b.mean,delta,recentN:a.n,baselineN:b.n,
+      if(Math.abs(delta)<threshold){
+        coverage.push({...entry,delta,threshold,status:'below_threshold',reason:'Diferença abaixo do limite de sinal'});
+        return;
+      }
+      const result = {...m,recentMean:a.mean,baselineMean:b.mean,delta,recentN:a.n,baselineN:b.n,
         direction:delta>0?'subiu':'caiu',
-        interpretation: (delta>0)===m.higherGood?'favorável':'desfavorável'});
+        interpretation: (delta>0)===m.higherGood?'favorável':'desfavorável'};
+      results.push(result);
+      coverage.push({...result,status:'trend',reason:'Sinal acima do limite definido'});
     });
     results.sort((a,b)=>Math.abs(b.delta)/Math.max(Math.abs(b.baselineMean),1)-Math.abs(a.delta)/Math.max(Math.abs(a.baselineMean),1));
     window._radarResults = results;
+    window._radarCoverage = coverage;
     window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,sono:sono.length,garmin:garmin.length};
     status.textContent = 'Janela recente: '+recentStart+' a '+radarDateOffset(0)+' · base: '+baselineStart+' a '+baselineEnd+'.';
     if(!results.length){
@@ -670,7 +684,13 @@ function prepareRadarPrompt(){
   const ctx = window._radarContext;
   if(!ctx){ alert('Aguarde o Radar terminar de carregar.'); return; }
   const lines = results.map(r=>'- '+r.label+': últimos 7 dias '+radarFmt(r.recentMean,r)+' (n='+r.recentN+') vs base anterior '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'); diferença '+radarFmt(r.delta,r)+'.');
-  const prompt = 'Ajude-me a interpretar tendências do meu Life Dashboard de forma cuidadosa e assistida. Não diagnostique e não trate associações como causalidade. Diferencie sinais robustos de ruído e considere dados ausentes. Se não houver dados suficientes, diga isso. Sugira no máximo 3 ações pequenas e testáveis, ligadas aos meus próprios dados, e explique a incerteza. Não preveja datas futuras sem evidência validada.\n\nJanela recente: '+ctx.recentStart+' até hoje. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nPeça os dados adicionais necessários antes de inferir algo. Trate sono, ciclo, atividade e contexto emocional como fatores potencialmente relacionados, não como explicações confirmadas.';
+  const coverage = (window._radarCoverage||[]).map(r=>'- '+r.label+': registros válidos recentes '+r.recentN+'/7; base '+r.baselineN+'/21. '+r.reason+'.');
+  const ctxLines = [
+    '- Diário: '+ctx.diario+' linhas carregadas na janela consultada.',
+    '- Sono: '+ctx.sono+' linhas carregadas na janela consultada.',
+    '- Garmin diário: '+ctx.garmin+' linhas carregadas na janela consultada.'
+  ];
+  const prompt = 'Ajude-me a interpretar tendências do meu Life Dashboard de forma cuidadosa e assistida. Não diagnostique e não trate associações como causalidade. Diferencie sinais robustos de ruído e considere dados ausentes. Se não houver dados suficientes, diga isso. Sugira no máximo 3 ações pequenas e testáveis, ligadas aos meus próprios dados, e explique a incerteza. Não preveja datas futuras sem evidência validada.\n\nJanela recente: '+ctx.recentStart+' até '+radarDateOffset(0)+'. Base: '+ctx.baselineStart+' a '+ctx.baselineEnd+'.\n\nRESUMO DE COBERTURA (n de registros com valor numérico válido; mínimo para comparar: 3 recentes e 5 na base):\n'+ctxLines.join('\n')+'\n\nTENDÊNCIAS DETECTADAS:\n'+(lines.join('\n')||'Nenhuma tendência passou os critérios mínimos desta rodada.')+'\n\nCOBERTURA POR MÉTRICA E MOTIVO DE EXCLUSÃO:\n'+coverage.join('\n')+'\n\nInterprete apenas as métricas com dados suficientes. Se nenhuma tendência foi detectada, explique se o motivo parece ser falta de registros ou diferenças pequenas; não invente tendências. Trate sono, ciclo, atividade e contexto emocional como fatores potencialmente relacionados, não como explicações confirmadas.';
   const out=document.getElementById('radarOutput');
   out.value=prompt;out.classList.add('visible');out.focus();out.select();
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(prompt).then(()=>{document.getElementById('radarCopyBtn').textContent='Texto copiado · abrir ChatGPT';}).catch(()=>{});
