@@ -7,8 +7,19 @@ create table if not exists public.radar_analises (
   data_inicio date not null,
   data_fim date not null,
   texto text not null,
+  resumo text,
+  sinais_observados text,
+  limitacoes text,
+  acoes text,
   constraint radar_analises_periodo_valido check (data_fim >= data_inicio)
 );
+
+-- Mantém compatibilidade com tabelas já criadas antes da saída estruturada.
+alter table public.radar_analises
+  add column if not exists resumo text,
+  add column if not exists sinais_observados text,
+  add column if not exists limitacoes text,
+  add column if not exists acoes text;
 
 alter table public.radar_analises enable row level security;
 
