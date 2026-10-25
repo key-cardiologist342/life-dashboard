@@ -21,7 +21,7 @@
     --c-time:   #E94F91;
     --c-cycle:  #C5A33D;
     --accent-pink: #F05B9C;
-    --accent-butter: #F4D96B;
+    --accent-butter: #E8D58A;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 60px; }
@@ -244,6 +244,12 @@
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   }
 
+
+  /* Ajuste final: amarelo manteiga suave e acabamento claro */
+  :root { --accent-butter:#E8D58A; }
+  .disney-card { background:linear-gradient(115deg,#F6DDEB 0%,#FFF6D9 54%,#FCE6D9 100%); }
+  .card:hover { border-color:rgba(151,106,141,.30); }
+  
 </style>
 </head>
 <body>
