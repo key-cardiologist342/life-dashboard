@@ -98,6 +98,29 @@
   /* ── EMPTY ── */
   .empty{color:var(--muted);font-size:0.82rem;text-align:center;padding:32px;display:flex;flex-direction:column;align-items:center;gap:8px}
   .empty .big{font-size:2rem}
+
+  /* ── RELATÓRIOS SALVOS ── */
+  .saved-section{margin:30px 0 42px}
+  .saved-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .saved-head h2{font-family:'Syne',sans-serif;font-size:1.15rem}
+  .saved-head p{font-size:.76rem;color:var(--muted);line-height:1.5;margin-top:4px}
+  .saved-grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .saved-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;min-width:0}
+  .saved-card.insight-card{border-left:3px solid var(--saved-accent,var(--purple))}
+  .saved-card.radar-card{border-top:2px solid var(--purple)}
+  .saved-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .saved-icon{font-size:1.15rem;flex-shrink:0}
+  .saved-title{font-weight:700;font-size:.9rem;line-height:1.45;overflow-wrap:anywhere}
+  .saved-meta{font-size:.66rem;color:var(--muted);margin-top:4px}
+  .saved-body{font-size:.8rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+  .saved-body.clamped{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .saved-more{margin-top:9px;background:none;border:0;padding:0;color:var(--saved-accent,var(--purple));font:600 .73rem 'DM Sans',sans-serif;cursor:pointer}
+  .saved-empty{padding:22px;background:var(--surface);border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-size:.8rem;line-height:1.7}
+  .saved-subtitle{font-family:'Syne',sans-serif;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:22px 0 10px}
+  .saved-columns{display:grid;grid-template-columns:1fr;gap:24px}
+  .saved-action{font-size:.72rem;color:var(--muted);line-height:1.6;margin-top:10px}
+  @media(min-width:760px){.saved-columns{grid-template-columns:1.1fr .9fr}.saved-grid{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body>
@@ -113,6 +136,26 @@
 <main>
   <div class="page-title">Gerador de <span>Insights</span></div>
   <p class="page-sub">Cruza todas as variáveis numéricas de todas as fontes e gera insights baseados nas correlações mais fortes do seu histórico.</p>
+
+  <section class="saved-section" aria-labelledby="savedReportsTitle">
+    <div class="saved-head">
+      <div><h2 id="savedReportsTitle">Seus relatórios</h2><p>As análises que já foram salvas no banco aparecem aqui. Gerar uma nova análise é um fluxo separado, logo abaixo.</p></div>
+      <button class="radar-btn" id="refreshSavedReports" type="button">↻ Atualizar</button>
+    </div>
+    <div class="saved-columns">
+      <section>
+        <div class="saved-subtitle">✨ Insights salvos</div>
+        <div id="savedInsights" class="saved-grid"><div class="saved-empty">Carregando insights salvos…</div></div>
+      </section>
+      <section>
+        <div class="saved-subtitle">🔎 Radar pessoal</div>
+        <div id="savedRadar"><div class="saved-empty">Carregando análises do Radar…</div></div>
+      </section>
+    </div>
+    <p class="saved-action">Os relatórios exibidos são os registros já existentes nas tabelas <code>insights</code> e <code>radar_analises</code>. Esta página não inventa relatórios quando ainda não há registros salvos.</p>
+  </section>
+  <div class="section-title">gerar uma nova análise</div>
+
 
   <!-- STATS -->
   <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
@@ -203,6 +246,75 @@ async function sb(path){
   });
   if(!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+
+function escHTML(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function reportDate(row){
+  const value=row.created_at||row.data_fim||row.data_inicio||row.data||row.updated_at;
+  if(!value) return '';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+}
+function longTextCard(text,accent='#a78bfa',label='Ler mais'){
+  const full=String(text||'').trim();
+  if(!full) return '<p class="saved-body">Sem texto neste registro.</p>';
+  const isLong=full.length>420 || full.split('\\n').length>5;
+  return '<div class="saved-body '+(isLong?'clamped':'')+'" data-full="'+escHTML(full)+'">'+escHTML(full)+'</div>'+
+    (isLong?'<button type="button" class="saved-more" style="--saved-accent:'+escHTML(accent)+'" data-expanded="false">'+label+'</button>':'');
+}
+function bindReadMore(root){
+  root.querySelectorAll('.saved-more').forEach(btn=>btn.addEventListener('click',()=>{
+    const body=btn.previousElementSibling;
+    const expanded=btn.dataset.expanded==='true';
+    body.classList.toggle('clamped',expanded);
+    btn.dataset.expanded=String(!expanded);
+    btn.textContent=expanded?'Ler mais':'Ler menos';
+  }));
+}
+async function renderSavedReports(){
+  const insightsEl=document.getElementById('savedInsights');
+  const radarEl=document.getElementById('savedRadar');
+  insightsEl.innerHTML='<div class="saved-empty">Carregando insights salvos…</div>';
+  radarEl.innerHTML='<div class="saved-empty">Carregando análises do Radar…</div>';
+  const [insightsResult,radarResult]=await Promise.allSettled([
+    sb('insights?select=*&limit=100'),
+    sb('radar_analises?select=*&limit=30')
+  ]);
+  if(insightsResult.status==='rejected'){
+    insightsEl.innerHTML='<div class="saved-empty">Não consegui ler a tabela <code>insights</code>. Confira a conexão/permissão no Supabase e tente atualizar.<br><small>'+escHTML(insightsResult.reason?.message||'Erro desconhecido')+'</small></div>';
+  }else{
+    const rows=insightsResult.value.slice().sort((a,b)=>String(b.created_at||b.data||'').localeCompare(String(a.created_at||a.data||'')));
+    if(!rows.length){
+      insightsEl.innerHTML='<div class="saved-empty">Ainda não há insights salvos. Gere a análise abaixo e importe o bloco <code>INSIGHTS_CSV</code> para a tabela <code>insights</code>.</div>';
+    }else{
+      insightsEl.innerHTML=rows.map(row=>{
+        const accent=/^#[0-9a-f]{6}$/i.test(String(row.cor||''))?row.cor:'#a78bfa';
+        return '<article class="saved-card insight-card" style="--saved-accent:'+escHTML(accent)+'">'+
+          '<div class="saved-card-top"><span class="saved-icon">'+escHTML(row.icone||'✨')+'</span><div><div class="saved-title">'+escHTML(row.titulo||'Insight')+'</div><div class="saved-meta">'+escHTML(reportDate(row))+(row.correlacao!=null?' · associação '+escHTML(row.correlacao):'')+'</div></div></div>'+
+          longTextCard(row.texto,accent)+'</article>';
+      }).join('');
+      bindReadMore(insightsEl);
+    }
+  }
+  if(radarResult.status==='rejected'){
+    radarEl.innerHTML='<div class="saved-empty">Não consegui ler a tabela <code>radar_analises</code>. Confira a conexão/permissão no Supabase e tente atualizar.<br><small>'+escHTML(radarResult.reason?.message||'Erro desconhecido')+'</small></div>';
+  }else{
+    const rows=radarResult.value.slice().sort((a,b)=>String(b.created_at||b.data_fim||b.data_inicio||'').localeCompare(String(a.created_at||a.data_fim||a.data_inicio||'')));
+    if(!rows.length){
+      radarEl.innerHTML='<div class="saved-empty">Ainda não há relatório do Radar salvo. Gere a análise abaixo e importe o bloco <code>RADAR_CSV</code> para <code>radar_analises</code>.</div>';
+    }else{
+      radarEl.innerHTML=rows.map((row,index)=>{
+        const title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
+        const text=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\\n\\n');
+        return '<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+
+          longTextCard(text,'#a78bfa')+'</article>';
+      }).join('');
+      bindReadMore(radarEl);
+    }
+  }
 }
 
 // ── LABELS LEGÍVEIS ───────────────────────────────────────
@@ -698,6 +810,9 @@ Não inclua comentários fora dos blocos CSV. Coloque todos os campos textuais e
 document.getElementById('radarRefreshBtn').addEventListener('click',()=>{renderRadar();});
 
 
+
+document.getElementById('refreshSavedReports').addEventListener('click',renderSavedReports);
+renderSavedReports().catch(e=>console.error('Relatórios salvos:',e));
 
 // ── BOOT ─────────────────────────────────────────────────
 renderRadar();
