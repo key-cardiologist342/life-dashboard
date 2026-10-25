@@ -121,6 +121,17 @@
   .saved-action{font-size:.72rem;color:var(--muted);line-height:1.6;margin-top:10px}
   @media(min-width:760px){.saved-columns{grid-template-columns:1.1fr .9fr}.saved-grid{grid-template-columns:1fr 1fr}}
 
+
+/* Tema laboratório criativo: malva, rosa, laranja e creme */
+:root{--bg:#FFF7F0;--surface:#FFFFFF;--surface2:#F8E9F0;--border:rgba(151,106,141,.18);--text:#3D2E3D;--muted:#806D7A;--accent:#976A8D;--primary:#976A8D;--c-mood:#976A8D;--c-sleep:#7A83C2;--c-energy:#F07845;--c-health:#477A54}
+body{background:radial-gradient(ellipse at 5% 0%,rgba(240,91,156,.10),transparent 24rem),radial-gradient(ellipse at 95% 10%,rgba(244,217,107,.15),transparent 24rem),var(--bg)!important;color:var(--text)!important}
+header{background:rgba(255,247,240,.97)!important;border-bottom:1px solid var(--border)!important}
+nav{background:rgba(255,255,255,.88)!important;border-color:var(--border)!important}
+nav a.active{color:#49334A!important;border-bottom-color:#F05B9C!important}
+.card,.panel,.stat-card,.metric-card,.section-card{background:#fff!important;border-color:var(--border)!important;box-shadow:0 5px 18px rgba(92,54,79,.05)}
+input,select,textarea{background:#fff;color:var(--text);border-color:var(--border)}
+:focus-visible{outline:3px solid rgba(240,91,156,.55);outline-offset:3px}
+
 </style>
 </head>
 <body>
