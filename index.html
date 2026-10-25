@@ -150,6 +150,22 @@
   .radar-analysis-note{font-size:.7rem;color:var(--muted);margin-top:8px}
 
 
+  .period-controls{display:flex;gap:4px;flex-wrap:wrap}
+  .period-controls button{border:1px solid var(--border);background:var(--surface2);color:var(--muted);font:inherit;font-size:.65rem;padding:5px 8px;border-radius:7px;cursor:pointer}
+  .period-controls button.active{color:var(--text);border-color:var(--c-mood);background:rgba(167,139,250,.12)}
+  .dashboard-link{display:inline-block;margin-top:14px;color:var(--c-mood);font-size:.75rem;text-decoration:none}
+  .dashboard-link:hover{text-decoration:underline}
+  .chart-note{font-size:.68rem;line-height:1.5;color:var(--muted);margin-top:8px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted)}
+  .legend-item i{width:8px;height:8px;border-radius:2px;display:inline-block}
+  .data-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+  .data-source{background:var(--surface2);padding:12px;border-radius:10px}
+  .data-source strong{display:block;font-size:.78rem;margin-bottom:5px}
+  .data-source p{font-size:.68rem;line-height:1.5;color:var(--muted)}
+  .freshness{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;margin-bottom:7px}
+  .freshness:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+  .freshness.good{color:var(--c-health)}.freshness.wait{color:#fbbf24}.freshness.old{color:#f87171}.freshness.unknown{color:var(--muted)}
+
   /* ── EMPTY ── */
   .empty { color:var(--muted); font-size:0.78rem; text-align:center; padding:24px 0; }
 </style>
@@ -190,121 +206,47 @@
     </div>
   </div>
 
-  <!-- SCORES -->
-  <div class="section-title">resumo de hoje</div>
+  <div class="section-title">seu panorama</div>
   <div class="score-strip">
-    <div class="score-card" style="--accent:var(--c-mood)">
-      <div class="label">Humor</div>
-      <div class="value" id="sc-mood">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat" id="trend-mood">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-energy)">
-      <div class="label">Energia</div>
-      <div class="value" id="sc-energy">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat" id="trend-energy">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-sleep)">
-      <div class="label">Sono</div>
-      <div class="value" id="sc-sleep">—</div>
-      <div class="sub" id="sc-sleep-sub">ontem</div>
-      <div class="trend flat" id="trend-sleep">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-time)">
-      <div class="label">Foco</div>
-      <div class="value" id="sc-focus">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-cycle)">
-      <div class="label">Ciclo</div>
-      <div class="value" id="sc-cycle">—</div>
-      <div class="sub" id="sc-cycle-sub">fase</div>
-      <div class="trend flat" id="sc-cycle-dia">—</div>
-    </div>
+    <div class="score-card" style="--accent:var(--c-mood)"><div class="label">Humor</div><div class="value" id="sc-mood">—</div><div class="sub" id="sc-mood-sub">Último registro</div><div class="trend flat" id="trend-mood">—</div></div>
+    <div class="score-card" style="--accent:var(--c-energy)"><div class="label">Energia</div><div class="value" id="sc-energy">—</div><div class="sub" id="sc-energy-sub">Último registro</div><div class="trend flat" id="trend-energy">—</div></div>
+    <div class="score-card" style="--accent:var(--c-time)"><div class="label">Foco</div><div class="value" id="sc-focus">—</div><div class="sub" id="sc-focus-sub">Último registro</div><div class="trend flat" id="trend-focus">—</div></div>
+    <div class="score-card" style="--accent:var(--c-sleep)"><div class="label">Sono</div><div class="value" id="sc-sleep">—</div><div class="sub" id="sc-sleep-sub">Último registro</div><div class="trend flat" id="trend-sleep">—</div></div>
+    <div class="score-card" style="--accent:var(--c-health)"><div class="label">Atividade</div><div class="value" id="sc-activity">—</div><div class="sub" id="sc-activity-sub">Atividades · 7 dias</div><div class="trend flat" id="trend-activity">—</div></div>
+    <div class="score-card" style="--accent:var(--c-cycle)"><div class="label">Ciclo</div><div class="value" id="sc-cycle">—</div><div class="sub" id="sc-cycle-sub">Fase estimada</div><div class="trend flat" id="sc-cycle-dia">—</div></div>
   </div>
 
-  <!-- ROW 1: HUMOR + SONO -->
-  <div class="section-title">estado & recuperação</div>
+  <div class="section-title">o que merece sua atenção</div>
   <div class="grid-2">
-
-    <!-- HUMOR & ENERGIA -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Humor & Energia</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="mood-timeline" id="moodChart"></div>
-      <div style="display:flex;gap:14px;margin-top:12px">
-        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-mood)"></div>Humor</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-energy)"></div>Energia</div>
-      </div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Pequenos próximos passos</div><span class="card-badge">prático</span></div>
+      <div id="actionsSummary" class="insight-text">As sugestões aparecerão quando houver dados suficientes.</div>
+      <p style="margin-top:12px;font-size:.75rem;color:var(--muted)">Sem cobrança automática: dias sem registro não contam como dias ruins.</p>
+      <a href="gerar_insights.html" class="dashboard-link">Abrir Insights e Radar completos ↗</a>
     </div>
-
-    <!-- SONO 7 DIAS -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>Sono — últimos 7 dias</div>
-        <span class="card-badge">Garmin</span>
-      </div>
-      <div class="sleep-chart-wrap">
-        <div class="sleep-chart" id="sleepChart"></div>
-        <div class="sleep-need-line" id="sleepNeedLine" style="display:none"></div>
-      </div>
-      <div class="sleep-legend">
-        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Duração</div>
-        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.3)"></div>Necessidade</div>
-        <div class="sleep-legend-item" id="sleepAvgLegend"></div>
-      </div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-cycle)"></div>Seu ciclo menstrual</div><span class="card-badge">fase provável</span></div>
+      <div id="cycleSummary" class="insight-text">Aguardando registros do ciclo…</div>
+      <p id="cycleCaveat" style="margin-top:10px;font-size:.72rem;color:var(--muted)">Estimativa baseada nos inícios de ciclo registrados.</p>
     </div>
-
   </div>
 
-  <!-- ROW 2: TEMPO + TREINO -->
-  <div class="section-title">movimento & tempo</div>
+  <div class="section-title">evolução e histórico</div>
+  <div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">Período da visão geral</div><div class="period-controls" id="overviewPeriod"><button class="active" data-days="7">7 dias</button><button data-days="30">30 dias</button><button data-days="90">90 dias</button></div></div><p class="chart-note">Os gráficos mostram os registros existentes no intervalo; lacunas não são preenchidas artificialmente.</p></div>
   <div class="grid-2">
-
-    <!-- TEMPO SEMANAL -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-time)"></div>Tempo (Toggl)</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="bar-list" id="timeList"></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Humor & energia</div><div class="period-controls" data-filter="mood"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div>
+      <div class="mood-timeline" id="moodChart"></div><div id="moodCoverage" class="chart-note"></div>
+      <div style="display:flex;gap:14px;margin-top:12px"><span class="legend-item"><i style="background:var(--c-mood)"></i>Humor</span><span class="legend-item"><i style="background:var(--c-energy)"></i>Energia</span></div>
     </div>
-
-    <!-- TREINO 7 DIAS -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Treinos da semana</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="treino-week" id="treinoWeek"></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>Sono</div><div class="period-controls" data-filter="sleep"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div>
+      <div class="sleep-chart-wrap"><div class="sleep-chart" id="sleepChart"></div><div class="sleep-need-line" id="sleepNeedLine" style="display:none"></div></div>
+      <div class="sleep-legend"><div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Duração</div><div class="sleep-legend-item" id="sleepAvgLegend"></div></div><div id="sleepCoverage" class="chart-note"></div>
     </div>
-
   </div>
-
-
-  <!-- INSIGHTS LARGO -->
-  <div class="section-title">insights</div>
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Insights da semana</div>
-      <span class="card-badge">✦ IA</span>
-    </div>
-    <div class="insights-list" id="insightsList"></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Atividade física Garmin</div><div class="period-controls" data-filter="activity"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div><div id="activitySummary" class="bar-list"></div><div id="activityCoverage" class="chart-note"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-energy)"></div>Rotina e hábitos</div><span class="card-badge">diário</span></div><div id="habitSummary" class="bar-list"></div><p class="chart-note">Resumo dos registros disponíveis, sem nota geral de desempenho.</p></div>
   </div>
-
-  <div class="section-title">análise do radar</div>
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Interpretação assistida</div>
-      <span class="card-badge">ChatGPT</span>
-    </div>
-    <div id="radarAnalysisContent"><div class="empty">Nenhuma análise do Radar salva ainda.</div></div>
-  </div>
-
+  <div class="section-title">estado dos dados</div>
+  <div class="card"><p class="chart-note" style="margin-bottom:12px">A data do registro pode ser diferente da data de importação. Os estados indicam cobertura observada, não qualidade da sua rotina.</p><div id="dataStatus" class="data-status"><div class="empty">Verificando fontes…</div></div></div>
 </main>
 
 <script type="module">
@@ -409,268 +351,33 @@ function calcFaseCiclo(clue){
   return { fase, emoji, diaCiclo };
 }
 
-// ── SCORES ────────────────────────────────────────────────
-function renderScores(diario, sono, clue){
-  const hoje  = diario[0] || {};
-  const ontem = diario[1] || {};
-  const s     = sono[0]   || {};
-  const sp    = sono[1]   || {};
-
-  document.getElementById('sc-mood').textContent     = hoje.humor    != null ? hoje.humor    : '—';
-  document.getElementById('sc-energy').textContent   = hoje.energia  != null ? hoje.energia  : '—';
-  document.getElementById('sc-focus').textContent    = hoje.foco_geral != null ? `${hoje.foco_geral}/5` : '—';
-  const diffSono = s.duracao_min && sp.duracao_min ? s.duracao_min - sp.duracao_min : null;
-document.getElementById('trend-sleep').innerHTML = diffSono == null
-  ? `<span class="flat">—</span>`
-  : diffSono > 0
-    ? `<span class="up">↑ ${minToHM(diffSono)}</span>`
-    : diffSono < 0
-      ? `<span class="down">↓ ${minToHM(Math.abs(diffSono))}</span>`
-      : `<span class="flat">→ igual</span>`;
-  document.getElementById('sc-sleep-sub').textContent = s.sleep_score ? `score: ${s.sleep_score}` : 'ontem';
-
-  document.getElementById('trend-mood').innerHTML   = trendHTML(hoje.humor,    ontem.humor);
-  document.getElementById('trend-energy').innerHTML = trendHTML(hoje.energia,  ontem.energia);
-  document.getElementById('trend-sleep').innerHTML  = trendHTML(s.duracao_min, sp.duracao_min);
-
-  // ciclo
-  const ciclo = calcFaseCiclo(clue);
-  if(ciclo){
-    document.getElementById('sc-cycle').textContent     = ciclo.emoji;
-    document.getElementById('sc-cycle-sub').textContent = ciclo.fase;
-    document.getElementById('sc-cycle-dia').innerHTML   = `<span class="flat">dia ${ciclo.diaCiclo}</span>`;
-  }
+const periods = { overview:7, mood:7, sleep:7, activity:7 };
+function dateLabel(iso){return iso?new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'sem data'}
+function withinPeriod(row,days){const d=new Date(now);d.setHours(12,0,0,0);d.setDate(d.getDate()-days+1);return row.data>=d.toISOString().slice(0,10)}
+function renderScores(diario,sono,clue,atividades){
+ const latest=diario[0], prev=diario.find(r=>latest&&r.data<latest.data), sl=sono[0], sp=sono.find(r=>sl&&r.data<sl.data);
+ [['humor','sc-mood','trend-mood','sc-mood-sub'],['energia','sc-energy','trend-energy','sc-energy-sub'],['foco_geral','sc-focus','trend-focus','sc-focus-sub']].forEach(([field,id,trendId,subId])=>{document.getElementById(id).textContent=latest&&latest[field]!=null?latest[field]+'/5':'—';document.getElementById(subId).textContent=latest?dateLabel(latest.data):'Sem registros';document.getElementById(trendId).innerHTML=trendHTML(latest&&latest[field],prev&&prev[field]);});
+ document.getElementById('sc-sleep').textContent=sl&&sl.duracao_min?minToHM(sl.duracao_min):'—';document.getElementById('sc-sleep-sub').textContent=sl?dateLabel(sl.data):'Sem registros';document.getElementById('trend-sleep').innerHTML=trendHTML(sl&&sl.duracao_min,sp&&sp.duracao_min);
+ const n=atividades.filter(r=>withinPeriod(r,7)).length;document.getElementById('sc-activity').textContent=String(n);document.getElementById('sc-activity-sub').textContent='atividades · 7 dias';
+ const c=calcFaseCiclo(clue);if(c){document.getElementById('sc-cycle').textContent=c.emoji;document.getElementById('sc-cycle-sub').textContent=c.fase;document.getElementById('sc-cycle-dia').innerHTML='<span class="flat">dia '+c.diaCiclo+'</span>';const texts={'Menstrual':'Em algumas pessoas, pode haver cólicas, cansaço ou maior sensibilidade emocional. Outras sentem pouco ou nenhum sintoma.','Folicular':'Algumas pessoas percebem a disposição aumentar após a menstruação; isso varia entre pessoas e ciclos.','Ovulatória':'Algumas pessoas notam mudanças na libido, secreção ou energia. O cálculo pelo calendário não confirma ovulação.','Lútea':'Algumas pessoas percebem mudanças no sono, apetite, energia ou humor, sobretudo antes da menstruação.'};document.getElementById('cycleSummary').textContent=texts[c.fase]||'Os efeitos variam entre pessoas e entre ciclos.';document.getElementById('cycleCaveat').textContent=c.diaCiclo>35?'O último início registrado foi há mais de 35 dias; a fase estimada pode não representar o ciclo atual.':'Estimativa pelo início registrado e pela regra atual do calendário; não confirma ovulação.';}else{document.getElementById('sc-cycle-sub').textContent='Sem início registrado';document.getElementById('cycleSummary').textContent='Ainda não há registros suficientes para estimar uma fase. Quando houver, este espaço mostrará possíveis experiências emocionais e físicas, sem prever sintomas individuais.';}
 }
-
-// ── MOOD CHART ────────────────────────────────────────────
-function renderMoodChart(diario){
-  const mc   = document.getElementById('moodChart');
-  const data = [...diario].reverse().slice(-7);
-  if(!data.length){ mc.innerHTML='<div class="empty">Sem dados ainda</div>'; return; }
-  mc.innerHTML = data.map(d => {
-    const label = dayNames[new Date(d.data+'T12:00:00').getDay()];
-    return `
-      <div class="mood-bar-wrap">
-        <div class="mood-bar" style="height:${(d.humor||0)*16}px;background:var(--c-mood);opacity:.85" title="Humor: ${d.humor}"></div>
-        <div class="mood-bar" style="height:${(d.energia||0)*16}px;background:var(--c-energy);opacity:.7" title="Energia: ${d.energia}"></div>
-        <div class="mood-day">${label}</div>
-      </div>`;
-  }).join('');
-}
-
-// ── SLEEP CHART ───────────────────────────────────────────
-function renderSleepChart(sono){
-  const sc = document.getElementById('sleepChart');
-  if(!sono.length){ sc.innerHTML='<div class="empty">Sem dados de sono</div>'; return; }
-
-  // pega os 7 mais recentes e reverte pra ordem cronológica
-  const data = [...sono].slice(0,7).reverse();
-  const maxDur  = Math.max(...data.map(s=>s.duracao_min||0), 600);
-  const avgNeed = data.reduce((a,s)=>a+(s.necessidade_min||480),0) / data.length;
-  const avgDur  = data.reduce((a,s)=>a+(s.duracao_min||0),0) / data.length;
-
-  // linha de necessidade em %
-  const needPct = (avgNeed / maxDur * 100).toFixed(1);
-  const line = document.getElementById('sleepNeedLine');
-  line.style.display = 'block';
-  line.style.bottom  = `calc(${needPct}% + 20px)`; // 20px = altura do label
-
-  sc.innerHTML = data.map(s => {
-    const dur   = s.duracao_min || 0;
-    const need  = s.necessidade_min || 480;
-    const hPct  = (dur / maxDur * 100).toFixed(1);
-    const color = dur >= need ? 'var(--c-sleep)' : '#f87171';
-    const label = dayNames[new Date(s.data+'T12:00:00').getDay()];
-    return `
-      <div class="sleep-bar-wrap">
-        <div class="sleep-bar" style="height:${hPct}%;background:${color};opacity:.85" title="${minToHM(dur)} (precisa: ${minToHM(need)})"></div>
-        <div class="sleep-day">${label}</div>
-      </div>`;
-  }).join('');
-
-  document.getElementById('sleepAvgLegend').innerHTML =
-    `<div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Média: ${minToHM(Math.round(avgDur))}`;
-}
-
-// ── TEMPO SEMANAL ─────────────────────────────────────────
-function renderTime(toggl){
-  const tl = document.getElementById('timeList');
-  if(!toggl.length){ tl.innerHTML='<div class="empty">Sem registros de tempo esta semana</div>'; return; }
-
-  const cats  = {'Trabalho':'#f472b6','Estudo':'#a78bfa','Lazer':'#38bdf8','Exercício':'#34d399'};
-  // agrupa por categoria somando os 7 dias
-  const agrupado = {};
-  toggl.forEach(t => {
-    agrupado[t.categoria] = (agrupado[t.categoria]||0) + t.minutos;
-  });
-  const maxM = Math.max(...Object.values(agrupado));
-
-  tl.innerHTML = Object.entries(agrupado)
-    .sort((a,b)=>b[1]-a[1])
-    .map(([cat, min]) => {
-      const c = cats[cat]||'#6b7280';
-      return `
-        <div>
-          <div class="bar-meta"><span>${cat}</span><span style="color:${c}">${minToHM(min)}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(min/maxM*100).toFixed(1)}%;background:${c}"></div></div>
-        </div>`;
-    }).join('');
-
-  // foco no score
-  const focoMin = (agrupado['Trabalho']||0) + (agrupado['Estudo']||0);
-  if(focoMin) document.getElementById('sc-focus').textContent = minToHM(focoMin);
-}
-
-// ── TREINO 7 DIAS ─────────────────────────────────────────
-function renderTreino(treinos){
-  const tw = document.getElementById('treinoWeek');
-
-  // mapa data → exercícios
-  const mapa = {};
-  treinos.forEach(t => {
-    if(!mapa[t.data]) mapa[t.data] = new Set();
-    if(t.exercicio) mapa[t.data].add(t.exercicio);
-  });
-
-  tw.innerHTML = last7.map(iso => {
-    const label  = dayNames[new Date(iso+'T12:00:00').getDay()];
-    const exs    = mapa[iso];
-    const treinou = exs && exs.size > 0;
-    const tipo   = treinou ? [...exs].slice(0,2).join(' · ') : '';
-    return `
-      <div class="treino-day">
-        <div class="day-label">${label}</div>
-        <div class="treino-dot ${treinou?'ativo':'vazio'}">${treinou?'💪':''}</div>
-        <div class="treino-tipo">${tipo}</div>
-      </div>`;
-  }).join('');
-}
-
-// ── INSIGHTS ──────────────────────────────────────────────
-function renderInsights(insights){
-  const il = document.getElementById('insightsList');
-  if(!insights.length){ il.innerHTML='<div class="empty">Nenhum insight ainda — adicione dados por alguns dias!</div>'; return; }
-  il.innerHTML = insights.map(i=>`
-    <div class="insight" style="--accent-i:${i.cor||'#a78bfa'}">
-      <div class="insight-icon">${i.icone||'✦'}</div>
-      <div class="insight-text">${i.texto}</div>
-    </div>`).join('');
-}
-
-function renderRadarAnalysis(analises){
-  const el = document.getElementById('radarAnalysisContent');
-  if(!analises || !analises.length){
-    el.innerHTML='<div class="empty">Nenhuma análise do Radar salva ainda. Gere a análise na página Insights e importe o bloco RADAR_CSV na tabela radar_analises do Supabase.</div>';
-    return;
-  }
-  const a = analises[0];
-  el.replaceChildren();
-  const meta=document.createElement('div');
-  meta.className='radar-saved-meta';
-  const periodo=[a.data_inicio,a.data_fim].filter(Boolean).join(' a ');
-  const salvo=a.gerado_em?new Date(a.gerado_em).toLocaleString('pt-BR'):'data não informada';
-  meta.textContent=(periodo?'Período: '+periodo+' · ':'')+'Salvo em '+salvo;
-  el.appendChild(meta);
-
-  // Novos registros usam colunas próprias; registros antigos continuam compatíveis via texto.
-  const structured=[
-    {title:'Resumo',body:a.resumo||'',icon:'✨',color:'var(--c-mood)'},
-    {title:'Sinais observados',body:a.sinais_observados||'',icon:'🔎',color:'var(--c-activity)'},
-    {title:'Limitações e incerteza',body:a.limitacoes||'',icon:'🧭',color:'var(--muted)'},
-    {title:'Ações para testar',body:a.acoes||'',icon:'🧪',color:'var(--c-energy)'}
-  ].filter(s=>String(s.body).trim());
-
-  let sections=structured;
-  if(!sections.length){
-    const raw=String(a.texto||'Análise sem texto.').replace(/\r/g,'').trim();
-    sections=[];let current=null;
-    raw.split('\n').forEach(line=>{
-      const t=line.trim();
-      if(!t)return;
-      const heading=t.match(/^#{1,3}\s+(.+)$/)||t.match(/^\*\*(.{1,90}?)\*\*:?$/)||t.match(/^(Resumo|Sinais observados|Limitações(?: e incerteza)?|Ações para testar):\s*(.*)$/i);
-      if(heading){
-        const title=heading[1].replace(/\*\*/g,'').replace(/:$/,'').trim();
-        const inlineBody=heading[2]||'';
-        current={title,body:inlineBody,icon:'',color:'var(--c-mood)'};
-        sections.push(current);
-      }else{
-        if(!current){current={title:'Resumo da análise',body:'',icon:'✨',color:'var(--c-mood)'};sections.push(current);}
-        current.body+=(current.body?'\n':'')+t.replace(/^[-•]\s*/,'');
-      }
-    });
-    if(!sections.length)sections.push({title:'Resumo da análise',body:raw,icon:'✨',color:'var(--c-mood)'});
-    const palette=[
-      {match:/limita|incertez|ausênc|cobertura|dados insuficientes|ruído/i,icon:'🧭',color:'var(--muted)'},
-      {match:/ação|experimento|próximo passo|teste/i,icon:'🧪',color:'var(--c-energy)'},
-      {match:/humor|emoc|satisfa|dia bom|interação social/i,icon:'💜',color:'var(--c-mood)'},
-      {match:/energia|sono|fadiga|descanso/i,icon:'🌙',color:'var(--c-sleep)'},
-      {match:/atividade|treino|corrida|movimento|saúde física/i,icon:'🏃',color:'var(--c-activity)'},
-      {match:/foco|produtividade|procrastina|clareza mental/i,icon:'🎯',color:'var(--c-focus)'},
-      {match:/tendência|sinal|achado|resultado|conclusão|resumo/i,icon:'✨',color:'var(--c-mood)'}
-    ];
-    sections=sections.map(s=>{
-      const cfg=palette.find(p=>p.match.test(s.title));
-      return {...s,icon:s.icon||(cfg?cfg.icon:'🪄'),color:s.color||(cfg?cfg.color:'var(--c-mood)')};
-    });
-  }
-
-  const list=document.createElement('div');list.className='radar-analysis-list';
-  sections.forEach(section=>{
-    const card=document.createElement('section');card.className='radar-analysis-card';card.style.setProperty('--radar-color',section.color||'var(--c-mood)');
-    const heading=document.createElement('div');heading.className='radar-analysis-heading';
-    const icon=document.createElement('span');icon.className='radar-analysis-icon';icon.textContent=section.icon||'🪄';
-    const title=document.createElement('span');title.textContent=section.title;
-    heading.append(icon,title);
-    const body=document.createElement('div');body.className='radar-analysis-body';
-    const full=String(section.body||'').trim();const limit=420;
-    body.textContent=full.length>limit?full.slice(0,limit).trimEnd()+'…':(full||'Sem informação suficiente nesta seção.');
-    card.append(heading,body);
-    if(full.length>limit){
-      const more=document.createElement('button');more.type='button';more.className='radar-analysis-more';more.textContent='Ler mais';
-      let expanded=false;
-      more.addEventListener('click',()=>{
-        expanded=!expanded;body.textContent=expanded?full:full.slice(0,limit).trimEnd()+'…';more.textContent=expanded?'Mostrar menos':'Ler mais';
-      });
-      card.appendChild(more);
-    }
-    list.appendChild(card);
-  });
-  el.appendChild(list);
-  const note=document.createElement('div');note.className='radar-analysis-note';note.textContent='Cada cartão mostra até 420 caracteres inicialmente; o texto completo fica salvo. Cores e emojis organizam a leitura e não indicam gravidade ou certeza.';
-  el.appendChild(note);
-}
-
+function renderMoodChart(diario,days){const el=document.getElementById('moodChart'),data=diario.filter(r=>withinPeriod(r,days||periods.mood)).sort((a,b)=>a.data.localeCompare(b.data));if(!data.length){el.innerHTML='<div class="empty">Sem registros neste período</div>';document.getElementById('moodCoverage').textContent='Nenhum registro no intervalo.';return;}el.innerHTML=data.map(d=>{const label=(days||periods.mood)<=7?dayNames[new Date(d.data+'T12:00:00').getDay()]:dateLabel(d.data);return '<div class="mood-bar-wrap"><div class="mood-bar" style="height:'+Math.max(2,(d.humor||0)*13)+'px;background:var(--c-mood)" title="'+d.data+' · Humor: '+(d.humor??'—')+'"></div><div class="mood-bar" style="height:'+Math.max(2,(d.energia||0)*13)+'px;background:var(--c-energy)" title="'+d.data+' · Energia: '+(d.energia??'—')+'"></div><div class="mood-day">'+label+'</div></div>';}).join('');document.getElementById('moodCoverage').textContent=data.length+' registros entre '+dateLabel(data[0].data)+' e '+dateLabel(data[data.length-1].data)+'; dias sem registro não são preenchidos.';}
+function renderSleepChart(sono,days){const el=document.getElementById('sleepChart'),data=sono.filter(r=>withinPeriod(r,days||periods.sleep)&&r.duracao_min).sort((a,b)=>a.data.localeCompare(b.data));if(!data.length){el.innerHTML='<div class="empty">Sem dados de sono neste período</div>';document.getElementById('sleepCoverage').textContent='Nenhum registro importado no intervalo.';return;}const max=Math.max(600,...data.map(r=>r.duracao_min)),avg=data.reduce((a,r)=>a+r.duracao_min,0)/data.length;el.innerHTML=data.map(r=>{const label=(days||periods.sleep)<=7?dayNames[new Date(r.data+'T12:00:00').getDay()]:dateLabel(r.data);return '<div class="sleep-bar-wrap"><div class="sleep-bar" style="height:'+Math.max(3,r.duracao_min/max*100)+'%;background:var(--c-sleep)" title="'+r.data+' · '+minToHM(r.duracao_min)+'"></div><div class="sleep-day">'+label+'</div></div>';}).join('');document.getElementById('sleepNeedLine').style.display='none';document.getElementById('sleepAvgLegend').textContent='Média: '+minToHM(Math.round(avg));document.getElementById('sleepCoverage').textContent=data.length+' noites registradas entre '+dateLabel(data[0].data)+' e '+dateLabel(data[data.length-1].data)+'.';}
+function renderActivity(activities,days){const data=activities.filter(r=>withinPeriod(r,days||periods.activity)).sort((a,b)=>b.data.localeCompare(a.data)),el=document.getElementById('activitySummary');if(!data.length){el.innerHTML='<div class="empty">Nenhuma atividade Garmin registrada neste período</div>';document.getElementById('activityCoverage').textContent='Ausência de registros não confirma ausência de atividade.';return;}el.innerHTML=data.slice(0,8).map(a=>'<div><div class="bar-meta"><span>'+(a.titulo||a.tipo||'Atividade')+' · '+dateLabel(a.data)+'</span><span>'+(a.distancia_km?Number(a.distancia_km).toLocaleString('pt-BR')+' km':a.duracao_seg?minToHM(Math.round(a.duracao_seg/60)):'registrada')+'</span></div></div>').join('');document.getElementById('activityCoverage').textContent=data.length+' atividades no período; exibindo até 8.';}
+function renderHabits(diario){const rows=diario.filter(r=>withinPeriod(r,periods.overview)),defs=[['Alimentação','alimentacao',5],['Hidratação','hidratacao',1],['Casa organizada','casa_organizada',1],['Cuidado com os dogs','cuidado_dogs',2]],el=document.getElementById('habitSummary');if(!rows.length){el.innerHTML='<div class="empty">Sem registros de hábitos neste período.</div>';return;}el.innerHTML=defs.map(([label,key,max])=>{const vals=rows.filter(r=>r[key]!=null);if(!vals.length)return '';const avg=vals.reduce((sum,r)=>sum+Number(r[key]),0)/vals.length;return '<div><div class="bar-meta"><span>'+label+'</span><span>'+avg.toFixed(1)+'/'+max+' · '+vals.length+' registros</span></div><div class="bar-track"><div class="bar-fill" style="width:'+Math.min(100,avg/max*100)+'%;background:var(--c-energy)"></div></div></div>';}).join('');}
+function renderDataStatus(sources){document.getElementById('dataStatus').innerHTML=sources.map(s=>{const dates=s.rows.filter(r=>r.data).map(r=>r.data).sort().reverse(),latest=dates[0],created=s.rows.map(r=>r.created_at).filter(Boolean).sort().reverse()[0];let state='unknown',label='Sem dados',detail='Nenhum registro disponível nesta consulta.';if(latest){const age=Math.floor((new Date(todayISO+'T12:00:00')-new Date(latest+'T12:00:00'))/86400000);state=age<=7?'good':age<=35?'wait':'old';label=age<=7?'Registro recente':age<=35?'Pode aguardar atualização':'Registro antigo';detail='Último dado: '+dateLabel(latest)+' · '+s.rows.length+' registros consultados.';}if(created)detail+=' Última criação no banco: '+new Date(created).toLocaleDateString('pt-BR')+'.';if(s.note)detail+=' '+s.note;return '<div class="data-source"><span class="freshness '+state+'">'+label+'</span><strong>'+s.name+'</strong><p>'+detail+'</p></div>';}).join('');}
+function wirePeriodControls(diario,sono,activities){const redraw=()=>{renderMoodChart(diario,periods.mood);renderSleepChart(sono,periods.sleep);renderActivity(activities,periods.activity);renderHabits(diario);};document.querySelectorAll('#overviewPeriod button').forEach(btn=>btn.addEventListener('click',()=>{periods.overview=Number(btn.dataset.days);periods.mood=periods.sleep=periods.activity=periods.overview;document.querySelectorAll('.period-controls button').forEach(b=>b.classList.toggle('active',Number(b.dataset.days)===periods.overview));redraw();}));document.querySelectorAll('[data-filter] button').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.closest('[data-filter]').dataset.filter;periods[key]=Number(btn.dataset.days);btn.closest('[data-filter]').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));redraw();}));}
 // ── INIT ──────────────────────────────────────────────────
 async function init(){
-  document.getElementById('greetSub').textContent = 'Carregando seus dados...';
-  renderDisney();
-  try {
-    const [diario, sono, toggl7, treino7, insights, clue, radarAnalises] = await Promise.all([
-      sb(`diario_diario?order=data.desc&limit=35`),
-      sb(`sono?order=data.desc&limit=7`),
-      sb(`toggl_diario?data=gte.${from7}&order=data.desc`),
-      sb(`treino_forca?data=gte.${from7}&order=data.desc`),
-      sb(`insights?order=gerado_em.desc&limit=5`),
-      sb(`clue_diario?data=gte.2026-01-01&order=data.desc&limit=200`),
-      sb(`radar_analises?order=gerado_em.desc&limit=1`).catch(e=>{ console.warn('Análises do Radar ainda não disponíveis:',e); return []; }),
-    ]);
-
-    renderScores(diario, sono, clue);
-    renderMoodChart(diario);
-    renderSleepChart(sono);
-    renderTime(toggl7);
-    renderTreino(treino7);
-    renderInsights(insights);
-    renderRadarAnalysis(radarAnalises);
-
-    document.getElementById('greetSub').textContent =
-      `${greet}! ${diario.length} dias de dados carregados.`;
-  } catch(e){
-    console.error(e);
-    document.getElementById('greetSub').textContent = '⚠️ Erro ao carregar dados. Veja o console.';
-  }
+ renderDisney();document.getElementById('greetSub').textContent='Carregando seu panorama…';
+ try{
+  const [diario,sono,atividades,garminDiario,clue]=await Promise.all([sb('diario_diario?order=data.desc&limit=120'),sb('sono?order=data.desc&limit=120'),sb('garmin_atividades?order=data.desc&limit=500'),sb('garmin_diario?order=data.desc&limit=120'),sb('clue_diario?order=data.desc&limit=400')]);
+  renderScores(diario,sono,clue,atividades);renderMoodChart(diario,periods.mood);renderSleepChart(sono,periods.sleep);renderActivity(atividades,periods.activity);renderHabits(diario);wirePeriodControls(diario,sono,atividades);
+  renderDataStatus([{name:'Diário',rows:diario,note:'Tendências baseadas nos registros preenchidos.'},{name:'Sono',rows:sono,note:'Pode ser atualizado em lote; a consulta não significa cobertura diária.'},{name:'Garmin · atividades',rows:atividades,note:'Atividades registradas, não todos os movimentos do dia.'},{name:'Garmin · diário',rows:garminDiario,note:'Métricas diárias disponíveis na tabela Garmin.'},{name:'Clue · ciclo',rows:clue,note:'Fase estimada pelo calendário; não confirma ovulação.'}]);
+  document.getElementById('greetSub').textContent=diario[0]?'Último diário: '+dateLabel(diario[0].data)+'. Cada indicador mostra sua própria cobertura.':'Ainda não há registros de diário disponíveis.';
+  const action=document.getElementById('actionsSummary');if(diario.length>=14){const avg=(rows,key)=>{const vals=rows.filter(r=>r[key]!=null);return vals.length?vals.reduce((sum,r)=>sum+r[key],0)/vals.length:null;},recent=diario.slice(0,7),prior=diario.slice(7,14),m1=avg(recent,'humor'),m0=avg(prior,'humor'),e1=avg(recent,'energia'),e0=avg(prior,'energia');if(m1!=null&&m0!=null&&m1<=m0-.7)action.textContent='O humor médio dos registros mais recentes ficou abaixo do bloco anterior. Se isso fizer sentido para você, observe a rotina e os acontecimentos recentes sem presumir uma causa.';else if(e1!=null&&e0!=null&&e1<=e0-.7)action.textContent='A energia média recente caiu em relação ao bloco anterior. Vale observar descanso e carga da semana, sem concluir que um único fator causou a mudança.';else action.textContent='Nenhuma mudança se destacou com clareza suficiente para sugerir uma ação automática. Abra Insights e Radar para consultar as análises completas.';}else action.textContent='Ainda são necessários mais registros para comparar períodos com segurança. Registre o que for útil, sem cobrança por preencher todos os dias.';
+ }catch(e){console.error(e);document.getElementById('greetSub').textContent='Não foi possível carregar o panorama. Tente atualizar a página.';document.getElementById('dataStatus').innerHTML='<div class="empty">Erro ao consultar as fontes. Verifique a conexão e tente novamente.</div>';}
 }
-
 init();
 </script>
 </body>
