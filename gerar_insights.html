@@ -141,9 +141,9 @@
   <!-- BOTÃO -->
   <div class="btn-wrap">
     <button class="btn-generate" onclick="copiarParaClaude()">
-      📋 Preparar dados de correlações para ChatGPT
+      📋 Gerar análise conjunta · Insights + Radar
     </button>
-    <p class="btn-hint">Cole no mesmo chat em que enviará os dados do Radar; depois importe o CSV de insights no Supabase</p>
+    <p class="btn-hint">Um clique copia os dados e as instruções dos dois módulos. Cole uma única vez no ChatGPT para receber INSIGHTS_CSV e RADAR_CSV.</p>
   </div>
 
   <!-- OUTPUT -->
@@ -174,11 +174,9 @@
     <div class="radar-status" id="radarStatus">Analisando seus registros…</div>
     <div class="radar-list" id="radarList"><div class="empty">Carregando tendências…</div></div>
     <div class="radar-actions">
-      <button class="radar-btn primary" id="radarCopyBtn" type="button">Investigar padrões com ChatGPT</button>
-      <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar radar</button>
+      <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar dados do Radar</button>
     </div>
-    <textarea class="radar-output" id="radarOutput" readonly aria-label="Dados para análise no ChatGPT"></textarea>
-    <p class="radar-note">A análise assistida não envia dados automaticamente para o ChatGPT. Revise o texto e copie-o para uma conversa quando quiser. Métricas com poucos registros ficam fora da comparação.</p>
+    <p class="radar-note">Os dados do Radar já são incluídos no botão único acima, junto com as correlações históricas. Nada é enviado automaticamente ao ChatGPT; você cola o prompt completo uma única vez.</p>
   </div>
 
 </main>
@@ -413,6 +411,7 @@ function filtrarCorr(){
 // ── COPIAR PARA CLAUDE ────────────────────────────────────
 function copiarParaClaude(){
   if(!_resumo){ alert('Aguarde os dados carregarem!'); return; }
+  if(!window._radarContext){ alert('Aguarde o Radar terminar de carregar para gerar a análise conjunta.'); return; }
 
   const rMin = parseFloat(document.getElementById('rMin').value);
   const nMin = parseInt(document.getElementById('nMin').value);
@@ -426,7 +425,7 @@ function copiarParaClaude(){
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
     .join('\n');
 
-  const texto = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
+  const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
 
 MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
 ${mediasTexto}
@@ -472,6 +471,8 @@ Exemplo do nível de clareza esperado (use somente se os dados reais sustentarem
 "🎯","Foco e produtividade caminham juntos","Nos seus registros os dias com melhor foco também costumam ser os dias mais produtivos; vale observar o que ajuda você a se concentrar nesses dias.", "#f472b6","0.80"
 
 Não copie o exemplo como resultado. Use apenas os padrões realmente sustentados pelos dados fornecidos.`;
+
+  const texto = `${textoBase}\n\n${buildRadarInput()}`;
 
   const box = document.getElementById('copyBox');
   box.textContent = texto;
@@ -610,6 +611,58 @@ async function renderRadar(){
     list.innerHTML='<div class="empty">Erro ao carregar o Radar. O restante do dashboard continua disponível.</div>';
   }
 }
+
+function buildRadarInput(){
+  const ctx = window._radarContext;
+  const results = window._radarResults || [];
+  const coverage = window._radarCoverage || [];
+  const today = radarDateOffset(0);
+  const changes = results.map(r=>'- '+r.label+': últimos 7 dias '+radarFmt(r.recentMean,r)+' (n='+r.recentN+') vs. base anterior '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'); diferença '+radarFmt(r.delta,r)+'.');
+  const coverageLines = coverage.map(r=>'- '+r.label+': média recente '+radarFmt(r.recentMean,r)+' (n='+r.recentN+'/7); base '+radarFmt(r.baselineMean,r)+' (n='+r.baselineN+'/21); '+(r.delta!=null?'diferença '+(r.delta>0?'+':'')+radarFmt(r.delta,r)+'; ':'')+r.reason+'.');
+  const dailyLines = (ctx.diarioRows||[]).map(row=>'- '+row.data+': '+RADAR_METRICS.filter(m=>row[m.field]!==undefined).map(m=>m.label+'='+row[m.field]).join('; '));
+  return `DADOS DO RADAR PESSOAL — ANALISAR JUNTO COM OS INSIGHTS HISTÓRICOS
+
+OBJETIVO DO RADAR
+Identifique sinais recentes que possam ajudar a acompanhar os próximos 3–7 dias. Não repita simplesmente as correlações históricas: use-as como contexto para avaliar se as mudanças atuais acrescentam algo novo. Procure sinais que estejam surgindo, acelerando, persistindo ou revertendo e considere indicadores antecedentes apenas quando os próprios dados sustentarem essa leitura.
+
+REGRAS
+- Escolha no máximo 2 sinais recentes realmente úteis. Explique o que mudou, em quantos registros aparece e se persiste, acelera ou reverte, quando possível.
+- Faça uma interpretação condicional para os próximos 3–7 dias somente se houver sequência repetida ou contexto histórico relevante: o que pode continuar ou que outro sinal vale observar se a tendência persistir. Não afirme que algo vai acontecer nem invente probabilidades.
+- Use os dados de humor diretamente; não deduza humor a partir de foco, produtividade ou métricas fisiológicas.
+- Compare VFC, frequência cardíaca de repouso, estresse, sono e Body Battery ao histórico pessoal e a sinais complementares. Um valor isolado não prova melhora/piora nem prevê eventos; não dê prognósticos médicos.
+- Confira a sobreposição real de datas antes de relacionar fontes. Sono/Garmin podem estar desatualizados; ausências não são zero.
+- Não trate associação como causa nem invente sequência temporal. Se não houver sinal útil para perspectiva futura, diga isso e especifique o que observar para esclarecer.
+- Não force uma descoberta. Prefira uma conclusão incerta e honesta a uma previsão sem suporte.
+
+JANELAS
+Recente: ${ctx.recentStart} a ${today}. Base comparativa: ${ctx.baselineStart} a ${ctx.baselineEnd}.
+
+COBERTURA DAS FONTES
+- Diário: ${ctx.diario} linhas na janela consultada; fonte principal.
+- Sono: ${ctx.sono} registros; mais recente: ${ctx.sonoLatest||'nenhum'}${ctx.sonoError?' (falha ao consultar)':''}.
+- Garmin: ${ctx.garmin} registros; mais recente: ${ctx.garminLatest||'nenhum'}${ctx.garminError?' (falha ao consultar)':''}.
+
+MUDANÇAS DETECTADAS (7 dias recentes vs. 21 dias anteriores)
+${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
+
+COBERTURA E LIMITAÇÕES POR MÉTRICA
+${coverageLines.join('\n')}
+
+REGISTROS DIÁRIOS ALINHADOS POR DATA
+${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
+
+SAÍDA DO RADAR
+Gere um único registro RADAR_CSV com o cabeçalho exato:
+data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes
+Use data_inicio ${ctx.recentStart} e data_fim ${today}.
+- resumo: mudança principal e possível significado, sem afirmar causa; até 35 palavras.
+- sinais_observados: até 3 evidências concretas da sequência recente.
+- limitacoes: incertezas importantes; até 30 palavras.
+- acoes: no máximo 2 itens específicos para acompanhar nos próximos 3–7 dias.
+- texto: inclua Resumo:, Sinais observados:, O que observar nos próximos dias: e Limitações:, no máximo 120 palavras.
+Não inclua comentários fora dos blocos CSV. Todos os campos textuais entre aspas duplas; duplique aspas internas. `;
+}
+
 function prepareRadarPrompt(){
   const results = window._radarResults || [];
   const ctx = window._radarContext;
@@ -693,8 +746,7 @@ Todos os campos textuais devem estar entre aspas duplas; se um texto contiver as
   out.value=promptFinal;out.classList.add('visible');out.focus();out.select();
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(promptFinal).then(()=>{document.getElementById('radarCopyBtn').textContent='Texto copiado · abrir ChatGPT';}).catch(()=>{});
 }
-document.getElementById('radarCopyBtn').addEventListener('click',prepareRadarPrompt);
-document.getElementById('radarRefreshBtn').addEventListener('click',()=>{document.getElementById('radarCopyBtn').textContent='Preparar análise com ChatGPT';renderRadar();});
+document.getElementById('radarRefreshBtn').addEventListener('click',()=>{renderRadar();});
 
 
 
