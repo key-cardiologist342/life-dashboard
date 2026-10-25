@@ -168,6 +168,15 @@
   a { color:#0F3F62; }
   :focus-visible { outline:3px solid rgba(214,180,92,.8); outline-offset:3px; }
   
+
+/* Tema diário celestial: azul RGB(15,63,98), creme e dourado */
+:root{--bg:#F5F0E5;--surface:#FFFFFF;--surface2:#EAF0F3;--border:rgba(15,63,98,.16);--text:#183346;--muted:#647985;--accent:#0F3F62;--primary:#0F3F62;--gold:#D6B45C;--c-mood:#0F3F62;--c-sleep:#397F91;--c-energy:#C28A35}
+body{background:var(--bg)!important;color:var(--text)!important}
+header{background:rgba(245,240,229,.97)!important;border-bottom:1px solid var(--border)!important}
+nav{background:#fff!important;border-color:var(--border)!important}
+nav a.active{color:#0F3F62!important;border-bottom-color:#D6B45C!important}
+.card,.panel,.stat-card,.metric-card,.section-card{background:#fff!important;border-color:var(--border)!important}
+input,select,textarea{background:#fff;color:var(--text);border-color:var(--border)}
 </style>
 </head>
 <body>
