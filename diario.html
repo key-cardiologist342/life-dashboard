@@ -149,6 +149,25 @@
   .toast{box-shadow:0 8px 28px rgba(0,0,0,.22)}
   body::after{content:"✦";position:fixed;right:22px;bottom:18px;color:#E8C65A;font-size:25px;opacity:.65;pointer-events:none}
 
+
+  /* Tema diário celestial: azul RGB(15,63,98), creme e dourado */
+  :root {
+    --bg:#F5F0E5; --surface:#FFFFFF; --surface2:#EAF0F3;
+    --border:rgba(15,63,98,.16); --text:#183346; --muted:#647985;
+    --accent:#0F3F62; --primary:#0F3F62; --gold:#D6B45C;
+    --c-mood:#0F3F62; --c-sleep:#397F91; --c-energy:#C28A35;
+  }
+  body { background:radial-gradient(ellipse at 95% 0%,rgba(214,180,92,.12),transparent 25rem),var(--bg)!important; color:var(--text)!important; }
+  header { background:rgba(245,240,229,.96)!important; border-bottom:1px solid var(--border)!important; box-shadow:0 4px 20px rgba(15,63,98,.06); }
+  nav { background:rgba(255,255,255,.85)!important; border-color:var(--border)!important; }
+  nav a.active, nav a:hover { color:#0F3F62!important; border-bottom-color:#D6B45C!important; }
+  .card,.panel,.stat-card,.metric-card,.section-card { background:#fff!important; border-color:var(--border)!important; box-shadow:0 5px 18px rgba(15,63,98,.055); }
+  button,.btn { border-color:var(--border); }
+  input,select,textarea { background:#fff; color:var(--text); border-color:var(--border); }
+  h1,h2,h3,.page-title,.logo { color:#0F3F62; }
+  a { color:#0F3F62; }
+  :focus-visible { outline:3px solid rgba(214,180,92,.8); outline-offset:3px; }
+  
 </style>
 </head>
 <body>
