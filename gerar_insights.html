@@ -622,52 +622,56 @@ function buildRadarInput(){
   const dailyLines = (ctx.diarioRows||[]).map(row=>'- '+row.data+': '+RADAR_METRICS.filter(m=>row[m.field]!==undefined).map(m=>m.label+'='+row[m.field]).join('; '));
   return `DADOS DO RADAR PESSOAL — ANALISAR JUNTO COM OS INSIGHTS HISTÓRICOS
 
-MISSÃO PRINCIPAL — OLHAR PARA FRENTE
-A pergunta principal é: "Com base no que mudou recentemente e no meu histórico, o que pode acontecer nos próximos 3–7 dias e qual sinal me faria esperar isso?" NÃO transforme o Radar em resumo semanal. O passado só entra como evidência para uma hipótese sobre o que vem a seguir.
+SEU PAPEL
+Você vai me ajudar a entender o que talvez aconteça comigo nos próximos 3–7 dias usando meus registros reais. Quero uma explicação que eu entenda de primeira, como uma conversa com alguém que conhece meus dados. Não escreva como relatório técnico nem use palavras complicadas.
 
-ORDEM OBRIGATÓRIA DA ANÁLISE
-1. CENÁRIO PARA OS PRÓXIMOS 3–7 DIAS: formule primeiro a melhor expectativa condicional que os dados permitem (ex.: "se X continuar/voltar a acontecer, Y pode se manter ou mudar"). Diga explicitamente se é uma extrapolação da tendência atual ou uma hipótese apoiada por episódios antecedentes repetidos.
-2. SINAL A FAVOR OU CONTRA: identifique a mudança mais recente que pode alterar esse cenário e o que, nos dados, indicaria continuidade, recuperação ou piora. Cite métrica, datas e valores reais quando disponíveis.
-3. TESTE NO HISTÓRICO: procure se a mesma métrica mudou antes do desfecho em episódios separados, com atraso de 1–7 dias. Só chame de "possível indicador antecedente" se houver pelo menos 2 episódios compatíveis; conte também episódios contrários.
-4. O QUE MONITORAR: diga 1–2 sinais observáveis nos próximos dias e qual resultado reforçaria ou enfraqueceria a hipótese. Evite recomendações vagas como "acompanhe como você se sente".
+O QUE RESPONDER PRIMEIRO
+1. Comece dizendo, em linguagem cotidiana, o que pode acontecer nos próximos dias e em que condição. Exemplo de estilo: "Se seu foco continuar melhorando, você pode conseguir manter a produtividade um pouco mais alta nos próximos dias. Ainda precisamos ver se isso dura e se o humor acompanha." Adapte sempre aos dados reais; não copie o exemplo se ele não se aplicar.
+2. Explique quais mudanças nos meus registros fazem você pensar nisso. Use datas e números apenas quando ajudarem a entender.
+3. Diga o que observar nos próximos dias para saber se essa possibilidade está se confirmando ou não.
+4. Confira o histórico mais antigo para ver se algo mudou antes de uma mudança no meu humor, energia, foco ou produtividade. Só diga que algo costuma aparecer antes de outra mudança se encontrar pelo menos 2 episódios separados que apoiem essa ideia; conte também os casos que não combinaram.
 
-REGRAS DE EVIDÊNCIA
-- Não comece com "a semana mostrou..." nem gaste a resposta recontando cada dia. No máximo 1 frase curta de contexto passado; priorize implicações futuras.
-- Mesmo sem episódios antecedentes suficientes, NÃO encerre apenas com "não é possível prever". Ofereça um cenário condicional modesto baseado na trajetória recente, rotulando-o como extrapolação fraca, e especifique o que o confirmaria/refutaria. Não invente certeza nem force previsão.
-- Diferencie: (A) previsão condicional baseada na trajetória recente; (B) possível indicador antecedente validado por episódios anteriores; (C) algo ainda desconhecido. Não misture essas categorias.
-- Use humor diretamente registrado; não deduza humor a partir de foco, produtividade ou métricas fisiológicas.
-- Investigue se VFC, FC de repouso, estresse, sono, Body Battery ou rotina mudaram ANTES do desfecho, não apenas se estão diferentes na mesma semana. Um valor isolado não prevê eventos; não dê prognósticos médicos.
-- Confira a sobreposição real de datas. Sono/Garmin podem estar desatualizados; ausências não são zero. Informe a amostra efetiva e evite alegar sequência onde há lacunas.
-- Compare com o histórico pessoal e inclua evidência contrária. Associação não significa causa. Escolha no máximo 2 hipóteses úteis.
-- Seja específico: diga qual desfecho parece mais plausível, em que condição, qual sinal antecipado procurar e quão fraca/forte é a evidência. Evite frases genéricas que serviriam para qualquer pessoa.
+COMO PENSAR COM CUIDADO
+- O principal é olhar para frente, não fazer um resumo da semana.
+- Se os dados só mostrarem que uma tendência recente continua, diga isso de forma simples: "Se continuar assim, é possível que..." e deixe claro que é apenas uma possibilidade.
+- Se não houver dados suficientes para ligar um sinal a algo que acontece depois, diga "ainda não temos registros suficientes para saber se isso costuma acontecer antes". Não use termos como "extrapolação fraca", "indicador antecedente", "desfecho", "episódios compatíveis" ou "trajetória" na resposta final.
+- Diferencie uma tendência que continua de um sinal que já apareceu antes de uma mudança em várias ocasiões. Explique essa diferença sem dar nome técnico a ela.
+- Use o humor que registrei diretamente. Não conclua que meu humor melhorou ou piorou só porque foco, produtividade ou métricas do relógio mudaram.
+- Veja se sono, VFC, frequência cardíaca de repouso, estresse, Body Battery ou rotina mudaram antes da mudança que está tentando entender — não basta terem mudado na mesma semana. Não faça previsões médicas.
+- Confira as datas em que há dados de cada fonte. Falta de registro não significa valor zero; se houver lacunas, explique isso de maneira simples.
+- Inclua o que vai contra sua hipótese, se houver. Não trate uma associação como causa.
+- Escolha no máximo 2 possibilidades realmente úteis. Se os dados não sustentarem uma conclusão, não invente uma só para preencher espaço.
+- Escreva para mim, não para um analista de dados. Prefira "nos dias em que..." e "vale observar se..." a linguagem estatística. Não use jargões nem explique métodos matemáticos.
 
 JANELAS
-Recente: ${ctx.recentStart} a ${today}. Base comparativa: ${ctx.baselineStart} a ${ctx.baselineEnd}.
+Dias mais recentes: ${ctx.recentStart} a ${today}. Período anterior para comparação: ${ctx.baselineStart} a ${ctx.baselineEnd}.
 
-COBERTURA DAS FONTES
-- Diário: ${ctx.diario} linhas na janela consultada; fonte principal.
-- Sono: ${ctx.sono} registros; mais recente: ${ctx.sonoLatest||'nenhum'}${ctx.sonoError?' (falha ao consultar)':''}.
-- Garmin: ${ctx.garmin} registros; mais recente: ${ctx.garminLatest||'nenhum'}${ctx.garminError?' (falha ao consultar)':''}.
+QUANTIDADE DE REGISTROS
+- Diário: ${ctx.diario} registros na janela consultada; é a fonte principal.
+- Sono: ${ctx.sono} registros; o mais recente é ${ctx.sonoLatest||'nenhum'}${ctx.sonoError?' (não foi possível consultar esta fonte)':''}.
+- Garmin: ${ctx.garmin} registros; o mais recente é ${ctx.garminLatest||'nenhum'}${ctx.garminError?' (não foi possível consultar esta fonte)':''}.
 
-MUDANÇAS DETECTADAS (7 dias recentes vs. 21 dias anteriores)
+MUDANÇAS DETECTADAS (7 dias recentes comparados com os 21 dias anteriores)
 ${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
 
-COBERTURA E LIMITAÇÕES POR MÉTRICA
+QUAIS DADOS ESTÃO FALTANDO OU SÃO LIMITADOS
 ${coverageLines.join('\n')}
 
-REGISTROS DIÁRIOS ALINHADOS POR DATA (HISTÓRICO DISPONÍVEL DE ATÉ 90 DIAS)
+REGISTROS POR DIA (HISTÓRICO DISPONÍVEL DE ATÉ 90 DIAS)
 ${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
 
-SAÍDA DO RADAR
-Gere um único registro RADAR_CSV com o cabeçalho exato:
+FORMATO DA RESPOSTA
+Gere um único registro RADAR_CSV com este cabeçalho exato:
 data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes
 Use data_inicio ${ctx.recentStart} e data_fim ${today}.
-- resumo: mudança principal e possível significado, sem afirmar causa; até 35 palavras.
-- sinais_observados: até 3 evidências concretas da sequência recente.
-- limitacoes: incertezas importantes; até 30 palavras.
-- acoes: no máximo 2 itens específicos para acompanhar nos próximos 3–7 dias.
-- texto: inclua Resumo:, Sinais observados:, O que observar nos próximos dias: e Limitações:, no máximo 120 palavras.
-Não inclua comentários fora dos blocos CSV. Todos os campos textuais entre aspas duplas; duplique aspas internas. `;
+- resumo: diga a principal possibilidade em palavras simples; até 35 palavras.
+- sinais_observados: até 3 fatos dos registros que ajudem a entender a possibilidade.
+- limitacoes: diga o que ainda não sabemos e por quê, sem jargões; até 30 palavras.
+- acoes: até 2 coisas concretas para observar nos próximos 3–7 dias e o que cada resultado indicaria.
+- texto: inclua "Resumo:", "O que nos dados sugere:", "O que observar nos próximos dias:" e "O que ainda não sabemos:"; no máximo 120 palavras.
+- Use frases curtas e palavras comuns. Se precisar usar um termo técnico, explique-o imediatamente em linguagem simples.
+- Não comece com um resumo dos últimos dias. Comece pela possibilidade para os próximos dias.
+Não inclua comentários fora dos blocos CSV. Coloque todos os campos textuais entre aspas duplas e duplique aspas internas. `;
 }
 
 document.getElementById('radarRefreshBtn').addEventListener('click',()=>{renderRadar();});
