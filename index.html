@@ -351,143 +351,22 @@ function calcFaseCiclo(clue){
   return { fase, emoji, diaCiclo };
 }
 
-// ── SCORES ────────────────────────────────────────────────
-function renderScores(diario, sono, clue){
-  const hoje  = diario[0] || {};
-  const ontem = diario[1] || {};
-  const s     = sono[0]   || {};
-  const sp    = sono[1]   || {};
-
-  document.getElementById('sc-mood').textContent     = hoje.humor    != null ? hoje.humor    : '—';
-  document.getElementById('sc-energy').textContent   = hoje.energia  != null ? hoje.energia  : '—';
-  document.getElementById('sc-focus').textContent    = hoje.foco_geral != null ? `${hoje.foco_geral}/5` : '—';
-  const diffSono = s.duracao_min && sp.duracao_min ? s.duracao_min - sp.duracao_min : null;
-document.getElementById('trend-sleep').innerHTML = diffSono == null
-  ? `<span class="flat">—</span>`
-  : diffSono > 0
-    ? `<span class="up">↑ ${minToHM(diffSono)}</span>`
-    : diffSono < 0
-      ? `<span class="down">↓ ${minToHM(Math.abs(diffSono))}</span>`
-      : `<span class="flat">→ igual</span>`;
-  document.getElementById('sc-sleep-sub').textContent = s.sleep_score ? `score: ${s.sleep_score}` : 'ontem';
-
-  document.getElementById('trend-mood').innerHTML   = trendHTML(hoje.humor,    ontem.humor);
-  document.getElementById('trend-energy').innerHTML = trendHTML(hoje.energia,  ontem.energia);
-  document.getElementById('trend-sleep').innerHTML  = trendHTML(s.duracao_min, sp.duracao_min);
-
-  // ciclo
-  const ciclo = calcFaseCiclo(clue);
-  if(ciclo){
-    document.getElementById('sc-cycle').textContent     = ciclo.emoji;
-    document.getElementById('sc-cycle-sub').textContent = ciclo.fase;
-    document.getElementById('sc-cycle-dia').innerHTML   = `<span class="flat">dia ${ciclo.diaCiclo}</span>`;
-  }
+const periods = { overview:7, mood:7, sleep:7, activity:7 };
+function dateLabel(iso){return iso?new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'sem data'}
+function withinPeriod(row,days){const d=new Date(now);d.setHours(12,0,0,0);d.setDate(d.getDate()-days+1);return row.data>=d.toISOString().slice(0,10)}
+function renderScores(diario,sono,clue,atividades){
+ const latest=diario[0], prev=diario.find(r=>latest&&r.data<latest.data), sl=sono[0], sp=sono.find(r=>sl&&r.data<sl.data);
+ [['humor','sc-mood','trend-mood','sc-mood-sub'],['energia','sc-energy','trend-energy','sc-energy-sub'],['foco_geral','sc-focus','trend-focus','sc-focus-sub']].forEach(([field,id,trendId,subId])=>{document.getElementById(id).textContent=latest&&latest[field]!=null?latest[field]+'/5':'—';document.getElementById(subId).textContent=latest?dateLabel(latest.data):'Sem registros';document.getElementById(trendId).innerHTML=trendHTML(latest&&latest[field],prev&&prev[field]);});
+ document.getElementById('sc-sleep').textContent=sl&&sl.duracao_min?minToHM(sl.duracao_min):'—';document.getElementById('sc-sleep-sub').textContent=sl?dateLabel(sl.data):'Sem registros';document.getElementById('trend-sleep').innerHTML=trendHTML(sl&&sl.duracao_min,sp&&sp.duracao_min);
+ const n=atividades.filter(r=>withinPeriod(r,7)).length;document.getElementById('sc-activity').textContent=String(n);document.getElementById('sc-activity-sub').textContent='atividades · 7 dias';
+ const c=calcFaseCiclo(clue);if(c){document.getElementById('sc-cycle').textContent=c.emoji;document.getElementById('sc-cycle-sub').textContent=c.fase;document.getElementById('sc-cycle-dia').innerHTML='<span class="flat">dia '+c.diaCiclo+'</span>';const texts={'Menstrual':'Em algumas pessoas, pode haver cólicas, cansaço ou maior sensibilidade emocional. Outras sentem pouco ou nenhum sintoma.','Folicular':'Algumas pessoas percebem a disposição aumentar após a menstruação; isso varia entre pessoas e ciclos.','Ovulatória':'Algumas pessoas notam mudanças na libido, secreção ou energia. O cálculo pelo calendário não confirma ovulação.','Lútea':'Algumas pessoas percebem mudanças no sono, apetite, energia ou humor, sobretudo antes da menstruação.'};document.getElementById('cycleSummary').textContent=texts[c.fase]||'Os efeitos variam entre pessoas e entre ciclos.';document.getElementById('cycleCaveat').textContent=c.diaCiclo>35?'O último início registrado foi há mais de 35 dias; a fase estimada pode não representar o ciclo atual.':'Estimativa pelo início registrado e pela regra atual do calendário; não confirma ovulação.';}else{document.getElementById('sc-cycle-sub').textContent='Sem início registrado';document.getElementById('cycleSummary').textContent='Ainda não há registros suficientes para estimar uma fase. Quando houver, este espaço mostrará possíveis experiências emocionais e físicas, sem prever sintomas individuais.';}
 }
-
-// ── MOOD CHART ────────────────────────────────────────────
-function renderMoodChart(diario){
-  const mc   = document.getElementById('moodChart');
-  const data = [...diario].reverse().slice(-7);
-  if(!data.length){ mc.innerHTML='<div class="empty">Sem dados ainda</div>'; return; }
-  mc.innerHTML = data.map(d => {
-    const label = dayNames[new Date(d.data+'T12:00:00').getDay()];
-    return `
-      <div class="mood-bar-wrap">
-        <div class="mood-bar" style="height:${(d.humor||0)*16}px;background:var(--c-mood);opacity:.85" title="Humor: ${d.humor}"></div>
-        <div class="mood-bar" style="height:${(d.energia||0)*16}px;background:var(--c-energy);opacity:.7" title="Energia: ${d.energia}"></div>
-        <div class="mood-day">${label}</div>
-      </div>`;
-  }).join('');
-}
-
-// ── SLEEP CHART ───────────────────────────────────────────
-function renderSleepChart(sono){
-  const sc = document.getElementById('sleepChart');
-  if(!sono.length){ sc.innerHTML='<div class="empty">Sem dados de sono</div>'; return; }
-
-  // pega os 7 mais recentes e reverte pra ordem cronológica
-  const data = [...sono].slice(0,7).reverse();
-  const maxDur  = Math.max(...data.map(s=>s.duracao_min||0), 600);
-  const avgNeed = data.reduce((a,s)=>a+(s.necessidade_min||480),0) / data.length;
-  const avgDur  = data.reduce((a,s)=>a+(s.duracao_min||0),0) / data.length;
-
-  // linha de necessidade em %
-  const needPct = (avgNeed / maxDur * 100).toFixed(1);
-  const line = document.getElementById('sleepNeedLine');
-  line.style.display = 'block';
-  line.style.bottom  = `calc(${needPct}% + 20px)`; // 20px = altura do label
-
-  sc.innerHTML = data.map(s => {
-    const dur   = s.duracao_min || 0;
-    const need  = s.necessidade_min || 480;
-    const hPct  = (dur / maxDur * 100).toFixed(1);
-    const color = dur >= need ? 'var(--c-sleep)' : '#f87171';
-    const label = dayNames[new Date(s.data+'T12:00:00').getDay()];
-    return `
-      <div class="sleep-bar-wrap">
-        <div class="sleep-bar" style="height:${hPct}%;background:${color};opacity:.85" title="${minToHM(dur)} (precisa: ${minToHM(need)})"></div>
-        <div class="sleep-day">${label}</div>
-      </div>`;
-  }).join('');
-
-  document.getElementById('sleepAvgLegend').innerHTML =
-    `<div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Média: ${minToHM(Math.round(avgDur))}`;
-}
-
-// ── TEMPO SEMANAL ─────────────────────────────────────────
-function renderTime(toggl){
-  const tl = document.getElementById('timeList');
-  if(!toggl.length){ tl.innerHTML='<div class="empty">Sem registros de tempo esta semana</div>'; return; }
-
-  const cats  = {'Trabalho':'#f472b6','Estudo':'#a78bfa','Lazer':'#38bdf8','Exercício':'#34d399'};
-  // agrupa por categoria somando os 7 dias
-  const agrupado = {};
-  toggl.forEach(t => {
-    agrupado[t.categoria] = (agrupado[t.categoria]||0) + t.minutos;
-  });
-  const maxM = Math.max(...Object.values(agrupado));
-
-  tl.innerHTML = Object.entries(agrupado)
-    .sort((a,b)=>b[1]-a[1])
-    .map(([cat, min]) => {
-      const c = cats[cat]||'#6b7280';
-      return `
-        <div>
-          <div class="bar-meta"><span>${cat}</span><span style="color:${c}">${minToHM(min)}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(min/maxM*100).toFixed(1)}%;background:${c}"></div></div>
-        </div>`;
-    }).join('');
-
-  // foco no score
-  const focoMin = (agrupado['Trabalho']||0) + (agrupado['Estudo']||0);
-  if(focoMin) document.getElementById('sc-focus').textContent = minToHM(focoMin);
-}
-
-// ── TREINO 7 DIAS ─────────────────────────────────────────
-function renderTreino(treinos){
-  const tw = document.getElementById('treinoWeek');
-
-  // mapa data → exercícios
-  const mapa = {};
-  treinos.forEach(t => {
-    if(!mapa[t.data]) mapa[t.data] = new Set();
-    if(t.exercicio) mapa[t.data].add(t.exercicio);
-  });
-
-  tw.innerHTML = last7.map(iso => {
-    const label  = dayNames[new Date(iso+'T12:00:00').getDay()];
-    const exs    = mapa[iso];
-    const treinou = exs && exs.size > 0;
-    const tipo   = treinou ? [...exs].slice(0,2).join(' · ') : '';
-    return `
-      <div class="treino-day">
-        <div class="day-label">${label}</div>
-        <div class="treino-dot ${treinou?'ativo':'vazio'}">${treinou?'💪':''}</div>
-        <div class="treino-tipo">${tipo}</div>
-      </div>`;
-  }).join('');
-}
-
+function renderMoodChart(diario,days){const el=document.getElementById('moodChart'),data=diario.filter(r=>withinPeriod(r,days||periods.mood)).sort((a,b)=>a.data.localeCompare(b.data));if(!data.length){el.innerHTML='<div class="empty">Sem registros neste período</div>';document.getElementById('moodCoverage').textContent='Nenhum registro no intervalo.';return;}el.innerHTML=data.map(d=>{const label=(days||periods.mood)<=7?dayNames[new Date(d.data+'T12:00:00').getDay()]:dateLabel(d.data);return '<div class="mood-bar-wrap"><div class="mood-bar" style="height:'+Math.max(2,(d.humor||0)*13)+'px;background:var(--c-mood)" title="'+d.data+' · Humor: '+(d.humor??'—')+'"></div><div class="mood-bar" style="height:'+Math.max(2,(d.energia||0)*13)+'px;background:var(--c-energy)" title="'+d.data+' · Energia: '+(d.energia??'—')+'"></div><div class="mood-day">'+label+'</div></div>';}).join('');document.getElementById('moodCoverage').textContent=data.length+' registros entre '+dateLabel(data[0].data)+' e '+dateLabel(data[data.length-1].data)+'; dias sem registro não são preenchidos.';}
+function renderSleepChart(sono,days){const el=document.getElementById('sleepChart'),data=sono.filter(r=>withinPeriod(r,days||periods.sleep)&&r.duracao_min).sort((a,b)=>a.data.localeCompare(b.data));if(!data.length){el.innerHTML='<div class="empty">Sem dados de sono neste período</div>';document.getElementById('sleepCoverage').textContent='Nenhum registro importado no intervalo.';return;}const max=Math.max(600,...data.map(r=>r.duracao_min)),avg=data.reduce((a,r)=>a+r.duracao_min,0)/data.length;el.innerHTML=data.map(r=>{const label=(days||periods.sleep)<=7?dayNames[new Date(r.data+'T12:00:00').getDay()]:dateLabel(r.data);return '<div class="sleep-bar-wrap"><div class="sleep-bar" style="height:'+Math.max(3,r.duracao_min/max*100)+'%;background:var(--c-sleep)" title="'+r.data+' · '+minToHM(r.duracao_min)+'"></div><div class="sleep-day">'+label+'</div></div>';}).join('');document.getElementById('sleepNeedLine').style.display='none';document.getElementById('sleepAvgLegend').textContent='Média: '+minToHM(Math.round(avg));document.getElementById('sleepCoverage').textContent=data.length+' noites registradas entre '+dateLabel(data[0].data)+' e '+dateLabel(data[data.length-1].data)+'.';}
+function renderActivity(activities,days){const data=activities.filter(r=>withinPeriod(r,days||periods.activity)).sort((a,b)=>b.data.localeCompare(a.data)),el=document.getElementById('activitySummary');if(!data.length){el.innerHTML='<div class="empty">Nenhuma atividade Garmin registrada neste período</div>';document.getElementById('activityCoverage').textContent='Ausência de registros não confirma ausência de atividade.';return;}el.innerHTML=data.slice(0,8).map(a=>'<div><div class="bar-meta"><span>'+(a.titulo||a.tipo||'Atividade')+' · '+dateLabel(a.data)+'</span><span>'+(a.distancia_km?Number(a.distancia_km).toLocaleString('pt-BR')+' km':a.duracao_seg?minToHM(Math.round(a.duracao_seg/60)):'registrada')+'</span></div></div>').join('');document.getElementById('activityCoverage').textContent=data.length+' atividades no período; exibindo até 8.';}
+function renderHabits(diario){const rows=diario.filter(r=>withinPeriod(r,periods.overview)),defs=[['Alimentação','alimentacao',5],['Hidratação','hidratacao',1],['Casa organizada','casa_organizada',1],['Cuidado com os dogs','cuidado_dogs',2]],el=document.getElementById('habitSummary');if(!rows.length){el.innerHTML='<div class="empty">Sem registros de hábitos neste período.</div>';return;}el.innerHTML=defs.map(([label,key,max])=>{const vals=rows.filter(r=>r[key]!=null);if(!vals.length)return '';const avg=vals.reduce((sum,r)=>sum+Number(r[key]),0)/vals.length;return '<div><div class="bar-meta"><span>'+label+'</span><span>'+avg.toFixed(1)+'/'+max+' · '+vals.length+' registros</span></div><div class="bar-track"><div class="bar-fill" style="width:'+Math.min(100,avg/max*100)+'%;background:var(--c-energy)"></div></div></div>';}).join('');}
+function renderDataStatus(sources){document.getElementById('dataStatus').innerHTML=sources.map(s=>{const dates=s.rows.filter(r=>r.data).map(r=>r.data).sort().reverse(),latest=dates[0],created=s.rows.map(r=>r.created_at).filter(Boolean).sort().reverse()[0];let state='unknown',label='Sem dados',detail='Nenhum registro disponível nesta consulta.';if(latest){const age=Math.floor((new Date(todayISO+'T12:00:00')-new Date(latest+'T12:00:00'))/86400000);state=age<=7?'good':age<=35?'wait':'old';label=age<=7?'Registro recente':age<=35?'Pode aguardar atualização':'Registro antigo';detail='Último dado: '+dateLabel(latest)+' · '+s.rows.length+' registros consultados.';}if(created)detail+=' Última criação no banco: '+new Date(created).toLocaleDateString('pt-BR')+'.';if(s.note)detail+=' '+s.note;return '<div class="data-source"><span class="freshness '+state+'">'+label+'</span><strong>'+s.name+'</strong><p>'+detail+'</p></div>';}).join('');}
+function wirePeriodControls(diario,sono,activities){const redraw=()=>{renderMoodChart(diario,periods.mood);renderSleepChart(sono,periods.sleep);renderActivity(activities,periods.activity);renderHabits(diario);};document.querySelectorAll('#overviewPeriod button').forEach(btn=>btn.addEventListener('click',()=>{periods.overview=Number(btn.dataset.days);periods.mood=periods.sleep=periods.activity=periods.overview;document.querySelectorAll('.period-controls button').forEach(b=>b.classList.toggle('active',Number(b.dataset.days)===periods.overview));redraw();}));document.querySelectorAll('[data-filter] button').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.closest('[data-filter]').dataset.filter;periods[key]=Number(btn.dataset.days);btn.closest('[data-filter]').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));redraw();}));}
 // ── INSIGHTS ──────────────────────────────────────────────
 function renderInsights(insights){
   const il = document.getElementById('insightsList');
@@ -584,35 +463,15 @@ function renderRadarAnalysis(analises){
 
 // ── INIT ──────────────────────────────────────────────────
 async function init(){
-  document.getElementById('greetSub').textContent = 'Carregando seus dados...';
-  renderDisney();
-  try {
-    const [diario, sono, toggl7, treino7, insights, clue, radarAnalises] = await Promise.all([
-      sb(`diario_diario?order=data.desc&limit=35`),
-      sb(`sono?order=data.desc&limit=7`),
-      sb(`toggl_diario?data=gte.${from7}&order=data.desc`),
-      sb(`treino_forca?data=gte.${from7}&order=data.desc`),
-      sb(`insights?order=gerado_em.desc&limit=5`),
-      sb(`clue_diario?data=gte.2026-01-01&order=data.desc&limit=200`),
-      sb(`radar_analises?order=gerado_em.desc&limit=1`).catch(e=>{ console.warn('Análises do Radar ainda não disponíveis:',e); return []; }),
-    ]);
-
-    renderScores(diario, sono, clue);
-    renderMoodChart(diario);
-    renderSleepChart(sono);
-    renderTime(toggl7);
-    renderTreino(treino7);
-    renderInsights(insights);
-    renderRadarAnalysis(radarAnalises);
-
-    document.getElementById('greetSub').textContent =
-      `${greet}! ${diario.length} dias de dados carregados.`;
-  } catch(e){
-    console.error(e);
-    document.getElementById('greetSub').textContent = '⚠️ Erro ao carregar dados. Veja o console.';
-  }
+ renderDisney();document.getElementById('greetSub').textContent='Carregando seu panorama…';
+ try{
+  const [diario,sono,atividades,garminDiario,clue]=await Promise.all([sb('diario_diario?order=data.desc&limit=120'),sb('sono?order=data.desc&limit=120'),sb('garmin_atividades?order=data.desc&limit=500'),sb('garmin_diario?order=data.desc&limit=120'),sb('clue_diario?order=data.desc&limit=400')]);
+  renderScores(diario,sono,clue,atividades);renderMoodChart(diario,periods.mood);renderSleepChart(sono,periods.sleep);renderActivity(atividades,periods.activity);renderHabits(diario);wirePeriodControls(diario,sono,atividades);
+  renderDataStatus([{name:'Diário',rows:diario,note:'Tendências baseadas nos registros preenchidos.'},{name:'Sono',rows:sono,note:'Pode ser atualizado em lote; a consulta não significa cobertura diária.'},{name:'Garmin · atividades',rows:atividades,note:'Atividades registradas, não todos os movimentos do dia.'},{name:'Garmin · diário',rows:garminDiario,note:'Métricas diárias disponíveis na tabela Garmin.'},{name:'Clue · ciclo',rows:clue,note:'Fase estimada pelo calendário; não confirma ovulação.'}]);
+  document.getElementById('greetSub').textContent=diario[0]?'Último diário: '+dateLabel(diario[0].data)+'. Cada indicador mostra sua própria cobertura.':'Ainda não há registros de diário disponíveis.';
+  const action=document.getElementById('actionsSummary');if(diario.length>=14){const avg=(rows,key)=>{const vals=rows.filter(r=>r[key]!=null);return vals.length?vals.reduce((sum,r)=>sum+r[key],0)/vals.length:null;},recent=diario.slice(0,7),prior=diario.slice(7,14),m1=avg(recent,'humor'),m0=avg(prior,'humor'),e1=avg(recent,'energia'),e0=avg(prior,'energia');if(m1!=null&&m0!=null&&m1<=m0-.7)action.textContent='O humor médio dos registros mais recentes ficou abaixo do bloco anterior. Se isso fizer sentido para você, observe a rotina e os acontecimentos recentes sem presumir uma causa.';else if(e1!=null&&e0!=null&&e1<=e0-.7)action.textContent='A energia média recente caiu em relação ao bloco anterior. Vale observar descanso e carga da semana, sem concluir que um único fator causou a mudança.';else action.textContent='Nenhuma mudança se destacou com clareza suficiente para sugerir uma ação automática. Abra Insights e Radar para consultar as análises completas.';}else action.textContent='Ainda são necessários mais registros para comparar períodos com segurança. Registre o que for útil, sem cobrança por preencher todos os dias.';
+ }catch(e){console.error(e);document.getElementById('greetSub').textContent='Não foi possível carregar o panorama. Tente atualizar a página.';document.getElementById('dataStatus').innerHTML='<div class="empty">Erro ao consultar as fontes. Verifique a conexão e tente novamente.</div>';}
 }
-
 init();
 </script>
 </body>
