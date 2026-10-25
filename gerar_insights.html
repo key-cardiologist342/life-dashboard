@@ -622,20 +622,24 @@ function buildRadarInput(){
   const dailyLines = (ctx.diarioRows||[]).map(row=>'- '+row.data+': '+RADAR_METRICS.filter(m=>row[m.field]!==undefined).map(m=>m.label+'='+row[m.field]).join('; '));
   return `DADOS DO RADAR PESSOAL — ANALISAR JUNTO COM OS INSIGHTS HISTÓRICOS
 
-OBJETIVO DO RADAR
-Investigue sinais recentes que possam antecipar mudanças no humor, energia, foco, produtividade ou rotina nos próximos 3–7 dias. O objetivo não é resumir médias: é testar se há pistas temporais nos registros pessoais. Use a sequência de até 90 dias para procurar episódios repetidos em que uma mudança em uma métrica veio antes de uma mudança em outra. A comparação visual de tendência continua sendo últimos 7 dias vs. 21 dias anteriores.
+MISSÃO PRINCIPAL — OLHAR PARA FRENTE
+A pergunta principal é: "Com base no que mudou recentemente e no meu histórico, o que pode acontecer nos próximos 3–7 dias e qual sinal me faria esperar isso?" NÃO transforme o Radar em resumo semanal. O passado só entra como evidência para uma hipótese sobre o que vem a seguir.
 
-REGRAS
-- Primeiro identifique mudanças reais no Diário e descreva a sequência, não apenas a média: início aproximado, duração, intensidade e sinais de estabilização/recuperação.
-- Depois investigue possíveis indicadores antecedentes: por exemplo, se alterações de VFC, FC de repouso, estresse, sono, energia ou rotina costumam preceder mudanças de humor/foco/produtividade em 1–7 dias. Compare datas explícitas e procure pelo menos 2 episódios compatíveis; não basta duas métricas subirem ou caírem juntas no mesmo período.
-- Separe claramente (A) mudança observada, (B) hipótese de sinal antecedente sustentada por episódios anteriores e (C) cenário condicional para os próximos 3–7 dias. Se não houver episódios suficientes, diga que ainda não é possível estabelecer um indicador antecedente e não invente uma previsão.
-- Escolha no máximo 2 sinais realmente úteis. Explique a evidência concreta, as datas e quantas vezes o padrão se repetiu.
-- Use os dados de humor diretamente; não deduza humor a partir de foco, produtividade ou métricas fisiológicas.
-- Compare VFC, frequência cardíaca de repouso, estresse, sono e Body Battery ao histórico pessoal e a sinais complementares. Um valor isolado não prova melhora/piora nem prevê eventos; não dê prognósticos médicos.
-- Confira a sobreposição real de datas antes de relacionar fontes. Sono/Garmin podem estar desatualizados; ausências não são zero. Informe quando a amostra efetiva é pequena.
-- Não use apenas correlações entre níveis ou uma tendência compartilhada para afirmar que algo antecede outra coisa. Dê preferência a mudanças que se repetiram em episódios separados e verifique exemplos que contradigam a hipótese.
-- Não trate associação como causa. Se não houver evidência temporal repetida, entregue uma conclusão útil sobre o estado atual e diga quais 1–2 sinais observar para testar a hipótese nos próximos dias.
-- Não force uma descoberta. Prefira uma conclusão incerta e honesta a uma previsão sem suporte.
+ORDEM OBRIGATÓRIA DA ANÁLISE
+1. CENÁRIO PARA OS PRÓXIMOS 3–7 DIAS: formule primeiro a melhor expectativa condicional que os dados permitem (ex.: "se X continuar/voltar a acontecer, Y pode se manter ou mudar"). Diga explicitamente se é uma extrapolação da tendência atual ou uma hipótese apoiada por episódios antecedentes repetidos.
+2. SINAL A FAVOR OU CONTRA: identifique a mudança mais recente que pode alterar esse cenário e o que, nos dados, indicaria continuidade, recuperação ou piora. Cite métrica, datas e valores reais quando disponíveis.
+3. TESTE NO HISTÓRICO: procure se a mesma métrica mudou antes do desfecho em episódios separados, com atraso de 1–7 dias. Só chame de "possível indicador antecedente" se houver pelo menos 2 episódios compatíveis; conte também episódios contrários.
+4. O QUE MONITORAR: diga 1–2 sinais observáveis nos próximos dias e qual resultado reforçaria ou enfraqueceria a hipótese. Evite recomendações vagas como "acompanhe como você se sente".
+
+REGRAS DE EVIDÊNCIA
+- Não comece com "a semana mostrou..." nem gaste a resposta recontando cada dia. No máximo 1 frase curta de contexto passado; priorize implicações futuras.
+- Mesmo sem episódios antecedentes suficientes, NÃO encerre apenas com "não é possível prever". Ofereça um cenário condicional modesto baseado na trajetória recente, rotulando-o como extrapolação fraca, e especifique o que o confirmaria/refutaria. Não invente certeza nem force previsão.
+- Diferencie: (A) previsão condicional baseada na trajetória recente; (B) possível indicador antecedente validado por episódios anteriores; (C) algo ainda desconhecido. Não misture essas categorias.
+- Use humor diretamente registrado; não deduza humor a partir de foco, produtividade ou métricas fisiológicas.
+- Investigue se VFC, FC de repouso, estresse, sono, Body Battery ou rotina mudaram ANTES do desfecho, não apenas se estão diferentes na mesma semana. Um valor isolado não prevê eventos; não dê prognósticos médicos.
+- Confira a sobreposição real de datas. Sono/Garmin podem estar desatualizados; ausências não são zero. Informe a amostra efetiva e evite alegar sequência onde há lacunas.
+- Compare com o histórico pessoal e inclua evidência contrária. Associação não significa causa. Escolha no máximo 2 hipóteses úteis.
+- Seja específico: diga qual desfecho parece mais plausível, em que condição, qual sinal antecipado procurar e quão fraca/forte é a evidência. Evite frases genéricas que serviriam para qualquer pessoa.
 
 JANELAS
 Recente: ${ctx.recentStart} a ${today}. Base comparativa: ${ctx.baselineStart} a ${ctx.baselineEnd}.
