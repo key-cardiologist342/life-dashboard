@@ -229,7 +229,7 @@ function escHTML(value){
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function reportDate(row){
-  const value=row.created_at||row.data_fim||row.data_inicio||row.data||row.updated_at;
+  const value=row.gerado_em||row.created_at||row.data_fim||row.data_inicio||row.data||row.updated_at;
   if(!value) return '';
   const d=new Date(value);
   return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
@@ -255,13 +255,13 @@ async function renderSavedReports(){
   insightsEl.innerHTML='<div class="saved-empty">Carregando os últimos insights…</div>';
   radarEl.innerHTML='<div class="saved-empty">Carregando o último Radar…</div>';
   const [ir,rr]=await Promise.allSettled([
-    sb('insights?select=*&order=created_at.desc&limit=100'),
-    sb('radar_analises?select=*&order=created_at.desc&limit=30')
+    sb('insights?select=*&order=gerado_em.desc&limit=100'),
+    sb('radar_analises?select=*&order=gerado_em.desc&limit=30')
   ]);
   function latestBatch(rows,dateField){
     if(!rows.length)return [];
-    const stamp=rows[0].created_at;
-    if(stamp)return rows.filter(row=>row.created_at===stamp);
+    const stamp=rows[0].gerado_em||rows[0].created_at;
+    if(stamp)return rows.filter(row=>(row.gerado_em||row.created_at)===stamp);
     const date=rows[0][dateField]||rows[0].data;
     return date?rows.filter(row=>(row[dateField]||row.data)===date):[rows[0]];
   }
@@ -348,14 +348,6 @@ const [diario, sono, clue, treino, garmin, garminAtiv] = await Promise.all([
   sb('garmin_atividades?order=data.desc&limit=500'),
 ]);
 
-  document.getElementById('statDiario').textContent  = diario.length;
-  document.getElementById('statSono').textContent    = sono.length;
-  document.getElementById('statClue').textContent    = clue.length;
-
-  // sessões únicas de treino
-  const sessoes = new Set(treino.map(t=>t.data));
-  document.getElementById('statTreino').textContent = sessoes.size;
-  document.getElementById('statGarmin').textContent = garmin.length;
 
   // ── MONTA MAPA POR DATA ───────────────────────────────
   const mapa = {}; // data → {variavel: valor}
