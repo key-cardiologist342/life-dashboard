@@ -135,11 +135,11 @@
 
 <main>
   <div class="page-title">Gerador de <span>Insights</span></div>
-  <p class="page-sub">Cruza todas as variáveis numéricas de todas as fontes e gera insights baseados nas correlações mais fortes do seu histórico.</p>
+  <p class="page-sub">Veja os relatórios mais recentes, filtre as correlações e gere uma nova análise quando quiser.</p>
 
   <section class="saved-section" aria-labelledby="savedReportsTitle">
     <div class="saved-head">
-      <div><h2 id="savedReportsTitle">Seus relatórios</h2><p>As análises que já foram salvas no banco aparecem aqui. Gerar uma nova análise é um fluxo separado, logo abaixo.</p></div>
+      <div><h2 id="savedReportsTitle">Seus relatórios</h2><p>Mostra só a importação mais recente: as últimas linhas de Insights e o último relatório do Radar.</p></div>
       <button class="radar-btn" id="refreshSavedReports" type="button">↻ Atualizar</button>
     </div>
     <div class="saved-columns">
@@ -157,29 +157,22 @@
   <div class="section-title">gerar uma nova análise</div>
 
 
-  <!-- STATS -->
-  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
-  <div class="stat-card"><div class="label">Dias no diário</div><div class="val" id="statDiario">—</div><div class="sub">registros</div></div>
-  <div class="stat-card"><div class="label">Noites de sono</div><div class="val" id="statSono">—</div><div class="sub">Garmin</div></div>
-  <div class="stat-card"><div class="label">Dias Clue</div><div class="val" id="statClue">—</div><div class="sub">sintomas</div></div>
-  <div class="stat-card"><div class="label">Sessões treino</div><div class="val" id="statTreino">—</div><div class="sub">únicas</div></div>
-  <div class="stat-card"><div class="label">Dias Garmin</div><div class="val" id="statGarmin">—</div><div class="sub">atividade diária</div></div>
-</div>
-
   <!-- FILTROS -->
   <div class="section-title">correlações encontradas</div>
   <div class="filtros">
-    <span class="filtro-label">Mín. |r|:</span>
-    <input type="range" id="rMin" min="0.1" max="0.5" step="0.05" value="0.35" oninput="filtrarCorr()"/>
-    <span id="rMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">0.20</span>
-    <span class="filtro-label" style="margin-left:8px">Mín. n:</span>
-    <input type="range" id="nMin" min="3" max="15" step="1" value="10" oninput="filtrarCorr()"/>
-    <span id="nMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">5</span>
+    <span class="filtro-label">Força mínima da associação:</span>
+    <input type="range" id="rMin" min="0.30" max="0.85" step="0.05" value="0.60" oninput="filtrarCorr()"/>
+    <span id="rMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">0.60</span>
+    <span class="filtro-label" style="margin-left:8px">Mínimo de dias com dados:</span>
+    <input type="range" id="nMin" min="10" max="60" step="5" value="30" oninput="filtrarCorr()"/>
+    <span id="nMinVal" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--purple)">30</span>
     <span id="corrCount" style="font-size:0.72rem;color:var(--muted);margin-left:auto"></span>
   </div>
   <div class="corr-list" id="corrList">
     <div class="empty"><div class="big">📊</div>Carregando dados...</div>
   </div>
+
+  <div hidden aria-hidden="true"><div id="radarStatus"></div><div id="radarList"></div><button id="radarRefreshBtn" type="button"></button></div>
 
   <!-- BOTÃO -->
   <div class="btn-wrap">
@@ -204,23 +197,6 @@
   </div>
 
 
-  <div class="section-title" style="margin-top:40px">radar investigativo · padrões pessoais</div>
-  <p class="page-sub" style="margin-bottom:18px">Além de comparar semanas, a análise assistida investiga relações entre registros diários, exceções e perguntas que os dados permitem explorar — sem confundir associação com causa.</p>
-  <!-- RADAR PESSOAL: primeira versão baseada em regras transparentes -->
-  <div class="section-title">radar pessoal</div>
-  <div class="card" style="margin-bottom:24px" id="radarCard">
-    <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Pistas do seu histórico</div>
-      <span class="card-badge">diário · 7 vs. 21 dias</span>
-    </div>
-    <p class="radar-intro">O Diário é a fonte principal. A análise compara os últimos 7 dias com os 21 anteriores e também recebe os registros diários para investigar o que pode variar junto, quais dias destoam e quais perguntas ainda estão abertas. Sono e Garmin são complementares e podem estar desatualizados.</p>
-    <div class="radar-status" id="radarStatus">Analisando seus registros…</div>
-    <div class="radar-list" id="radarList"><div class="empty">Carregando tendências…</div></div>
-    <div class="radar-actions">
-      <button class="radar-btn" id="radarRefreshBtn" type="button">Atualizar dados do Radar</button>
-    </div>
-    <p class="radar-note">Os dados do Radar já são incluídos no botão único acima, junto com as correlações históricas. Nada é enviado automaticamente ao ChatGPT; você cola o prompt completo uma única vez.</p>
-  </div>
 
 </main>
 
@@ -275,43 +251,37 @@ function bindReadMore(root){
   }));
 }
 async function renderSavedReports(){
-  const insightsEl=document.getElementById('savedInsights');
-  const radarEl=document.getElementById('savedRadar');
-  insightsEl.innerHTML='<div class="saved-empty">Carregando insights salvos…</div>';
-  radarEl.innerHTML='<div class="saved-empty">Carregando análises do Radar…</div>';
-  const [insightsResult,radarResult]=await Promise.allSettled([
-    sb('insights?select=*&limit=100'),
-    sb('radar_analises?select=*&limit=30')
+  const insightsEl=document.getElementById('savedInsights'), radarEl=document.getElementById('savedRadar');
+  insightsEl.innerHTML='<div class="saved-empty">Carregando os últimos insights…</div>';
+  radarEl.innerHTML='<div class="saved-empty">Carregando o último Radar…</div>';
+  const [ir,rr]=await Promise.allSettled([
+    sb('insights?select=*&order=created_at.desc&limit=100'),
+    sb('radar_analises?select=*&order=created_at.desc&limit=30')
   ]);
-  if(insightsResult.status==='rejected'){
-    insightsEl.innerHTML='<div class="saved-empty">Não consegui ler a tabela <code>insights</code>. Confira a conexão/permissão no Supabase e tente atualizar.<br><small>'+escHTML(insightsResult.reason?.message||'Erro desconhecido')+'</small></div>';
-  }else{
-    const rows=insightsResult.value.slice().sort((a,b)=>String(b.created_at||b.data||'').localeCompare(String(a.created_at||a.data||'')));
-    if(!rows.length){
-      insightsEl.innerHTML='<div class="saved-empty">Ainda não há insights salvos. Gere a análise abaixo e importe o bloco <code>INSIGHTS_CSV</code> para a tabela <code>insights</code>.</div>';
-    }else{
-      insightsEl.innerHTML=rows.map(row=>{
-        const accent=/^#[0-9a-f]{6}$/i.test(String(row.cor||''))?row.cor:'#a78bfa';
-        return '<article class="saved-card insight-card" style="--saved-accent:'+escHTML(accent)+'">'+
-          '<div class="saved-card-top"><span class="saved-icon">'+escHTML(row.icone||'✨')+'</span><div><div class="saved-title">'+escHTML(row.titulo||'Insight')+'</div><div class="saved-meta">'+escHTML(reportDate(row))+(row.correlacao!=null?' · associação '+escHTML(row.correlacao):'')+'</div></div></div>'+
-          longTextCard(row.texto,accent)+'</article>';
-      }).join('');
-      bindReadMore(insightsEl);
-    }
+  function latestBatch(rows,dateField){
+    if(!rows.length)return [];
+    const stamp=rows[0].created_at;
+    if(stamp)return rows.filter(row=>row.created_at===stamp);
+    const date=rows[0][dateField]||rows[0].data;
+    return date?rows.filter(row=>(row[dateField]||row.data)===date):[rows[0]];
   }
-  if(radarResult.status==='rejected'){
-    radarEl.innerHTML='<div class="saved-empty">Não consegui ler a tabela <code>radar_analises</code>. Confira a conexão/permissão no Supabase e tente atualizar.<br><small>'+escHTML(radarResult.reason?.message||'Erro desconhecido')+'</small></div>';
-  }else{
-    const rows=radarResult.value.slice().sort((a,b)=>String(b.created_at||b.data_fim||b.data_inicio||'').localeCompare(String(a.created_at||a.data_fim||a.data_inicio||'')));
-    if(!rows.length){
-      radarEl.innerHTML='<div class="saved-empty">Ainda não há relatório do Radar salvo. Gere a análise abaixo e importe o bloco <code>RADAR_CSV</code> para <code>radar_analises</code>.</div>';
-    }else{
-      radarEl.innerHTML=rows.map((row,index)=>{
-        const title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
-        const text=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\n\n');
-        return '<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+
-          longTextCard(text,'#a78bfa')+'</article>';
-      }).join('');
+  if(ir.status==='rejected') insightsEl.innerHTML='<div class="saved-empty">Não consegui carregar os insights recentes. Confira a conexão/permissão no Supabase.<br><small>'+escHTML(ir.reason?.message||'Erro desconhecido')+'</small></div>';
+  else {
+    const rows=latestBatch(ir.value,'data');
+    insightsEl.innerHTML=rows.length?rows.map(row=>{
+      const accent=/^#[0-9a-f]{6}$/i.test(String(row.cor||''))?row.cor:'#a78bfa';
+      return '<article class="saved-card insight-card" style="--saved-accent:'+escHTML(accent)+'"><div class="saved-card-top"><span class="saved-icon">'+escHTML(row.icone||'✨')+'</span><div><div class="saved-title">'+escHTML(row.titulo||'Insight')+'</div><div class="saved-meta">'+escHTML(reportDate(row))+(row.correlacao!=null?' · associação '+escHTML(row.correlacao):'')+'</div></div></div>'+longTextCard(row.texto,accent)+'</article>';
+    }).join(''):'<div class="saved-empty">Ainda não há insights salvos. As linhas da importação mais recente aparecerão aqui depois que você importar o CSV.</div>';
+    bindReadMore(insightsEl);
+  }
+  if(rr.status==='rejected') radarEl.innerHTML='<div class="saved-empty">Não consegui carregar o Radar recente. Confira a conexão/permissão no Supabase.<br><small>'+escHTML(rr.reason?.message||'Erro desconhecido')+'</small></div>';
+  else {
+    const rows=latestBatch(rr.value,'data_fim').slice(0,1);
+    if(!rows.length) radarEl.innerHTML='<div class="saved-empty">Ainda não há relatório do Radar salvo. O último relatório aparecerá aqui depois da importação.</div>';
+    else {
+      const row=rows[0], title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
+      const body=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\n\n');
+      radarEl.innerHTML='<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+longTextCard(body,'#a78bfa')+'</article>';
       bindReadMore(radarEl);
     }
   }
@@ -500,7 +470,7 @@ function filtrarCorr(){
 
   const cl = document.getElementById('corrList');
   if(!filtradas.length){
-    cl.innerHTML='<div class="empty"><div class="big">📉</div>Nenhuma correlação com esses filtros.<br>Tente diminuir o mínimo.</div>';
+    cl.innerHTML='<div class="empty"><div class="big">📉</div>Nenhuma correlação atende a esses critérios. Se quiser explorar mais resultados, reduza um dos filtros.</div>';
     return;
   }
 
