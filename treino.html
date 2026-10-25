@@ -195,6 +195,17 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.err { background: #f87171; }
+
+/* Tema treino: crescimento, verde natural e amarelo suave */
+:root{--bg:#F4F5E9;--surface:#FFFFFF;--surface2:#E9EEDC;--border:rgba(53,91,60,.16);--text:#293A2D;--muted:#6D7B6B;--accent:#477A54;--primary:#477A54;--c-mood:#477A54;--c-sleep:#397F91;--c-energy:#D97943}
+body{background:radial-gradient(ellipse at 95% 0%,rgba(232,213,138,.18),transparent 25rem),var(--bg)!important;color:var(--text)!important}
+header{background:rgba(244,245,233,.97)!important;border-bottom:1px solid var(--border)!important}
+nav{background:rgba(255,255,255,.88)!important;border-color:var(--border)!important}
+nav a.active{color:#355B3C!important;border-bottom-color:#E8D58A!important}
+.card,.panel,.stat-card,.metric-card,.section-card{background:#fff!important;border-color:var(--border)!important;box-shadow:0 5px 18px rgba(53,91,60,.05)}
+input,select,textarea{background:#fff;color:var(--text);border-color:var(--border)}
+:focus-visible{outline:3px solid rgba(71,122,84,.55);outline-offset:3px}
+
 </style>
 </head>
 <body>
