@@ -517,6 +517,14 @@ const RADAR_METRICS = [
   {table:'diario_diario', field:'social_bom', label:'Interações sociais boas', higherGood:true, group:'Contexto'},
   {table:'diario_diario', field:'produtividade', label:'Produtividade', higherGood:true, group:'Rotina'},
   {table:'diario_diario', field:'satisfacao', label:'Satisfação', higherGood:true, group:'Diário'},
+  {table:'garmin_diario', field:'vfc_noturna_ms', label:'VFC noturna', higherGood:null, group:'Garmin'},
+  {table:'garmin_diario', field:'vfc_media_7d', label:'Média de VFC em 7 dias', higherGood:null, group:'Garmin'},
+  {table:'garmin_diario', field:'fc_repouso', label:'Frequência cardíaca de repouso', higherGood:false, group:'Garmin'},
+  {table:'garmin_diario', field:'estresse_diario', label:'Estresse Garmin', higherGood:false, group:'Garmin'},
+  {table:'garmin_diario', field:'passos', label:'Passos', higherGood:null, group:'Garmin'},
+  {table:'garmin_diario', field:'calorias_ativas', label:'Calorias ativas', higherGood:null, group:'Garmin'},
+  {table:'sono', field:'body_battery', label:'Body Battery', higherGood:null, group:'Garmin'},
+  {table:'sono', field:'sleep_score', label:'Pontuação do sono', higherGood:null, group:'Garmin'},
 
 ];
 
@@ -545,12 +553,12 @@ async function renderRadar(){
     // O Diário é a única fonte obrigatória. Sono e Garmin podem ser atualizados com menor frequência.
     const diario = await sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365');
     const [sonoResult, garminResult] = await Promise.allSettled([
-      sb('sono?order=data.desc&limit=90'),
-      sb('garmin_diario?order=data.desc&limit=90')
+      sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
     const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
-    const dataByTable = {diario_diario:diario};
+    const dataByTable = {diario_diario:diario, sono, garmin_diario:garmin};
     const recentStart = radarDateOffset(6);
     const baselineStart = radarDateOffset(27);
     const baselineEnd = radarDateOffset(7);
@@ -574,7 +582,7 @@ async function renderRadar(){
       }
       const result = {...m,recentMean:a.mean,baselineMean:b.mean,delta,recentN:a.n,baselineN:b.n,
         direction:delta>0?'subiu':'caiu',
-        interpretation: (delta>0)===m.higherGood?'favorável':'desfavorável'};
+        interpretation: m.higherGood===null?'neutro':((delta>0)===m.higherGood?'favorável':'desfavorável')};
       results.push(result);
       coverage.push({...result,status:'trend',reason:'Sinal acima do limite definido'});
     });
@@ -582,7 +590,10 @@ async function renderRadar(){
     window._radarResults = results;
     window._radarCoverage = coverage;
     const latestDate = rows => rows.length ? rows.map(r=>r.data).filter(Boolean).sort().reverse()[0] : null;
-    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:diario.map(row=>{const clean={data:row.data};RADAR_METRICS.forEach(m=>{if(row[m.field]!==null&&row[m.field]!==undefined&&row[m.field]!==''&&Number.isFinite(Number(row[m.field])))clean[m.field]=Number(row[m.field]);});return clean;}),sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
+    const dailyByDate = new Map();
+    [{table:'diario_diario',rows:diario},{table:'sono',rows:sono},{table:'garmin_diario',rows:garmin}].forEach(source=>source.rows.filter(row=>row.data>=from&&row.data<=radarDateOffset(0)).forEach(row=>{if(!dailyByDate.has(row.data))dailyByDate.set(row.data,{data:row.data});const clean=dailyByDate.get(row.data);RADAR_METRICS.filter(m=>m.table===source.table).forEach(m=>{const value=row[m.field];if(value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value)))clean[m.field]=Number(value);});}));
+    const dailyRows=[...dailyByDate.values()].sort((a,b)=>a.data.localeCompare(b.data));
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:dailyRows,sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
     status.textContent = 'Radar principal: Diário · janela recente '+recentStart+' a '+radarDateOffset(0)+' · base '+baselineStart+' a '+baselineEnd+'. Sono/Garmin são complementares.';
     if(!results.length){
       list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
