@@ -135,6 +135,96 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.err { background: #f87171; }
+
+  /* Diário celestial: azul-petróleo, creme e estrelas douradas */
+  :root{--bg:#103E48;--surface:#174C56;--surface2:#205A63;--border:rgba(255,231,164,.22);--text:#FFF8E9;--muted:#C0D5D2;--purple:#E8C65A;--blue:#7BC7D0;--green:#9FC8A1;--orange:#F0A36B;--pink:#EAA6C5;--yellow:#F4D96B}
+  body{background:radial-gradient(ellipse at 90% 0%,rgba(232,198,90,.12),transparent 28rem),var(--bg);color:var(--text)}
+  header{background:rgba(16,62,72,.94);border-color:var(--border)}
+  nav{background:rgba(23,76,86,.9);border-color:var(--border)}
+  nav a{color:#C0D5D2} nav a.active{color:#FFF8E9;border-bottom-color:#E8C65A}
+  .card,.panel,.form-card,.entry-card,.stat-card{background:var(--surface);border-color:var(--border);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+  input,select,textarea{background:#103E48!important;color:#FFF8E9!important;border-color:rgba(255,231,164,.28)!important}
+  button{border-color:rgba(255,231,164,.28)}
+  .section-title,.muted{color:var(--muted)}
+  .toast{box-shadow:0 8px 28px rgba(0,0,0,.22)}
+  body::after{content:"✦";position:fixed;right:22px;bottom:18px;color:#E8C65A;font-size:25px;opacity:.65;pointer-events:none}
+
+
+  /* Tema diário celestial: azul RGB(15,63,98), creme e dourado */
+  :root {
+    --bg:#F5F0E5; --surface:#FFFFFF; --surface2:#EAF0F3;
+    --border:rgba(15,63,98,.16); --text:#183346; --muted:#647985;
+    --accent:#0F3F62; --primary:#0F3F62; --gold:#D6B45C;
+    --c-mood:#0F3F62; --c-sleep:#397F91; --c-energy:#C28A35;
+  }
+  body { background:radial-gradient(ellipse at 95% 0%,rgba(214,180,92,.12),transparent 25rem),var(--bg)!important; color:var(--text)!important; }
+  header { background:rgba(245,240,229,.96)!important; border-bottom:1px solid var(--border)!important; box-shadow:0 4px 20px rgba(15,63,98,.06); }
+  nav { background:rgba(255,255,255,.85)!important; border-color:var(--border)!important; }
+  nav a.active, nav a:hover { color:#0F3F62!important; border-bottom-color:#D6B45C!important; }
+  .card,.panel,.stat-card,.metric-card,.section-card { background:#fff!important; border-color:var(--border)!important; box-shadow:0 5px 18px rgba(15,63,98,.055); }
+  button,.btn { border-color:var(--border); }
+  input,select,textarea { background:#fff; color:var(--text); border-color:var(--border); }
+  h1,h2,h3,.page-title,.logo { color:#0F3F62; }
+  a { color:#0F3F62; }
+  :focus-visible { outline:3px solid rgba(214,180,92,.8); outline-offset:3px; }
+  
+
+/* Tema diário celestial: azul RGB(15,63,98), creme e dourado */
+:root{--bg:#F5F0E5;--surface:#FFFFFF;--surface2:#EAF0F3;--border:rgba(15,63,98,.16);--text:#183346;--muted:#647985;--accent:#0F3F62;--primary:#0F3F62;--gold:#D6B45C;--c-mood:#0F3F62;--c-sleep:#397F91;--c-energy:#C28A35}
+body{background:var(--bg)!important;color:var(--text)!important}
+header{background:rgba(245,240,229,.97)!important;border-bottom:1px solid var(--border)!important}
+nav{background:#fff!important;border-color:var(--border)!important}
+nav a.active{color:#0F3F62!important;border-bottom-color:#D6B45C!important}
+.card,.panel,.stat-card,.metric-card,.section-card{background:#fff!important;border-color:var(--border)!important}
+input,select,textarea{background:#fff;color:var(--text);border-color:var(--border)}
+
+/* REFINO ESTÉTICO POR PÁGINA */
+
+/* DIÁRIO CELESTIAL — azul-petróleo profundo, creme e constelações douradas */
+:root{--bg:#0F3F62!important;--surface:#F5F0E5!important;--surface2:#E8E0CF!important;--border:#D6B45C55!important;--text:#17344A!important;--muted:#647987!important;--purple:#D6B45C!important;--blue:#0F3F62!important;--green:#477A54!important;--orange:#C8794D!important;--pink:#976A8D!important;--yellow:#D6B45C!important}
+body{background:#0F3F62!important;color:#F5F0E5!important;background-image:radial-gradient(circle at 8% 14%,#D6B45C18 1px,transparent 2px),radial-gradient(circle at 83% 26%,#F5F0E530 1px,transparent 2px),radial-gradient(circle at 67% 78%,#D6B45C22 1px,transparent 2px)!important;background-size:37px 43px,53px 61px,71px 67px!important}
+header{background:#0B304B!important;border-bottom:1px solid #D6B45C66!important}
+main{max-width:760px!important;padding-top:34px!important}
+.page-title{color:#F5F0E5!important;letter-spacing:-.04em}
+.page-title span{color:#D6B45C!important}
+.page-sub{color:#C7D6DF!important}
+.section{background:#F5F0E5!important;border:1px solid #D6B45C88!important;border-radius:24px 24px 8px 24px!important;box-shadow:0 12px 28px #061D2D30!important}
+.section-header{background:#E8E0CF!important;border-bottom:1px solid #D6B45C66!important;color:#17344A!important}
+.section-body{background:#F5F0E5!important}
+.field-label{color:#17344A!important}
+.field-hint{color:#647987!important}
+input[type=date],input[type=text],textarea{background:#FFFCF5!important;color:#17344A!important;border:1px solid #0F3F6240!important}
+.scale-btn{background:#FFFCF5!important;color:#0F3F62!important;border:1px solid #0F3F6230!important;border-radius:50%!important}
+.scale-btn.selected{background:#D6B45C!important;color:#17344A!important;border-color:#D6B45C!important;box-shadow:0 0 0 4px #D6B45C35!important}
+.btn-submit{background:#D6B45C!important;color:#17344A!important;border-radius:999px!important;box-shadow:0 5px 0 #092D45!important}
+.toast{background:#D6B45C!important;color:#17344A!important}
+
+
+/* Correção final da paleta celestial: azul-petróleo solicitado */
+:root{--bg:#0F3F62!important;--surface:#F5F0E5!important;--surface2:#E8E0CF!important;--border:rgba(214,180,92,.45)!important;--text:#17344A!important;--muted:#647987!important}
+body{background-color:#0F3F62!important;background-image:radial-gradient(ellipse at 90% 0%,rgba(214,180,92,.16),transparent 28rem),radial-gradient(circle at 12% 22%,rgba(245,240,229,.20) 1px,transparent 2px),radial-gradient(circle at 78% 68%,rgba(214,180,92,.26) 1px,transparent 2px)!important;background-size:auto,43px 47px,67px 71px!important;color:#F5F0E5!important}
+header{background:rgba(10,45,72,.97)!important;border-color:rgba(214,180,92,.45)!important}
+.page-title,.page-title span{color:#F5F0E5!important}
+.page-title span{color:#D6B45C!important}
+.page-sub{color:#D2E0E8!important}
+.section{background:#F5F0E5!important;border-color:#D6B45C!important}
+.section-header{background:#E8E0CF!important;color:#17344A!important}
+.section-body{background:#F5F0E5!important}
+input[type=date],input[type=text],textarea{background:#FFFCF5!important;color:#17344A!important;border-color:#0F3F62!important}
+
+/* Mais azul no diário: superfícies também escuras, creme apenas nos detalhes */
+:root{--surface:#12496F!important;--surface2:#0B304B!important;--text:#F5F0E5!important;--muted:#C7D6DF!important}
+.section{background:#12496F!important;color:#F5F0E5!important;border-color:#D6B45C88!important;box-shadow:0 12px 28px rgba(3,20,34,.28)!important}
+.section-header{background:#0B304B!important;color:#F5F0E5!important;border-bottom:1px solid #D6B45C66!important}
+.section-body{background:#12496F!important}
+.field-label{color:#F5F0E5!important}
+.field-hint{color:#C7D6DF!important}
+input[type=date],input[type=text],textarea{background:#0B304B!important;color:#F5F0E5!important;border:1px solid #D6B45C66!important}
+.scale-btn{background:#0B304B!important;color:#F5F0E5!important;border:1px solid #D6B45C66!important}
+.scale-btn.selected{background:#D6B45C!important;color:#0B304B!important}
+
+/* Contraste dos títulos das seções no fundo azul-escuro */
+.section-header h2{color:#D6B45C!important;text-shadow:0 1px 0 rgba(0,0,0,.18)!important}
 </style>
 </head>
 <body>

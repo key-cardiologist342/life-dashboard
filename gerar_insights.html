@@ -121,6 +121,40 @@
   .saved-action{font-size:.72rem;color:var(--muted);line-height:1.6;margin-top:10px}
   @media(min-width:760px){.saved-columns{grid-template-columns:1.1fr .9fr}.saved-grid{grid-template-columns:1fr 1fr}}
 
+
+/* Tema laboratório criativo: malva, rosa, laranja e creme */
+:root{--bg:#FFF7F0;--surface:#FFFFFF;--surface2:#F8E9F0;--border:rgba(151,106,141,.18);--text:#3D2E3D;--muted:#806D7A;--accent:#976A8D;--primary:#976A8D;--c-mood:#976A8D;--c-sleep:#7A83C2;--c-energy:#F07845;--c-health:#477A54}
+body{background:radial-gradient(ellipse at 5% 0%,rgba(240,91,156,.10),transparent 24rem),radial-gradient(ellipse at 95% 10%,rgba(244,217,107,.15),transparent 24rem),var(--bg)!important;color:var(--text)!important}
+header{background:rgba(255,247,240,.97)!important;border-bottom:1px solid var(--border)!important}
+nav{background:rgba(255,255,255,.88)!important;border-color:var(--border)!important}
+nav a.active{color:#49334A!important;border-bottom-color:#F05B9C!important}
+.card,.panel,.stat-card,.metric-card,.section-card{background:#fff!important;border-color:var(--border)!important;box-shadow:0 5px 18px rgba(92,54,79,.05)}
+input,select,textarea{background:#fff;color:var(--text);border-color:var(--border)}
+:focus-visible{outline:3px solid rgba(240,91,156,.55);outline-offset:3px}
+
+
+/* REFINO ESTÉTICO POR PÁGINA */
+
+/* LABORATÓRIO CRIATIVO — blocos editoriais, etiquetas e cores de experimentação */
+:root{--bg:#FFF4ED!important;--surface:#FFFFFF!important;--surface2:#FCE4D8!important;--border:#976A8D40!important;--text:#38283A!important;--muted:#806D7A!important;--purple:#976A8D!important;--blue:#397F91!important;--green:#477A54!important;--orange:#F07845!important;--pink:#E94F91!important;--yellow:#E8D58A!important}
+body{background:#FFF4ED!important;background-image:linear-gradient(135deg,#976A8D0B 25%,transparent 25%),linear-gradient(315deg,#F078450C 25%,transparent 25%)!important;background-size:34px 34px!important;color:#38283A!important}
+header{background:#FFF4ED!important;border-bottom:2px solid #976A8D40!important}
+main{max-width:1080px!important}
+.page-title{font-size:2.2rem!important;letter-spacing:-.05em}
+.page-title span{color:#E94F91!important}
+.stat-card{border-radius:6px 18px 18px 18px!important;box-shadow:5px 5px 0 #976A8D12!important}
+.stat-card:nth-child(2n){background:#FFF0D2!important}
+.corr-item{background:#FFFFFF!important;border-radius:6px 14px 14px 14px!important;border-left:4px solid #397F91!important}
+.radar-item{background:#FFF0D2!important;border:1px dashed #976A8D70!important;border-radius:16px 6px 16px 6px!important}
+.btn-generate{background:linear-gradient(110deg,#976A8D,#E94F91,#F07845)!important;border-radius:8px 22px 8px 22px!important;box-shadow:0 6px 0 #976A8D30!important}
+.copy-box,.instrucao{background:#FFFFFF!important;border-color:#976A8D55!important;border-radius:6px 18px 18px 18px!important}
+.filtro-btn.active{background:#976A8D18!important;color:#976A8D!important;border-color:#976A8D!important}
+
+
+/* Layout solicitado: Insights salvos e Radar pessoal empilhados em uma coluna */
+.saved-columns{grid-template-columns:minmax(0,1fr)!important;gap:22px!important}
+.saved-grid{grid-template-columns:minmax(0,1fr)!important}
+@media(min-width:760px){.saved-columns{grid-template-columns:minmax(0,1fr)!important}.saved-grid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
 </head>
 <body>

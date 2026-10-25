@@ -30,6 +30,26 @@
 
   .error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:10px;padding:12px 16px;font-size:0.8rem;color:#f87171;margin-top:16px;display:none}
   .error.visible{display:block}
+
+/* Identidade compartilhada com o dashboard */
+:root{--bg:#FFF8E9;--surface:#FFFFFF;--surface2:#FFF0D2;--border:rgba(92,54,79,.16);--text:#38283A;--muted:#806D7A;--accent:#976A8D;--primary:#976A8D}
+body{background:radial-gradient(ellipse at 4% 0%,rgba(240,91,156,.12),transparent 28rem),radial-gradient(ellipse at 96% 16%,rgba(232,213,138,.22),transparent 25rem),#FFF8E9!important;color:#38283A!important}
+.card,.login-card,.auth-card,.panel{background:#fff!important;border-color:rgba(151,106,141,.18)!important}
+input,select,textarea{background:#fff;color:#38283A;border-color:rgba(151,106,141,.25)}
+button,.btn{border-radius:12px}
+:focus-visible{outline:3px solid rgba(233,79,145,.55);outline-offset:3px}
+
+
+/* REFINO ESTÉTICO POR PÁGINA */
+
+/* PORTA DE ENTRADA — convite acolhedor, distinto do painel */
+body{background:#F3EFE7!important;background-image:radial-gradient(circle at 18% 18%,#976A8D24 0 9rem,transparent 9.1rem),radial-gradient(circle at 85% 82%,#E8D58A65 0 12rem,transparent 12.1rem),radial-gradient(circle at 78% 12%,#F0784520 0 4rem,transparent 4.1rem)!important}
+.card{max-width:440px!important;padding:44px!important;border-radius:32px 32px 32px 8px!important;box-shadow:12px 12px 0 #976A8D20!important;border:1px solid #976A8D35!important}
+.logo{font-size:1.8rem!important;letter-spacing:-.06em}
+.logo span{color:#E94F91!important}
+.subtitle{margin-bottom:32px!important}
+.btn{background:linear-gradient(110deg,#976A8D,#E94F91)!important;box-shadow:0 6px 0 #976A8D30!important;border-radius:8px 18px 8px 18px!important}
+
 </style>
 </head>
 <body>

@@ -7,18 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    --bg:       #0e0f13;
-    --surface:  #16181f;
-    --surface2: #1e2029;
-    --border:   rgba(255,255,255,0.06);
-    --text:     #e8eaf0;
-    --muted:    #6b7280;
-    --c-mood:   #a78bfa;
-    --c-sleep:  #38bdf8;
-    --c-energy: #fb923c;
-    --c-health: #34d399;
-    --c-time:   #f472b6;
-    --c-cycle:  #f9a8d4;
+    /* Sala dopamine: malva, manteiga, pink e laranja */
+    --bg:       #FFF8E9;
+    --surface:  #FFFFFF;
+    --surface2: #FFF0D2;
+    --border:   rgba(92,54,79,0.13);
+    --text:     #38283A;
+    --muted:    #806D7A;
+    --c-mood:   #976A8D;
+    --c-sleep:  #397F91;
+    --c-energy: #F07845;
+    --c-health: #477A54;
+    --c-time:   #E94F91;
+    --c-cycle:  #C5A33D;
+    --accent-pink: #F05B9C;
+    --accent-butter: #E8D58A;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 60px; }
@@ -168,6 +171,103 @@
 
   /* ── EMPTY ── */
   .empty { color:var(--muted); font-size:0.78rem; text-align:center; padding:24px 0; }
+
+  /* ── DOPAMINE HOME REFRESH ── */
+  body {
+    background:
+      radial-gradient(ellipse at 4% 0%, rgba(240,91,156,.10), transparent 28rem),
+      radial-gradient(ellipse at 96% 16%, rgba(244,217,107,.22), transparent 25rem),
+      var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: rgba(255,248,233,.92);
+    border-bottom-color: var(--border);
+    box-shadow: 0 4px 20px rgba(92,54,79,.05);
+  }
+  .logo { color: #49334A; letter-spacing: -.04em; }
+  .logo span { color: var(--accent-pink); }
+  .date-chip { color: var(--muted); background: #fff; border-color: var(--border); }
+  header button[onclick="logout()"] { border-color: var(--border) !important; color: var(--text) !important; background: #fff !important; }
+  .status-dot { box-shadow: 0 0 0 4px rgba(71,122,84,.12); }
+  nav { background: rgba(255,255,255,.72); border-bottom-color: var(--border); }
+  nav a { color: #8C7887; }
+  nav a:hover { color: #49334A; }
+  nav a.active { color: #49334A; border-bottom-color: var(--accent-pink); }
+  .greeting h1 { color: #49334A; letter-spacing: -.045em; }
+  .greeting h1 span { color: var(--c-mood); }
+  .greeting p { color: var(--muted); }
+  .disney-card {
+    background: linear-gradient(115deg, #F6DDEB 0%, #FFF0C3 54%, #FCE6D9 100%);
+    border: 1px solid rgba(151,106,141,.2);
+    border-radius: 22px;
+    box-shadow: 0 8px 22px rgba(151,106,141,.08);
+  }
+  .disney-text { color: #49334A; }
+  .disney-source { color: #806D7A; }
+  .section-title { color: #8A687F; letter-spacing: .14em; }
+  .section-title::after { background: rgba(151,106,141,.20); }
+  .score-card {
+    background: rgba(255,255,255,.94);
+    border-color: var(--border);
+    border-radius: 18px;
+    box-shadow: 0 5px 16px rgba(92,54,79,.045);
+  }
+  .score-card:hover { border-color: rgba(151,106,141,.35); box-shadow: 0 9px 22px rgba(92,54,79,.08); }
+  .score-card .label { color: #806D7A; }
+  .score-card .sub { color: #958392; }
+  .up { color: #477A54; }
+  .down { color: #C94E57; }
+  .flat { color: #958392; }
+  .card {
+    background: rgba(255,255,255,.96);
+    border-color: var(--border);
+    box-shadow: 0 6px 20px rgba(92,54,79,.045);
+  }
+  .card:hover { border-color: rgba(151,106,141,.30); }
+  .card-title { color: #49334A; }
+  .card-badge { background: #FFF0D2; color: #806D7A; }
+  .bar-track { background: #F5E9E8; }
+  .treino-dot { border-color: rgba(92,54,79,.18); }
+  .treino-dot.ativo { background: var(--c-health); border-color: var(--c-health); box-shadow: 0 0 0 4px rgba(71,122,84,.12); }
+  .treino-dot.vazio { background: #FFF0D2; }
+  .insight, .radar-analysis-card, .data-source { background: #FFF5E6; }
+  .period-controls button { border-color: var(--border); background: #FFF8EF; color: #806D7A; }
+  .period-controls button.active { color: #49334A; border-color: var(--c-mood); background: #F4E4F0; }
+  .dashboard-link { color: #B6427C; }
+  .chart-note, .legend-item, .legend-item i, .sleep-legend-item { color: #806D7A; }
+  .sleep-need-line { background: rgba(92,54,79,.20); }
+  .empty { color: #958392; }
+  button, a, .score-card, .card { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid rgba(233,79,145,.55); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+
+
+  /* Ajuste final: amarelo manteiga suave e acabamento claro */
+  :root { --accent-butter:#E8D58A; }
+  .disney-card { background:linear-gradient(115deg,#F6DDEB 0%,#FFF6D9 54%,#FCE6D9 100%); }
+  .card:hover { border-color:rgba(151,106,141,.30); }
+  
+
+/* Ajuste final da paleta: amarelo manteiga suave */
+:root{--accent-butter:#E8D58A}
+.disney-card{background:linear-gradient(115deg,#F6DDEB 0%,#FFF6D9 54%,#FCE6D9 100%)}
+
+
+/* REFINO ESTÉTICO POR PÁGINA */
+
+/* SALA WHIMSICAL — composição lúdica e acolhedora */
+body{background-color:#FFF8E9!important;background-image:radial-gradient(circle at 8% 22%,#F05B9C20 0 7rem,transparent 7.1rem),radial-gradient(circle at 92% 42%,#E8D58A55 0 10rem,transparent 10.1rem),radial-gradient(circle at 72% 4%,#F0784520 0 5rem,transparent 5.1rem)!important}
+header{background:rgba(255,248,233,.94)!important;border-bottom:2px solid #976A8D40!important}
+.logo{letter-spacing:-.06em}
+nav a{border-radius:14px 14px 0 0}
+.greeting{padding:1.3rem 1.5rem;border-radius:28px 28px 28px 8px;background:linear-gradient(115deg,#976A8D18,#E8D58A35,#F05B9C12);border:1px solid #976A8D30}
+.disney-card{border-radius:28px 12px 28px 12px!important;background:linear-gradient(120deg,#F05B9C20,#E8D58A55,#F0784518)!important;border:1px solid #E94F9140!important}
+.score-card{border-radius:22px 22px 22px 7px!important;box-shadow:0 6px 0 #976A8D10}
+.card{border-radius:24px 24px 24px 8px!important}
+
 </style>
 </head>
 <body>
