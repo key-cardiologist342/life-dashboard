@@ -150,6 +150,22 @@
   .radar-analysis-note{font-size:.7rem;color:var(--muted);margin-top:8px}
 
 
+  .period-controls{display:flex;gap:4px;flex-wrap:wrap}
+  .period-controls button{border:1px solid var(--border);background:var(--surface2);color:var(--muted);font:inherit;font-size:.65rem;padding:5px 8px;border-radius:7px;cursor:pointer}
+  .period-controls button.active{color:var(--text);border-color:var(--c-mood);background:rgba(167,139,250,.12)}
+  .dashboard-link{display:inline-block;margin-top:14px;color:var(--c-mood);font-size:.75rem;text-decoration:none}
+  .dashboard-link:hover{text-decoration:underline}
+  .chart-note{font-size:.68rem;line-height:1.5;color:var(--muted);margin-top:8px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--muted)}
+  .legend-item i{width:8px;height:8px;border-radius:2px;display:inline-block}
+  .data-status{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+  .data-source{background:var(--surface2);padding:12px;border-radius:10px}
+  .data-source strong{display:block;font-size:.78rem;margin-bottom:5px}
+  .data-source p{font-size:.68rem;line-height:1.5;color:var(--muted)}
+  .freshness{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;margin-bottom:7px}
+  .freshness:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+  .freshness.good{color:var(--c-health)}.freshness.wait{color:#fbbf24}.freshness.old{color:#f87171}.freshness.unknown{color:var(--muted)}
+
   /* ── EMPTY ── */
   .empty { color:var(--muted); font-size:0.78rem; text-align:center; padding:24px 0; }
 </style>
@@ -190,121 +206,47 @@
     </div>
   </div>
 
-  <!-- SCORES -->
-  <div class="section-title">resumo de hoje</div>
+  <div class="section-title">seu panorama</div>
   <div class="score-strip">
-    <div class="score-card" style="--accent:var(--c-mood)">
-      <div class="label">Humor</div>
-      <div class="value" id="sc-mood">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat" id="trend-mood">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-energy)">
-      <div class="label">Energia</div>
-      <div class="value" id="sc-energy">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat" id="trend-energy">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-sleep)">
-      <div class="label">Sono</div>
-      <div class="value" id="sc-sleep">—</div>
-      <div class="sub" id="sc-sleep-sub">ontem</div>
-      <div class="trend flat" id="trend-sleep">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-time)">
-      <div class="label">Foco</div>
-      <div class="value" id="sc-focus">—</div>
-      <div class="sub">hoje</div>
-      <div class="trend flat">—</div>
-    </div>
-    <div class="score-card" style="--accent:var(--c-cycle)">
-      <div class="label">Ciclo</div>
-      <div class="value" id="sc-cycle">—</div>
-      <div class="sub" id="sc-cycle-sub">fase</div>
-      <div class="trend flat" id="sc-cycle-dia">—</div>
-    </div>
+    <div class="score-card" style="--accent:var(--c-mood)"><div class="label">Humor</div><div class="value" id="sc-mood">—</div><div class="sub" id="sc-mood-sub">Último registro</div><div class="trend flat" id="trend-mood">—</div></div>
+    <div class="score-card" style="--accent:var(--c-energy)"><div class="label">Energia</div><div class="value" id="sc-energy">—</div><div class="sub" id="sc-energy-sub">Último registro</div><div class="trend flat" id="trend-energy">—</div></div>
+    <div class="score-card" style="--accent:var(--c-time)"><div class="label">Foco</div><div class="value" id="sc-focus">—</div><div class="sub" id="sc-focus-sub">Último registro</div><div class="trend flat" id="trend-focus">—</div></div>
+    <div class="score-card" style="--accent:var(--c-sleep)"><div class="label">Sono</div><div class="value" id="sc-sleep">—</div><div class="sub" id="sc-sleep-sub">Último registro</div><div class="trend flat" id="trend-sleep">—</div></div>
+    <div class="score-card" style="--accent:var(--c-health)"><div class="label">Atividade</div><div class="value" id="sc-activity">—</div><div class="sub" id="sc-activity-sub">Atividades · 7 dias</div><div class="trend flat" id="trend-activity">—</div></div>
+    <div class="score-card" style="--accent:var(--c-cycle)"><div class="label">Ciclo</div><div class="value" id="sc-cycle">—</div><div class="sub" id="sc-cycle-sub">Fase estimada</div><div class="trend flat" id="sc-cycle-dia">—</div></div>
   </div>
 
-  <!-- ROW 1: HUMOR + SONO -->
-  <div class="section-title">estado & recuperação</div>
+  <div class="section-title">o que merece sua atenção</div>
   <div class="grid-2">
-
-    <!-- HUMOR & ENERGIA -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Humor & Energia</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="mood-timeline" id="moodChart"></div>
-      <div style="display:flex;gap:14px;margin-top:12px">
-        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-mood)"></div>Humor</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--c-energy)"></div>Energia</div>
-      </div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Pequenos próximos passos</div><span class="card-badge">prático</span></div>
+      <div id="actionsSummary" class="insight-text">As sugestões aparecerão quando houver dados suficientes.</div>
+      <p style="margin-top:12px;font-size:.75rem;color:var(--muted)">Sem cobrança automática: dias sem registro não contam como dias ruins.</p>
+      <a href="gerar_insights.html" class="dashboard-link">Abrir Insights e Radar completos ↗</a>
     </div>
-
-    <!-- SONO 7 DIAS -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>Sono — últimos 7 dias</div>
-        <span class="card-badge">Garmin</span>
-      </div>
-      <div class="sleep-chart-wrap">
-        <div class="sleep-chart" id="sleepChart"></div>
-        <div class="sleep-need-line" id="sleepNeedLine" style="display:none"></div>
-      </div>
-      <div class="sleep-legend">
-        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Duração</div>
-        <div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.3)"></div>Necessidade</div>
-        <div class="sleep-legend-item" id="sleepAvgLegend"></div>
-      </div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-cycle)"></div>Seu ciclo menstrual</div><span class="card-badge">fase provável</span></div>
+      <div id="cycleSummary" class="insight-text">Aguardando registros do ciclo…</div>
+      <p id="cycleCaveat" style="margin-top:10px;font-size:.72rem;color:var(--muted)">Estimativa baseada nos inícios de ciclo registrados.</p>
     </div>
-
   </div>
 
-  <!-- ROW 2: TEMPO + TREINO -->
-  <div class="section-title">movimento & tempo</div>
+  <div class="section-title">evolução e histórico</div>
+  <div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">Período da visão geral</div><div class="period-controls" id="overviewPeriod"><button class="active" data-days="7">7 dias</button><button data-days="30">30 dias</button><button data-days="90">90 dias</button></div></div><p class="chart-note">Os gráficos mostram os registros existentes no intervalo; lacunas não são preenchidas artificialmente.</p></div>
   <div class="grid-2">
-
-    <!-- TEMPO SEMANAL -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-time)"></div>Tempo (Toggl)</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="bar-list" id="timeList"></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Humor & energia</div><div class="period-controls" data-filter="mood"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div>
+      <div class="mood-timeline" id="moodChart"></div><div id="moodCoverage" class="chart-note"></div>
+      <div style="display:flex;gap:14px;margin-top:12px"><span class="legend-item"><i style="background:var(--c-mood)"></i>Humor</span><span class="legend-item"><i style="background:var(--c-energy)"></i>Energia</span></div>
     </div>
-
-    <!-- TREINO 7 DIAS -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Treinos da semana</div>
-        <span class="card-badge">7 dias</span>
-      </div>
-      <div class="treino-week" id="treinoWeek"></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-sleep)"></div>Sono</div><div class="period-controls" data-filter="sleep"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div>
+      <div class="sleep-chart-wrap"><div class="sleep-chart" id="sleepChart"></div><div class="sleep-need-line" id="sleepNeedLine" style="display:none"></div></div>
+      <div class="sleep-legend"><div class="sleep-legend-item"><div class="sleep-legend-dot" style="background:var(--c-sleep)"></div>Duração</div><div class="sleep-legend-item" id="sleepAvgLegend"></div></div><div id="sleepCoverage" class="chart-note"></div>
     </div>
-
   </div>
-
-
-  <!-- INSIGHTS LARGO -->
-  <div class="section-title">insights</div>
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Insights da semana</div>
-      <span class="card-badge">✦ IA</span>
-    </div>
-    <div class="insights-list" id="insightsList"></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-health)"></div>Atividade física Garmin</div><div class="period-controls" data-filter="activity"><button class="active" data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button></div></div><div id="activitySummary" class="bar-list"></div><div id="activityCoverage" class="chart-note"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title"><div class="dot" style="background:var(--c-energy)"></div>Rotina e hábitos</div><span class="card-badge">diário</span></div><div id="habitSummary" class="bar-list"></div><p class="chart-note">Resumo dos registros disponíveis, sem nota geral de desempenho.</p></div>
   </div>
-
-  <div class="section-title">análise do radar</div>
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <div class="card-title"><div class="dot" style="background:var(--c-mood)"></div>Interpretação assistida</div>
-      <span class="card-badge">ChatGPT</span>
-    </div>
-    <div id="radarAnalysisContent"><div class="empty">Nenhuma análise do Radar salva ainda.</div></div>
-  </div>
-
+  <div class="section-title">estado dos dados</div>
+  <div class="card"><p class="chart-note" style="margin-bottom:12px">A data do registro pode ser diferente da data de importação. Os estados indicam cobertura observada, não qualidade da sua rotina.</p><div id="dataStatus" class="data-status"><div class="empty">Verificando fontes…</div></div></div>
 </main>
 
 <script type="module">
