@@ -135,6 +135,20 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.err { background: #f87171; }
+
+  /* Diário celestial: azul-petróleo, creme e estrelas douradas */
+  :root{--bg:#103E48;--surface:#174C56;--surface2:#205A63;--border:rgba(255,231,164,.22);--text:#FFF8E9;--muted:#C0D5D2;--purple:#E8C65A;--blue:#7BC7D0;--green:#9FC8A1;--orange:#F0A36B;--pink:#EAA6C5;--yellow:#F4D96B}
+  body{background:radial-gradient(ellipse at 90% 0%,rgba(232,198,90,.12),transparent 28rem),var(--bg);color:var(--text)}
+  header{background:rgba(16,62,72,.94);border-color:var(--border)}
+  nav{background:rgba(23,76,86,.9);border-color:var(--border)}
+  nav a{color:#C0D5D2} nav a.active{color:#FFF8E9;border-bottom-color:#E8C65A}
+  .card,.panel,.form-card,.entry-card,.stat-card{background:var(--surface);border-color:var(--border);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+  input,select,textarea{background:#103E48!important;color:#FFF8E9!important;border-color:rgba(255,231,164,.28)!important}
+  button{border-color:rgba(255,231,164,.28)}
+  .section-title,.muted{color:var(--muted)}
+  .toast{box-shadow:0 8px 28px rgba(0,0,0,.22)}
+  body::after{content:"✦";position:fixed;right:22px;bottom:18px;color:#E8C65A;font-size:25px;opacity:.65;pointer-events:none}
+
 </style>
 </head>
 <body>
