@@ -261,7 +261,7 @@ function reportDate(row){
 function longTextCard(text,accent='#a78bfa',label='Ler mais'){
   const full=String(text||'').trim();
   if(!full) return '<p class="saved-body">Sem texto neste registro.</p>';
-  const isLong=full.length>420 || full.split('\\n').length>5;
+  const isLong=full.length>420 || full.split('\n').length>5;
   return '<div class="saved-body '+(isLong?'clamped':'')+'" data-full="'+escHTML(full)+'">'+escHTML(full)+'</div>'+
     (isLong?'<button type="button" class="saved-more" style="--saved-accent:'+escHTML(accent)+'" data-expanded="false">'+label+'</button>':'');
 }
@@ -308,7 +308,7 @@ async function renderSavedReports(){
     }else{
       radarEl.innerHTML=rows.map((row,index)=>{
         const title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
-        const text=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\\n\\n');
+        const text=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\n\n');
         return '<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+
           longTextCard(text,'#a78bfa')+'</article>';
       }).join('');
