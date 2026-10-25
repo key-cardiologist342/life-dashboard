@@ -550,8 +550,8 @@ async function renderRadar(){
   const status = document.getElementById('radarStatus');
   const list = document.getElementById('radarList');
   try{
-    const from = radarDateOffset(27);
-    // O Diário é a única fonte obrigatória. Sono e Garmin podem ser atualizados com menor frequência.
+    const from = radarDateOffset(89);
+    // Busca até 90 dias para investigar padrões temporais repetidos; a comparação visual continua sendo 7 dias vs. 21 dias anteriores. Diário é obrigatório; sono/Garmin podem ter lacunas.
     const diario = await sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365');
     const [sonoResult, garminResult] = await Promise.allSettled([
       sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
@@ -623,15 +623,18 @@ function buildRadarInput(){
   return `DADOS DO RADAR PESSOAL — ANALISAR JUNTO COM OS INSIGHTS HISTÓRICOS
 
 OBJETIVO DO RADAR
-Identifique sinais recentes que possam ajudar a acompanhar os próximos 3–7 dias. Não repita simplesmente as correlações históricas: use-as como contexto para avaliar se as mudanças atuais acrescentam algo novo. Procure sinais que estejam surgindo, acelerando, persistindo ou revertendo e considere indicadores antecedentes apenas quando os próprios dados sustentarem essa leitura.
+Investigue sinais recentes que possam antecipar mudanças no humor, energia, foco, produtividade ou rotina nos próximos 3–7 dias. O objetivo não é resumir médias: é testar se há pistas temporais nos registros pessoais. Use a sequência de até 90 dias para procurar episódios repetidos em que uma mudança em uma métrica veio antes de uma mudança em outra. A comparação visual de tendência continua sendo últimos 7 dias vs. 21 dias anteriores.
 
 REGRAS
-- Escolha no máximo 2 sinais recentes realmente úteis. Explique o que mudou, em quantos registros aparece e se persiste, acelera ou reverte, quando possível.
-- Faça uma interpretação condicional para os próximos 3–7 dias somente se houver sequência repetida ou contexto histórico relevante: o que pode continuar ou que outro sinal vale observar se a tendência persistir. Não afirme que algo vai acontecer nem invente probabilidades.
+- Primeiro identifique mudanças reais no Diário e descreva a sequência, não apenas a média: início aproximado, duração, intensidade e sinais de estabilização/recuperação.
+- Depois investigue possíveis indicadores antecedentes: por exemplo, se alterações de VFC, FC de repouso, estresse, sono, energia ou rotina costumam preceder mudanças de humor/foco/produtividade em 1–7 dias. Compare datas explícitas e procure pelo menos 2 episódios compatíveis; não basta duas métricas subirem ou caírem juntas no mesmo período.
+- Separe claramente (A) mudança observada, (B) hipótese de sinal antecedente sustentada por episódios anteriores e (C) cenário condicional para os próximos 3–7 dias. Se não houver episódios suficientes, diga que ainda não é possível estabelecer um indicador antecedente e não invente uma previsão.
+- Escolha no máximo 2 sinais realmente úteis. Explique a evidência concreta, as datas e quantas vezes o padrão se repetiu.
 - Use os dados de humor diretamente; não deduza humor a partir de foco, produtividade ou métricas fisiológicas.
 - Compare VFC, frequência cardíaca de repouso, estresse, sono e Body Battery ao histórico pessoal e a sinais complementares. Um valor isolado não prova melhora/piora nem prevê eventos; não dê prognósticos médicos.
-- Confira a sobreposição real de datas antes de relacionar fontes. Sono/Garmin podem estar desatualizados; ausências não são zero.
-- Não trate associação como causa nem invente sequência temporal. Se não houver sinal útil para perspectiva futura, diga isso e especifique o que observar para esclarecer.
+- Confira a sobreposição real de datas antes de relacionar fontes. Sono/Garmin podem estar desatualizados; ausências não são zero. Informe quando a amostra efetiva é pequena.
+- Não use apenas correlações entre níveis ou uma tendência compartilhada para afirmar que algo antecede outra coisa. Dê preferência a mudanças que se repetiram em episódios separados e verifique exemplos que contradigam a hipótese.
+- Não trate associação como causa. Se não houver evidência temporal repetida, entregue uma conclusão útil sobre o estado atual e diga quais 1–2 sinais observar para testar a hipótese nos próximos dias.
 - Não force uma descoberta. Prefira uma conclusão incerta e honesta a uma previsão sem suporte.
 
 JANELAS
@@ -648,7 +651,7 @@ ${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
 COBERTURA E LIMITAÇÕES POR MÉTRICA
 ${coverageLines.join('\n')}
 
-REGISTROS DIÁRIOS ALINHADOS POR DATA
+REGISTROS DIÁRIOS ALINHADOS POR DATA (HISTÓRICO DISPONÍVEL DE ATÉ 90 DIAS)
 ${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
 
 SAÍDA DO RADAR
