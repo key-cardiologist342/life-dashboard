@@ -642,7 +642,17 @@ function copiarParaClaude(){
     const aOutcome=outcomes.has(c.va), bOutcome=outcomes.has(c.vb);
     const aBehavior=behaviors.has(c.va), bBehavior=behaviors.has(c.vb);
     return (aOutcome&&bBehavior)||(bOutcome&&aBehavior);
-  }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0ASSOCIAÇÕES CANDIDATAS (somente relações interpretáveis com pelo menos 10 dias em comum):
+  }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
+  const corrTexto = insightCandidates
+    .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
+    .join('\\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
+
+  const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
+
+MÉDIAS POR VARIÁVEL (cada uma usa somente os dias em que há dado):
+${mediasTexto}
+
+ASSOCIAÇÕES CANDIDATAS (somente relações entre comportamento/contexto e resultado pessoal, com pelo menos 10 dias em comum):
 ${corrTexto}
 
 CRITÉRIO DE QUALIDADE — OBRIGATÓRIO:
