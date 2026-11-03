@@ -574,6 +574,30 @@ garminAtiv.forEach(a => {
   filtrarCorr();
 }
 
+// Critérios compartilhados pela lista visual e pelo prompt de Insights.
+const INSIGHT_OUTCOMES = new Set(['humor','energia','clareza_mental','foco_geral','produtividade','procrastinacao','uso_excessivo_internet','dor_desconforto']);
+const INSIGHT_BEHAVIORS = new Set([
+  'duracao_min','sleep_score','body_battery','necessidade_min','fc_repouso','vfc_status','oximetria','respiracao',
+  'passos','calorias_ativas','treinou','volume_treino','qtd_atividades','te_aerobico_max',
+  'alimentacao_registrada','agua_registrada','social_bom','evento_positivo','evento_negativo','conflito',
+  'youtube_visualizacoes','filmes_assistidos','episodios_assistidos',
+  'leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min'
+]);
+const INSIGHT_EXCLUDED_PAIRS = new Set([
+  'dia_bom|humor','dia_bom|satisfacao','humor|satisfacao',
+  'youtube_videos_unicos|youtube_visualizacoes','youtube_canais_unicos|youtube_visualizacoes',
+  'youtube_canais_unicos|youtube_videos_unicos',
+  'filmes_assistidos|episodios_assistidos',
+  'atualizacoes_leitura|leitura_variacao_pp_media'
+]);
+function isUsefulInsightPair(c){
+  const key=[c.va,c.vb].sort().join('|');
+  if(INSIGHT_EXCLUDED_PAIRS.has(key)) return false;
+  const ao=INSIGHT_OUTCOMES.has(c.va), bo=INSIGHT_OUTCOMES.has(c.vb);
+  const ab=INSIGHT_BEHAVIORS.has(c.va), bb=INSIGHT_BEHAVIORS.has(c.vb);
+  return (ao&&bb)||(bo&&ab);
+}
+
 // ── RENDERIZAR CORRELAÇÕES ────────────────────────────────
 function filtrarCorr(){
   const rMin = parseFloat(document.getElementById('rMin').value);
@@ -581,7 +605,7 @@ function filtrarCorr(){
   document.getElementById('rMinVal').textContent = rMin.toFixed(2);
   document.getElementById('nMinVal').textContent = nMin;
 
-  const filtradas = _todasCorr.filter(c => Math.abs(c.r)>=rMin && c.n>=nMin);
+  const filtradas = _todasCorr.filter(c => Math.abs(c.r)>=rMin && c.n>=nMin && isUsefulInsightPair(c));
   document.getElementById('corrCount').textContent = `${filtradas.length} correlações`;
 
   const cl = document.getElementById('corrList');
@@ -619,25 +643,7 @@ function copiarParaClaude(){
     .map(([k,v]) => `- ${label(k)}: média ${v.media}; ${v.n} dias com dado; cobertura ${v.inicio} a ${v.fim}`)
     .join('\n');
 
-  // Seleção conservadora: cruzar comportamento/contexto com resultados pessoais.
-  // Excluir relações circulares, métricas derivadas da mesma atividade e indicadores redundantes.
-  const outcomes = new Set(['humor','energia','clareza_mental','foco_geral','produtividade','procrastinacao','uso_excessivo_internet','dor_desconforto']);
-  const behaviors = new Set([
-    'duracao_min','sleep_score','body_battery','necessidade_min','fc_repouso','vfc_status','oximetria','respiracao',
-    'passos','calorias_ativas','treinou','volume_treino','qtd_atividades','te_aerobico_max',
-    'alimentacao_registrada','agua_registrada','social_bom','evento_positivo','evento_negativo','conflito',
-    'youtube_visualizacoes','filmes_assistidos','episodios_assistidos',
-    'leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min'
-  ]);
-  const excludedPairs = new Set([
-    'dia_bom|humor','dia_bom|satisfacao','humor|satisfacao',
-    'youtube_videos_unicos|youtube_visualizacoes','youtube_canais_unicos|youtube_visualizacoes',
-    'youtube_canais_unicos|youtube_videos_unicos',
-    'filmes_assistidos|episodios_assistidos',
-    'atualizacoes_leitura|leitura_variacao_pp_media'
-  ]);
-  const pairKey = (x,y) => [x,y].sort().join('|');
-  const insightCandidates = _todasCorr.filter(c=>{
+  // Reutiliza os mesmos critérios da lista visual para não apresentar candidatos inúteis.\n  const insightCandidates = _todasCorr.filter(c=>{
     if(c.n<10 || Math.abs(c.r)<rMin || excludedPairs.has(pairKey(c.va,c.vb))) return false;
     const aOutcome=outcomes.has(c.va), bOutcome=outcomes.has(c.vb);
     const aBehavior=behaviors.has(c.va), bBehavior=behaviors.has(c.vb);
@@ -645,7 +651,7 @@ function copiarParaClaude(){
   }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
   const corrTexto = insightCandidates
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
-    .join('\\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
+    .join('\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
 
   const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
 
