@@ -7,6 +7,12 @@ alter table public.vida_itens
   add column if not exists status text;
 
 alter table public.vida_itens
+  drop constraint if exists vida_itens_ano_check,
+  drop constraint if exists vida_itens_duracao_oficial_check,
+  drop constraint if exists vida_itens_total_paginas_check,
+  drop constraint if exists vida_itens_status_check;
+
+alter table public.vida_itens
   add constraint vida_itens_ano_check
     check (ano is null or ano between 1800 and 2200),
   add constraint vida_itens_duracao_oficial_check
