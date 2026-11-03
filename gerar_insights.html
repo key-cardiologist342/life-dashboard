@@ -373,7 +373,7 @@ let _resumo    = null;
 
 // ── CARREGAR E CALCULAR ───────────────────────────────────
 async function carregar(){
-const [diario, sono, clue, treino, garmin, garminAtiv, youtube] = await Promise.all([
+const [diario, sono, clue, treino, garmin, garminAtiv, youtube, alimentacao, vidaItens, vidaRegistros, youtubeHistorico] = await Promise.all([
   sb('diario_diario?order=data.desc&limit=365'),
   sb('sono?order=data.desc&limit=365'),
   sb('clue_diario?order=data.desc&limit=365'),
@@ -381,6 +381,10 @@ const [diario, sono, clue, treino, garmin, garminAtiv, youtube] = await Promise.
   sb('garmin_diario?order=data.desc&limit=365'),
   sb('garmin_atividades?order=data.desc&limit=500'),
   sb('youtube_diario?order=data.asc&limit=365'),
+  sb('alimentacao_diaria?order=data.asc&limit=365'),
+  sb('vida_itens?select=id,tipo,titulo,autor,categoria&order=created_at.asc&limit=1000'),
+  sb('vida_registros?select=id,item_id,data,tipo_evento,temporada,episodio,progresso_percent,duracao_min,observacoes,created_at&order=data.asc&limit=2000'),
+  sb('youtube_historico?select=video_id,titulo,canal,assistido_em,categoria,subcategoria,classificacao_origem,confianca&order=assistido_em.asc&limit=5000')
 ]);
 
 
@@ -469,6 +473,46 @@ garminAtiv.forEach(a => {
     });
   }
 
+  // Alimentação e água: apenas presença de anotação; texto livre não vira caloria ou volume.
+  alimentacao.forEach(a=>{
+    if(!mapa[a.data]) mapa[a.data]={};
+    mapa[a.data].alimentacao_registrada = a.texto?.trim() ? 1 : 0;
+    mapa[a.data].agua_registrada = a.agua_texto?.trim() ? 1 : 0;
+  });
+
+  // Cultura, leitura e hobbies: métricas diárias derivadas dos registros reais.
+  const itemById = new Map(vidaItens.map(item=>[item.id,item]));
+  const leiturasPorItem = new Map();
+  const leituraPontosPorDia = {};
+  vidaRegistros.slice().sort((a,b)=>(a.data||'').localeCompare(b.data||'') || (a.created_at||'').localeCompare(b.created_at||'')).forEach(r=>{
+    const item=itemById.get(r.item_id);
+    if(!item) return;
+    if(!mapa[r.data]) mapa[r.data]={};
+    const m=mapa[r.data];
+    if(r.tipo_evento==='assistido' && item.tipo==='filme') m.filmes_assistidos=(m.filmes_assistidos||0)+1;
+    if(r.tipo_evento==='episodio' && item.tipo==='serie') m.episodios_assistidos=(m.episodios_assistidos||0)+1;
+    if(r.tipo_evento==='sessao_hobbie' && item.tipo==='hobbie'){
+      m.sessoes_hobbies=(m.sessoes_hobbies||0)+1;
+      if(r.duracao_min!=null) m.duracao_hobbies_min=(m.duracao_hobbies_min||0)+Number(r.duracao_min);
+    }
+    if(r.tipo_evento==='progresso_leitura' && item.tipo==='livro' && r.progresso_percent!=null){
+      const previous=leiturasPorItem.get(r.item_id);
+      const current=Number(r.progresso_percent);
+      if(previous!=null){
+        const delta=current-previous;
+        if(!leituraPontosPorDia[r.data]) leituraPontosPorDia[r.data]=[];
+        leituraPontosPorDia[r.data].push(delta);
+      }
+      leiturasPorItem.set(r.item_id,current);
+      m.atualizacoes_leitura=(m.atualizacoes_leitura||0)+1;
+    }
+  });
+  Object.entries(leituraPontosPorDia).forEach(([date,deltas])=>{
+    if(!mapa[date]) mapa[date]={};
+    mapa[date].leitura_variacao_pp_media=+(deltas.reduce((a,b)=>a+b,0)/deltas.length).toFixed(2);
+    mapa[date].livros_com_evolucao=deltas.length;
+  });
+
   // ── COLETA TODAS AS VARIÁVEIS ─────────────────────────
   const todasVars = new Set();
   Object.values(mapa).forEach(obj => Object.keys(obj).forEach(k=>todasVars.add(k)));
@@ -504,7 +548,24 @@ garminAtiv.forEach(a => {
   const youtubeCoverage = youtubeDates.length ? {inicio:youtubeDates[0],fim:youtubeDates[youtubeDates.length-1],dias:youtubeDates.length} : null;
   const youtubeCategoryTotals = {};
   youtube.forEach(y=>Object.entries(y.visualizacoes_por_categoria||{}).forEach(([cat,n])=>youtubeCategoryTotals[cat]=(youtubeCategoryTotals[cat]||0)+Number(n||0)));
-  _resumo = { dias: datas.length, medias, vars, youtubeCoverage, youtubeCategoryTotals, youtubeDays:youtube };
+  const ytChannels={}, ytHours={}, ytClassifications={}, ytHistoryCategories={};
+  youtubeHistorico.forEach(v=>{
+    if(v.canal) ytChannels[v.canal]=(ytChannels[v.canal]||0)+1;
+    if(v.categoria) ytHistoryCategories[v.categoria]=(ytHistoryCategories[v.categoria]||0)+1;
+    const hour=v.assistido_em ? new Date(v.assistido_em).getHours() : null;
+    if(hour!=null) ytHours[hour]=(ytHours[hour]||0)+1;
+    const source=v.classificacao_origem||'não informado';
+    ytClassifications[source]=(ytClassifications[source]||0)+1;
+  });
+  const recentYoutubeVideos=youtubeHistorico.slice().sort((a,b)=>String(b.assistido_em).localeCompare(String(a.assistido_em))).slice(0,25).map(v=>({assistido_em:v.assistido_em,titulo:v.titulo,canal:v.canal,categoria:v.categoria,subcategoria:v.subcategoria,confianca:v.confianca,classificacao_origem:v.classificacao_origem}));
+  const cultureSummary = {
+    library:vidaItens.map(({tipo,titulo,autor,categoria})=>({tipo,titulo,autor,categoria})),
+    records:vidaRegistros.map(r=>({data:r.data,tipo_evento:r.tipo_evento,titulo:itemById.get(r.item_id)?.titulo||'item não identificado',tipo:itemById.get(r.item_id)?.tipo||'não identificado',temporada:r.temporada,episodio:r.episodio,progresso_percent:r.progresso_percent,duracao_min:r.duracao_min,observacoes:r.observacoes})),
+    food:alimentacao.map(a=>({data:a.data,alimentacao:a.texto,agua:a.agua_texto})),
+    readingProgressPointsByDay:leituraPontosPorDia
+  };
+  _resumo = { dias: datas.length, medias, vars, youtubeCoverage, youtubeCategoryTotals, youtubeDays:youtube,
+    youtubeHistoryCount:youtubeHistorico.length,youtubeChannels:ytChannels,youtubeHours:ytHours,youtubeClassifications:ytClassifications,youtubeHistoryCategories:ytHistoryCategories,recentYoutubeVideos,cultureSummary };
 
   filtrarCorr();
 }
@@ -568,11 +629,26 @@ ${corrTexto}
 
 HISTÓRICO DO YOUTUBE:
 ${_resumo.youtubeCoverage ? `Período coberto: ${_resumo.youtubeCoverage.inicio} a ${_resumo.youtubeCoverage.fim} (${_resumo.youtubeCoverage.dias} dias com visualizações registradas).` : 'Nenhum histórico do YouTube disponível.'}
-${Object.entries(_resumo.youtubeCategoryTotals||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`- ${cat}: ${n} visualizações`).join('\n')}
-As métricas youtube_visualizacoes, youtube_videos_unicos e youtube_canais_unicos entram nas correlações diárias somente dentro do período coberto pelo Takeout. Dias sem evento nesse intervalo são tratados como zero; fora dele não há valor.
+- Visualizações individuais carregadas: ${_resumo.youtubeHistoryCount}.
+- Categorias: ${Object.entries(_resumo.youtubeCategoryTotals||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`${cat}: ${n}`).join('; ')||'sem dados'}.
+- Canais mais vistos: ${Object.entries(_resumo.youtubeChannels||{}).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([canal,n])=>`${canal}: ${n}`).join('; ')||'sem dados'}.
+- Distribuição por hora: ${Object.entries(_resumo.youtubeHours||{}).sort((a,b)=>Number(a[0])-Number(b[0])).map(([hora,n])=>`${hora}h: ${n}`).join('; ')||'sem dados'}.
+- Categorias do histórico individual: ${Object.entries(_resumo.youtubeHistoryCategories||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`${cat}: ${n}`).join('; ')||'sem dados'}.
+- Origem da classificação: ${JSON.stringify(_resumo.youtubeClassifications||{})}.
+- Amostra dos 25 registros individuais mais recentes (data, título, canal, categoria, subcategoria e confiança): ${JSON.stringify(_resumo.recentYoutubeVideos||[])}.
+As métricas diárias de YouTube entram nas correlações somente dentro da cobertura do Takeout. O histórico individual não informa duração assistida; não estime tempo de tela.
+
+ALIMENTAÇÃO, ÁGUA, CULTURA, LEITURA E HOBBIES:
+${JSON.stringify(_resumo.cultureSummary)}
+- Alimentação e água são anotações em texto livre. Descreva registros e conteúdo sem inferir calorias, nutrientes, qualidade da dieta ou litros/ml automaticamente.
+- Filmes e episódios são contagens de registros; não atribua duração sem uma fonte confiável e específica.
+- Leitura: use o percentual informado pelo Kindle. Calcule diferenças em pontos percentuais somente entre atualizações do mesmo livro. Não trate o percentual atual como páginas lidas naquele dia. Não estime páginas ou tempo de conclusão sem edição exata, total de páginas confirmado e dados suficientes.
+- Hobbies: conte sessões e some somente a duração que foi explicitamente registrada.
+- Ausência de registro não prova que a atividade não aconteceu. Identifique claramente quando a amostra é pequena ou recente.
 
 ESCOLHA DOS INSIGHTS:
 - Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
+- Considere também alimentação/hidratação registradas, entretenimento, leitura, hobbies e padrões de consumo de YouTube, mas só destaque relações quando houver volume e cobertura suficientes.
 - Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
 - Não priorize automaticamente o maior número. Prefira relações que sejam compreensíveis e possam me ajudar a entender minha rotina. Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
 - Não crie vários insights que digam quase a mesma coisa. Combine relações relacionadas quando isso deixar a explicação mais útil.
@@ -681,6 +757,14 @@ const RADAR_METRICS = [
   {table:'youtube_diario', field:'visualizacoes', label:'Visualizações no YouTube', higherGood:null, group:'YouTube'},
   {table:'youtube_diario', field:'videos_unicos', label:'Vídeos diferentes no YouTube', higherGood:null, group:'YouTube'},
   {table:'youtube_diario', field:'canais_unicos', label:'Canais diferentes no YouTube', higherGood:null, group:'YouTube'},
+  {table:'alimentacao_diaria', field:'alimentacao_registrada', label:'Registro de alimentação', higherGood:null, group:'Alimentação'},
+  {table:'alimentacao_diaria', field:'agua_registrada', label:'Registro de água', higherGood:null, group:'Hidratação'},
+  {table:'vida_diario', field:'filmes_assistidos', label:'Filmes registrados', higherGood:null, group:'Cultura'},
+  {table:'vida_diario', field:'episodios_assistidos', label:'Episódios registrados', higherGood:null, group:'Cultura'},
+  {table:'vida_diario', field:'atualizacoes_leitura', label:'Atualizações de leitura', higherGood:null, group:'Leitura'},
+  {table:'vida_diario', field:'leitura_variacao_pp_media', label:'Variação média de leitura (p.p.)', higherGood:null, group:'Leitura'},
+  {table:'vida_diario', field:'sessoes_hobbies', label:'Sessões de hobbies', higherGood:null, group:'Hobbies'},
+  {table:'vida_diario', field:'duracao_hobbies_min', label:'Duração de hobbies', higherGood:null, group:'Hobbies'},
 
 ];
 
@@ -708,14 +792,41 @@ async function renderRadar(){
     const from = radarDateOffset(89);
     // Busca até 90 dias para investigar padrões temporais repetidos; a comparação visual continua sendo 7 dias vs. 21 dias anteriores. Diário é obrigatório; sono/Garmin podem ter lacunas.
     const diario = await sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365');
-    const [sonoResult, garminResult, youtubeResult] = await Promise.allSettled([
+    const [sonoResult, garminResult, youtubeResult, foodResult, itemsResult, lifeResult] = await Promise.allSettled([
       sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365'),
-      sb('youtube_diario?data=gte.'+from+'&order=data.asc&limit=365')
+      sb('youtube_diario?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('alimentacao_diaria?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('vida_itens?select=id,tipo,titulo&limit=1000'),
+      sb('vida_registros?data=gte.'+from+'&select=data,created_at,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc,created_at.asc&limit=2000')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
     const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
     let youtube = youtubeResult.status==='fulfilled' ? youtubeResult.value : [];
+    const food = foodResult.status==='fulfilled' ? foodResult.value : [];
+    const radarItems = itemsResult.status==='fulfilled' ? new Map(itemsResult.value.map(x=>[x.id,x])) : new Map();
+    const lifeRows = lifeResult.status==='fulfilled' ? lifeResult.value : [];
+    const foodDaily = food.map(x=>({data:x.data,alimentacao_registrada:x.texto?.trim()?1:0,agua_registrada:x.agua_texto?.trim()?1:0}));
+    const lifeMap = new Map();
+    const lastProgress = new Map();
+    const readingDeltas = new Map();
+    lifeRows.forEach(r=>{
+      const item=radarItems.get(r.item_id);
+      if(!item) return;
+      if(!lifeMap.has(r.data)) lifeMap.set(r.data,{data:r.data});
+      const day=lifeMap.get(r.data);
+      if(r.tipo_evento==='assistido'&&item.tipo==='filme') day.filmes_assistidos=(day.filmes_assistidos||0)+1;
+      if(r.tipo_evento==='episodio'&&item.tipo==='serie') day.episodios_assistidos=(day.episodios_assistidos||0)+1;
+      if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'){day.sessoes_hobbies=(day.sessoes_hobbies||0)+1;if(r.duracao_min!=null)day.duracao_hobbies_min=(day.duracao_hobbies_min||0)+Number(r.duracao_min);}
+      if(r.tipo_evento==='progresso_leitura'&&item.tipo==='livro'&&r.progresso_percent!=null){
+        const prev=lastProgress.get(r.item_id),cur=Number(r.progresso_percent);
+        if(prev!=null){if(!readingDeltas.has(r.data))readingDeltas.set(r.data,[]);readingDeltas.get(r.data).push(cur-prev);}
+        lastProgress.set(r.item_id,cur);day.atualizacoes_leitura=(day.atualizacoes_leitura||0)+1;
+      }
+    });
+    readingDeltas.forEach((vals,date)=>{const day=lifeMap.get(date)||{data:date};day.leitura_variacao_pp_media=vals.reduce((a,b)=>a+b,0)/vals.length;lifeMap.set(date,day);});
+    const lifeDaily=[...lifeMap.values()];
+    const foodError=foodResult.status==='rejected',lifeError=lifeResult.status==='rejected'||itemsResult.status==='rejected';
     // Completa com zero somente entre a primeira e a última data coberta pelo Takeout.
     if(youtube.length){
       const byDate = new Map(youtube.map(row=>[row.data,row]));
@@ -728,7 +839,7 @@ async function renderRadar(){
       }
       youtube=complete;
     }
-    const dataByTable = {diario_diario:diario, sono, garmin_diario:garmin, youtube_diario:youtube};
+    const dataByTable = {diario_diario:diario, sono, garmin_diario:garmin, youtube_diario:youtube, alimentacao_diaria:foodDaily, vida_diario:lifeDaily};
     const recentStart = radarDateOffset(6);
     const baselineStart = radarDateOffset(27);
     const baselineEnd = radarDateOffset(7);
@@ -761,9 +872,9 @@ async function renderRadar(){
     window._radarCoverage = coverage;
     const latestDate = rows => rows.length ? rows.map(r=>r.data).filter(Boolean).sort().reverse()[0] : null;
     const dailyByDate = new Map();
-    [{table:'diario_diario',rows:diario},{table:'sono',rows:sono},{table:'garmin_diario',rows:garmin},{table:'youtube_diario',rows:youtube}].forEach(source=>source.rows.filter(row=>row.data>=from&&row.data<=radarDateOffset(0)).forEach(row=>{if(!dailyByDate.has(row.data))dailyByDate.set(row.data,{data:row.data});const clean=dailyByDate.get(row.data);RADAR_METRICS.filter(m=>m.table===source.table).forEach(m=>{const value=row[m.field];if(value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value)))clean[m.field]=Number(value);});}));
+    [{table:'diario_diario',rows:diario},{table:'sono',rows:sono},{table:'garmin_diario',rows:garmin},{table:'youtube_diario',rows:youtube},{table:'alimentacao_diaria',rows:foodDaily},{table:'vida_diario',rows:lifeDaily}].forEach(source=>source.rows.filter(row=>row.data>=from&&row.data<=radarDateOffset(0)).forEach(row=>{if(!dailyByDate.has(row.data))dailyByDate.set(row.data,{data:row.data});const clean=dailyByDate.get(row.data);RADAR_METRICS.filter(m=>m.table===source.table).forEach(m=>{const value=row[m.field];if(value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value)))clean[m.field]=Number(value);});}));
     const dailyRows=[...dailyByDate.values()].sort((a,b)=>a.data.localeCompare(b.data));
-    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:dailyRows,sono:sono.length,garmin:garmin.length,youtube:youtube.length,youtubeLatest:latestDate(youtube),youtubeError:youtubeResult.status==='rejected',youtubeCategories:youtube.reduce((acc,row)=>{Object.entries(row.visualizacoes_por_categoria||{}).forEach(([k,v])=>acc[k]=(acc[k]||0)+Number(v||0));return acc;},{}),sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:dailyRows,sono:sono.length,garmin:garmin.length,youtube:youtube.length,youtubeLatest:latestDate(youtube),youtubeError:youtubeResult.status==='rejected',youtubeCategories:youtube.reduce((acc,row)=>{Object.entries(row.visualizacoes_por_categoria||{}).forEach(([k,v])=>acc[k]=(acc[k]||0)+Number(v||0));return acc;},{}),food:food.length,foodError,lifeRecords:lifeRows.length,lifeError,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
     status.textContent = 'Radar: mudanças nos últimos 7 dias vs. 21 dias anteriores · sequência diária de Diário, sono e Garmin quando disponível.';
     if(!results.length){
       list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
@@ -808,6 +919,10 @@ COMO PENSAR COM CUIDADO
 - Use o humor que registrei diretamente. Não conclua que meu humor melhorou ou piorou só porque foco, produtividade ou métricas do relógio mudaram.
 - Veja se sono, VFC, frequência cardíaca de repouso, estresse, Body Battery ou rotina mudaram antes da mudança que está tentando entender — não basta terem mudado na mesma semana. Não faça previsões médicas.
 - Confira as datas em que há dados de cada fonte. Falta de registro não significa valor zero; se houver lacunas, explique isso de maneira simples.
+- Alimentação/água: trate apenas presença e texto das anotações; nunca estime calorias, nutrientes ou volume a partir de texto.
+- Leitura: variações são pontos percentuais entre registros do mesmo livro; não chame isso de páginas lidas nem estime conclusão com poucos pontos.
+- Filmes/séries: conte registros, sem atribuir duração sem fonte. Hobbies: use apenas minutos explicitamente registrados.
+- YouTube: categorias/canais refletem visualizações classificadas; não inferir duração assistida nem intenção/estado emocional a partir do conteúdo.
 - Inclua o que vai contra sua hipótese, se houver. Não trate uma associação como causa.
 - Escolha no máximo 2 possibilidades realmente úteis. Se os dados não sustentarem uma conclusão, não invente uma só para preencher espaço.
 - NÃO fique apenas repetindo que meu humor, energia, foco ou produtividade estão baixos/altos. O objetivo é descobrir o que pode estar ligado a essas mudanças e o que eu posso fazer na prática.
@@ -827,6 +942,8 @@ QUANTIDADE DE REGISTROS
 - Sono: ${ctx.sono} registros; o mais recente é ${ctx.sonoLatest||'nenhum'}${ctx.sonoError?' (não foi possível consultar esta fonte)':''}.
 - Garmin: ${ctx.garmin} registros; o mais recente é ${ctx.garminLatest||'nenhum'}${ctx.garminError?' (não foi possível consultar esta fonte)':''}.
 - YouTube: ${ctx.youtube} dias com visualizações; o mais recente é ${ctx.youtubeLatest||'nenhum'}${ctx.youtubeError?' (não foi possível consultar esta fonte)':''}. Categorias no período: ${Object.entries(ctx.youtubeCategories||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+'='+v).join(', ')||'sem dados'}.
+- Alimentação: ${ctx.food} registros na janela${ctx.foodError?' (falha na consulta)':''}; água e refeições são textos, não valores numéricos.
+- Cultura/leitura/hobbies: ${ctx.lifeRecords} registros na janela${ctx.lifeError?' (falha na consulta)':''}; progresso de leitura é percentual, e duração só existe quando informada.
 
 MUDANÇAS DETECTADAS (7 dias recentes comparados com os 21 dias anteriores)
 ${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
