@@ -548,14 +548,16 @@ garminAtiv.forEach(a => {
   const youtubeCoverage = youtubeDates.length ? {inicio:youtubeDates[0],fim:youtubeDates[youtubeDates.length-1],dias:youtubeDates.length} : null;
   const youtubeCategoryTotals = {};
   youtube.forEach(y=>Object.entries(y.visualizacoes_por_categoria||{}).forEach(([cat,n])=>youtubeCategoryTotals[cat]=(youtubeCategoryTotals[cat]||0)+Number(n||0)));
-  const ytChannels={}, ytHours={}, ytClassifications={};
+  const ytChannels={}, ytHours={}, ytClassifications={}, ytHistoryCategories={};
   youtubeHistorico.forEach(v=>{
     if(v.canal) ytChannels[v.canal]=(ytChannels[v.canal]||0)+1;
+    if(v.categoria) ytHistoryCategories[v.categoria]=(ytHistoryCategories[v.categoria]||0)+1;
     const hour=v.assistido_em ? new Date(v.assistido_em).getHours() : null;
     if(hour!=null) ytHours[hour]=(ytHours[hour]||0)+1;
     const source=v.classificacao_origem||'não informado';
     ytClassifications[source]=(ytClassifications[source]||0)+1;
   });
+  const recentYoutubeVideos=youtubeHistorico.slice().sort((a,b)=>String(b.assistido_em).localeCompare(String(a.assistido_em))).slice(0,25).map(v=>({assistido_em:v.assistido_em,titulo:v.titulo,canal:v.canal,categoria:v.categoria,subcategoria:v.subcategoria,confianca:v.confianca,classificacao_origem:v.classificacao_origem}));
   const cultureSummary = {
     library:vidaItens.map(({tipo,titulo,autor,categoria})=>({tipo,titulo,autor,categoria})),
     records:vidaRegistros.map(r=>({data:r.data,tipo_evento:r.tipo_evento,titulo:itemById.get(r.item_id)?.titulo||'item não identificado',tipo:itemById.get(r.item_id)?.tipo||'não identificado',temporada:r.temporada,episodio:r.episodio,progresso_percent:r.progresso_percent,duracao_min:r.duracao_min,observacoes:r.observacoes})),
@@ -563,7 +565,7 @@ garminAtiv.forEach(a => {
     readingProgressPointsByDay:leituraPontosPorDia
   };
   _resumo = { dias: datas.length, medias, vars, youtubeCoverage, youtubeCategoryTotals, youtubeDays:youtube,
-    youtubeHistoryCount:youtubeHistorico.length,youtubeChannels:ytChannels,youtubeHours:ytHours,youtubeClassifications:ytClassifications,cultureSummary };
+    youtubeHistoryCount:youtubeHistorico.length,youtubeChannels:ytChannels,youtubeHours:ytHours,youtubeClassifications:ytClassifications,youtubeHistoryCategories:ytHistoryCategories,recentYoutubeVideos,cultureSummary };
 
   filtrarCorr();
 }
@@ -631,11 +633,22 @@ ${_resumo.youtubeCoverage ? `Período coberto: ${_resumo.youtubeCoverage.inicio}
 - Categorias: ${Object.entries(_resumo.youtubeCategoryTotals||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`${cat}: ${n}`).join('; ')||'sem dados'}.
 - Canais mais vistos: ${Object.entries(_resumo.youtubeChannels||{}).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([canal,n])=>`${canal}: ${n}`).join('; ')||'sem dados'}.
 - Distribuição por hora: ${Object.entries(_resumo.youtubeHours||{}).sort((a,b)=>Number(a[0])-Number(b[0])).map(([hora,n])=>`${hora}h: ${n}`).join('; ')||'sem dados'}.
+- Categorias do histórico individual: ${Object.entries(_resumo.youtubeHistoryCategories||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`${cat}: ${n}`).join('; ')||'sem dados'}.
 - Origem da classificação: ${JSON.stringify(_resumo.youtubeClassifications||{})}.
+- Amostra dos 25 registros individuais mais recentes (data, título, canal, categoria, subcategoria e confiança): ${JSON.stringify(_resumo.recentYoutubeVideos||[])}.
 As métricas diárias de YouTube entram nas correlações somente dentro da cobertura do Takeout. O histórico individual não informa duração assistida; não estime tempo de tela.
+
+ALIMENTAÇÃO, ÁGUA, CULTURA, LEITURA E HOBBIES:
+${JSON.stringify(_resumo.cultureSummary)}
+- Alimentação e água são anotações em texto livre. Descreva registros e conteúdo sem inferir calorias, nutrientes, qualidade da dieta ou litros/ml automaticamente.
+- Filmes e episódios são contagens de registros; não atribua duração sem uma fonte confiável e específica.
+- Leitura: use o percentual informado pelo Kindle. Calcule diferenças em pontos percentuais somente entre atualizações do mesmo livro. Não trate o percentual atual como páginas lidas naquele dia. Não estime páginas ou tempo de conclusão sem edição exata, total de páginas confirmado e dados suficientes.
+- Hobbies: conte sessões e some somente a duração que foi explicitamente registrada.
+- Ausência de registro não prova que a atividade não aconteceu. Identifique claramente quando a amostra é pequena ou recente.
 
 ESCOLHA DOS INSIGHTS:
 - Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
+- Considere também alimentação/hidratação registradas, entretenimento, leitura, hobbies e padrões de consumo de YouTube, mas só destaque relações quando houver volume e cobertura suficientes.
 - Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
 - Não priorize automaticamente o maior número. Prefira relações que sejam compreensíveis e possam me ajudar a entender minha rotina. Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
 - Não crie vários insights que digam quase a mesma coisa. Combine relações relacionadas quando isso deixar a explicação mais útil.
@@ -785,7 +798,7 @@ async function renderRadar(){
       sb('youtube_diario?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('alimentacao_diaria?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('vida_itens?select=id,tipo,titulo&limit=1000'),
-      sb('vida_registros?data=gte.'+from+'&select=data,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc&limit=2000')
+      sb('vida_registros?data=gte.'+from+'&select=data,created_at,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc,created_at.asc&limit=2000')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
     const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
