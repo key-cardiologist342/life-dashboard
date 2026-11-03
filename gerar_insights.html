@@ -383,7 +383,7 @@ const [diario, sono, clue, treino, garmin, garminAtiv, youtube, alimentacao, vid
   sb('youtube_diario?order=data.asc&limit=365'),
   sb('alimentacao_diaria?order=data.asc&limit=365'),
   sb('vida_itens?select=id,tipo,titulo,autor,categoria&order=created_at.asc&limit=1000'),
-  sb('vida_registros?select=id,item_id,data,tipo_evento,temporada,episodio,progresso_percent,duracao_min,observacoes,created_at&order=data.asc&limit=2000'),
+  sb('vida_registros?select=id,item_id,data,data_assistido,assistido,tipo_evento,temporada,episodio,progresso_percent,duracao_min,observacoes,created_at&order=data.asc&limit=2000'),
   sb('youtube_historico?select=video_id,titulo,canal,assistido_em,categoria,subcategoria,classificacao_origem,confianca&order=assistido_em.asc&limit=5000')
 ]);
 
@@ -487,8 +487,10 @@ garminAtiv.forEach(a => {
   vidaRegistros.slice().sort((a,b)=>(a.data||'').localeCompare(b.data||'') || (a.created_at||'').localeCompare(b.created_at||'')).forEach(r=>{
     const item=itemById.get(r.item_id);
     if(!item) return;
-    if(!mapa[r.data]) mapa[r.data]={};
-    const m=mapa[r.data];
+    if(r.tipo_evento==='episodio' && r.assistido!==true) return;
+    const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
+    if(!mapa[eventDate]) mapa[eventDate]={};
+    const m=mapa[eventDate];
     if(r.tipo_evento==='assistido' && item.tipo==='filme') m.filmes_assistidos=(m.filmes_assistidos||0)+1;
     if(r.tipo_evento==='episodio' && item.tipo==='serie') m.episodios_assistidos=(m.episodios_assistidos||0)+1;
     if(r.tipo_evento==='sessao_hobbie' && item.tipo==='hobbie'){
@@ -564,7 +566,7 @@ garminAtiv.forEach(a => {
   const recentYoutubeVideos=youtubeHistorico.slice().sort((a,b)=>String(b.assistido_em).localeCompare(String(a.assistido_em))).slice(0,25).map(v=>({assistido_em:v.assistido_em,titulo:v.titulo,canal:v.canal,categoria:v.categoria,subcategoria:v.subcategoria,confianca:v.confianca,classificacao_origem:v.classificacao_origem}));
   const cultureSummary = {
     library:vidaItens.map(({tipo,titulo,autor,categoria})=>({tipo,titulo,autor,categoria})),
-    records:vidaRegistros.map(r=>({data:r.data,tipo_evento:r.tipo_evento,titulo:itemById.get(r.item_id)?.titulo||'item não identificado',tipo:itemById.get(r.item_id)?.tipo||'não identificado',temporada:r.temporada,episodio:r.episodio,progresso_percent:r.progresso_percent,duracao_min:r.duracao_min,observacoes:r.observacoes})),
+    records:vidaRegistros.filter(r=>r.tipo_evento!=='episodio'||r.assistido===true).map(r=>({data:r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data,tipo_evento:r.tipo_evento,titulo:itemById.get(r.item_id)?.titulo||'item não identificado',tipo:itemById.get(r.item_id)?.tipo||'não identificado',temporada:r.temporada,episodio:r.episodio,progresso_percent:r.progresso_percent,duracao_min:r.duracao_min,observacoes:r.observacoes})),
     food:alimentacao.map(a=>({data:a.data,alimentacao:a.texto,agua:a.agua_texto})),
     readingProgressPointsByDay:leituraPontosPorDia
   };
@@ -838,7 +840,7 @@ async function renderRadar(){
       sb('youtube_diario?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('alimentacao_diaria?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('vida_itens?select=id,tipo,titulo&limit=1000'),
-      sb('vida_registros?data=gte.'+from+'&select=data,created_at,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc,created_at.asc&limit=2000')
+      sb('vida_registros?data=gte.'+from+'&select=data,data_assistido,assistido,created_at,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc,created_at.asc&limit=2000')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
     const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
@@ -853,8 +855,10 @@ async function renderRadar(){
     lifeRows.forEach(r=>{
       const item=radarItems.get(r.item_id);
       if(!item) return;
-      if(!lifeMap.has(r.data)) lifeMap.set(r.data,{data:r.data});
-      const day=lifeMap.get(r.data);
+      if(r.tipo_evento==='episodio'&&r.assistido!==true) return;
+      const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
+      if(!lifeMap.has(eventDate)) lifeMap.set(eventDate,{data:eventDate});
+      const day=lifeMap.get(eventDate);
       if(r.tipo_evento==='assistido'&&item.tipo==='filme') day.filmes_assistidos=(day.filmes_assistidos||0)+1;
       if(r.tipo_evento==='episodio'&&item.tipo==='serie') day.episodios_assistidos=(day.episodios_assistidos||0)+1;
       if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'){day.sessoes_hobbies=(day.sessoes_hobbies||0)+1;if(r.duracao_min!=null)day.duracao_hobbies_min=(day.duracao_hobbies_min||0)+Number(r.duracao_min);}
