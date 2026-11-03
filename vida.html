@@ -121,6 +121,7 @@ $('logoutBtn').onclick=async()=>{await supabase.auth.signOut();location.href='lo
 $('foodDate').value=localDate();$('recordDate').value=localDate();
 let foodTimer=null,items=[];
 async function loadFood(){
+ clearTimeout(foodTimer);
  const date=$('foodDate').value;$('foodStatus').textContent='Carregando…';
  const {data,error}=await supabase.from('alimentacao_diaria').select('texto,updated_at').eq('user_id',userId).eq('data',date).maybeSingle();
  if(error){$('foodStatus').textContent='Não foi possível carregar';console.error(error);return}
