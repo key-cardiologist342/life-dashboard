@@ -645,10 +645,7 @@ function copiarParaClaude(){
 
   // Reutiliza os mesmos critérios da lista visual para não apresentar candidatos inúteis.
   const insightCandidates = _todasCorr.filter(c=>{
-    if(c.n<10 || Math.abs(c.r)<rMin || excludedPairs.has(pairKey(c.va,c.vb))) return false;
-    const aOutcome=outcomes.has(c.va), bOutcome=outcomes.has(c.vb);
-    const aBehavior=behaviors.has(c.va), bBehavior=behaviors.has(c.vb);
-    return (aOutcome&&bBehavior)||(bOutcome&&aBehavior);
+    if(c.n<10 || Math.abs(c.r)<rMin || !isUsefulInsightPair(c)) return false;
   }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
   const corrTexto = insightCandidates
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
