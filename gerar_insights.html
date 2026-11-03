@@ -651,7 +651,7 @@ function copiarParaClaude(){
   }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
   const corrTexto = insightCandidates
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
-    .join('\\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
+    .join('\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
 
   const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
 
