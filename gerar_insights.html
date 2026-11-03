@@ -644,9 +644,9 @@ function copiarParaClaude(){
     .join('\n');
 
   // Reutiliza os mesmos critérios da lista visual para não apresentar candidatos inúteis.
-  const insightCandidates = _todasCorr.filter(c=>{
-    if(c.n<10 || Math.abs(c.r)<rMin || !isUsefulInsightPair(c)) return false;
-  }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
+  const insightCandidates = _todasCorr.filter(c=>
+    c.n>=10 && Math.abs(c.r)>=rMin && isUsefulInsightPair(c)
+  ).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
   const corrTexto = insightCandidates
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
     .join('\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
