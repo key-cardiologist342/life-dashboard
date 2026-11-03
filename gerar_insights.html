@@ -373,13 +373,14 @@ let _resumo    = null;
 
 // ── CARREGAR E CALCULAR ───────────────────────────────────
 async function carregar(){
-const [diario, sono, clue, treino, garmin, garminAtiv] = await Promise.all([
+const [diario, sono, clue, treino, garmin, garminAtiv, youtube] = await Promise.all([
   sb('diario_diario?order=data.desc&limit=365'),
   sb('sono?order=data.desc&limit=365'),
   sb('clue_diario?order=data.desc&limit=365'),
   sb('treino_forca?order=data.desc&limit=1000'),
   sb('garmin_diario?order=data.desc&limit=365'),
   sb('garmin_atividades?order=data.desc&limit=500'),
+  sb('youtube_diario?order=data.asc&limit=365'),
 ]);
 
 
@@ -447,6 +448,27 @@ garminAtiv.forEach(a => {
   }
 });
 
+  // YouTube: zero visualizações apenas dentro do período coberto pelo histórico importado.
+  // Fora desse intervalo, manter null/ausente para não confundir falta de dados com zero.
+  const youtubeDates = youtube.map(y=>y.data).filter(Boolean).sort();
+  if(youtubeDates.length){
+    const start = new Date(youtubeDates[0]+'T12:00:00');
+    const end = new Date(youtubeDates[youtubeDates.length-1]+'T12:00:00');
+    for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+      const key=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+      if(!mapa[key]) mapa[key]={};
+      mapa[key].youtube_visualizacoes=0;
+      mapa[key].youtube_videos_unicos=0;
+      mapa[key].youtube_canais_unicos=0;
+    }
+    youtube.forEach(y=>{
+      if(!mapa[y.data]) mapa[y.data]={};
+      mapa[y.data].youtube_visualizacoes=Number(y.visualizacoes||0);
+      mapa[y.data].youtube_videos_unicos=Number(y.videos_unicos||0);
+      mapa[y.data].youtube_canais_unicos=Number(y.canais_unicos||0);
+    });
+  }
+
   // ── COLETA TODAS AS VARIÁVEIS ─────────────────────────
   const todasVars = new Set();
   Object.values(mapa).forEach(obj => Object.keys(obj).forEach(k=>todasVars.add(k)));
@@ -479,7 +501,10 @@ garminAtiv.forEach(a => {
     const vals = datas.map(d=>mapa[d][v]).filter(x=>x!=null);
     if(vals.length) medias[v] = +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
   });
-  _resumo = { dias: datas.length, medias, vars };
+  const youtubeCoverage = youtubeDates.length ? {inicio:youtubeDates[0],fim:youtubeDates[youtubeDates.length-1],dias:youtubeDates.length} : null;
+  const youtubeCategoryTotals = {};
+  youtube.forEach(y=>Object.entries(y.visualizacoes_por_categoria||{}).forEach(([cat,n])=>youtubeCategoryTotals[cat]=(youtubeCategoryTotals[cat]||0)+Number(n||0)));
+  _resumo = { dias: datas.length, medias, vars, youtubeCoverage, youtubeCategoryTotals, youtubeDays:youtube };
 
   filtrarCorr();
 }
@@ -540,6 +565,11 @@ ${mediasTexto}
 
 CORRELAÇÕES (r de Pearson; valores mais próximos de -1 ou +1 indicam associação mais forte):
 ${corrTexto}
+
+HISTÓRICO DO YOUTUBE:
+${_resumo.youtubeCoverage ? `Período coberto: ${_resumo.youtubeCoverage.inicio} a ${_resumo.youtubeCoverage.fim} (${_resumo.youtubeCoverage.dias} dias com visualizações registradas).` : 'Nenhum histórico do YouTube disponível.'}
+${Object.entries(_resumo.youtubeCategoryTotals||{}).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`- ${cat}: ${n} visualizações`).join('\n')}
+As métricas youtube_visualizacoes, youtube_videos_unicos e youtube_canais_unicos entram nas correlações diárias somente dentro do período coberto pelo Takeout. Dias sem evento nesse intervalo são tratados como zero; fora dele não há valor.
 
 ESCOLHA DOS INSIGHTS:
 - Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
@@ -648,6 +678,9 @@ const RADAR_METRICS = [
   {table:'garmin_diario', field:'calorias_ativas', label:'Calorias ativas', higherGood:null, group:'Garmin'},
   {table:'sono', field:'body_battery', label:'Body Battery', higherGood:null, group:'Garmin'},
   {table:'sono', field:'sleep_score', label:'Pontuação do sono', higherGood:null, group:'Garmin'},
+  {table:'youtube_diario', field:'visualizacoes', label:'Visualizações no YouTube', higherGood:null, group:'YouTube'},
+  {table:'youtube_diario', field:'videos_unicos', label:'Vídeos diferentes no YouTube', higherGood:null, group:'YouTube'},
+  {table:'youtube_diario', field:'canais_unicos', label:'Canais diferentes no YouTube', higherGood:null, group:'YouTube'},
 
 ];
 
@@ -675,13 +708,15 @@ async function renderRadar(){
     const from = radarDateOffset(89);
     // Busca até 90 dias para investigar padrões temporais repetidos; a comparação visual continua sendo 7 dias vs. 21 dias anteriores. Diário é obrigatório; sono/Garmin podem ter lacunas.
     const diario = await sb('diario_diario?data=gte.'+from+'&order=data.asc&limit=365');
-    const [sonoResult, garminResult] = await Promise.allSettled([
+    const [sonoResult, garminResult, youtubeResult] = await Promise.allSettled([
       sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
-      sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365')
+      sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365'),
+      sb('youtube_diario?data=gte.'+from+'&order=data.asc&limit=365')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
     const garmin = garminResult.status==='fulfilled' ? garminResult.value : [];
-    const dataByTable = {diario_diario:diario, sono, garmin_diario:garmin};
+    const youtube = youtubeResult.status==='fulfilled' ? youtubeResult.value : [];
+    const dataByTable = {diario_diario:diario, sono, garmin_diario:garmin, youtube_diario:youtube};
     const recentStart = radarDateOffset(6);
     const baselineStart = radarDateOffset(27);
     const baselineEnd = radarDateOffset(7);
@@ -714,9 +749,9 @@ async function renderRadar(){
     window._radarCoverage = coverage;
     const latestDate = rows => rows.length ? rows.map(r=>r.data).filter(Boolean).sort().reverse()[0] : null;
     const dailyByDate = new Map();
-    [{table:'diario_diario',rows:diario},{table:'sono',rows:sono},{table:'garmin_diario',rows:garmin}].forEach(source=>source.rows.filter(row=>row.data>=from&&row.data<=radarDateOffset(0)).forEach(row=>{if(!dailyByDate.has(row.data))dailyByDate.set(row.data,{data:row.data});const clean=dailyByDate.get(row.data);RADAR_METRICS.filter(m=>m.table===source.table).forEach(m=>{const value=row[m.field];if(value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value)))clean[m.field]=Number(value);});}));
+    [{table:'diario_diario',rows:diario},{table:'sono',rows:sono},{table:'garmin_diario',rows:garmin},{table:'youtube_diario',rows:youtube}].forEach(source=>source.rows.filter(row=>row.data>=from&&row.data<=radarDateOffset(0)).forEach(row=>{if(!dailyByDate.has(row.data))dailyByDate.set(row.data,{data:row.data});const clean=dailyByDate.get(row.data);RADAR_METRICS.filter(m=>m.table===source.table).forEach(m=>{const value=row[m.field];if(value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value)))clean[m.field]=Number(value);});}));
     const dailyRows=[...dailyByDate.values()].sort((a,b)=>a.data.localeCompare(b.data));
-    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:dailyRows,sono:sono.length,garmin:garmin.length,sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
+    window._radarContext = {recentStart,baselineStart,baselineEnd,diario:diario.length,diarioRows:dailyRows,sono:sono.length,garmin:garmin.length,youtube:youtube.length,youtubeLatest:latestDate(youtube),youtubeError:youtubeResult.status==='rejected',youtubeCategories:youtube.reduce((acc,row)=>{Object.entries(row.visualizacoes_por_categoria||{}).forEach(([k,v])=>acc[k]=(acc[k]||0)+Number(v||0));return acc;},{}),sonoLatest:latestDate(sono),garminLatest:latestDate(garmin),sonoError:sonoResult.status==='rejected',garminError:garminResult.status==='rejected'};
     status.textContent = 'Radar: mudanças nos últimos 7 dias vs. 21 dias anteriores · sequência diária de Diário, sono e Garmin quando disponível.';
     if(!results.length){
       list.innerHTML='<div class="empty">Ainda não há desvios claros com dados suficientes. Isso não significa que esteja tudo igual — algumas métricas podem ter poucos registros.</div>';
@@ -779,6 +814,7 @@ QUANTIDADE DE REGISTROS
 - Diário: ${ctx.diario} registros na janela consultada; é a fonte principal.
 - Sono: ${ctx.sono} registros; o mais recente é ${ctx.sonoLatest||'nenhum'}${ctx.sonoError?' (não foi possível consultar esta fonte)':''}.
 - Garmin: ${ctx.garmin} registros; o mais recente é ${ctx.garminLatest||'nenhum'}${ctx.garminError?' (não foi possível consultar esta fonte)':''}.
+- YouTube: ${ctx.youtube} dias com visualizações; o mais recente é ${ctx.youtubeLatest||'nenhum'}${ctx.youtubeError?' (não foi possível consultar esta fonte)':''}. Categorias no período: ${Object.entries(ctx.youtubeCategories||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+'='+v).join(', ')||'sem dados'}.
 
 MUDANÇAS DETECTADAS (7 dias recentes comparados com os 21 dias anteriores)
 ${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
@@ -786,7 +822,7 @@ ${changes.join('\n')||'Nenhuma mudança passou os critérios mínimos.'}
 QUAIS DADOS ESTÃO FALTANDO OU SÃO LIMITADOS
 ${coverageLines.join('\n')}
 
-REGISTROS POR DIA (HISTÓRICO DISPONÍVEL DE ATÉ 90 DIAS)
+REGISTROS POR DIA (HISTÓRICO DISPONÍVEL DE ATÉ 90 DIAS; YouTube incluído quando houver dados)
 ${dailyLines.join('\n')||'Nenhum registro diário disponível.'}
 
 FORMATO DA RESPOSTA
