@@ -139,7 +139,7 @@ async function saveFood(date=activeFoodDate,text=$('foodText').value){
 }
 $('foodDate').addEventListener('change',async()=>{if(foodTimer){clearTimeout(foodTimer);foodTimer=null;await saveFood(activeFoodDate,$('foodText').value)}await loadFood()});
 $('foodText').addEventListener('input',()=>{clearTimeout(foodTimer);$('foodStatus').textContent='Alterações pendentes…';foodTimer=setTimeout(saveFood,1100)});
-$('saveFood').onclick=saveFood;
+$('saveFood').onclick=()=>saveFood();
 
 function eventType(type){return ({filme:'assistido',serie:'episodio',livro:'progresso_leitura',hobbie:'sessao_hobbie'})[type]}
 function syncRecordFields(){
