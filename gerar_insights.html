@@ -619,27 +619,39 @@ function copiarParaClaude(){
     .map(([k,v]) => `- ${label(k)}: média ${v.media}; ${v.n} dias com dado; cobertura ${v.inicio} a ${v.fim}`)
     .join('\n');
 
-  // Para o prompt, priorizar relações interpretáveis e com amostra mínima.
-  // Não enviar correlações entre métricas redundantes ou fisiológicas equivalentes.
-  const outcomes = new Set(['humor','energia','clareza_mental','foco_geral','produtividade','satisfacao','dia_bom','procrastinacao','uso_excessivo_internet','dor_desconforto']);
-  const behaviors = new Set(['passos','calorias_ativas','treinou','qtd_atividades','duracao_min','alimentacao_registrada','agua_registrada','youtube_visualizacoes','filmes_assistidos','episodios_assistidos','leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min']);
+  // Seleção conservadora: cruzar comportamento/contexto com resultados pessoais.
+  // Excluir relações circulares, métricas derivadas da mesma atividade e indicadores redundantes.
+  const outcomes = new Set(['humor','energia','clareza_mental','foco_geral','produtividade','procrastinacao','uso_excessivo_internet','dor_desconforto']);
+  const behaviors = new Set([
+    'duracao_min','sleep_score','body_battery','necessidade_min','fc_repouso','vfc_status','oximetria','respiracao',
+    'passos','calorias_ativas','treinou','volume_treino','qtd_atividades','te_aerobico_max',
+    'alimentacao_registrada','agua_registrada','social_bom','evento_positivo','evento_negativo','conflito',
+    'youtube_visualizacoes','filmes_assistidos','episodios_assistidos',
+    'leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min'
+  ]);
+  const excludedPairs = new Set([
+    'dia_bom|humor','dia_bom|satisfacao','humor|satisfacao',
+    'youtube_videos_unicos|youtube_visualizacoes','youtube_canais_unicos|youtube_visualizacoes',
+    'youtube_canais_unicos|youtube_videos_unicos',
+    'filmes_assistidos|episodios_assistidos',
+    'atualizacoes_leitura|leitura_variacao_pp_media'
+  ]);
+  const pairKey = (x,y) => [x,y].sort().join('|');
   const insightCandidates = _todasCorr.filter(c=>{
-    if(c.n<10 || Math.abs(c.r)<rMin) return false;
+    if(c.n<10 || Math.abs(c.r)<rMin || excludedPairs.has(pairKey(c.va,c.vb))) return false;
     const aOutcome=outcomes.has(c.va), bOutcome=outcomes.has(c.vb);
     const aBehavior=behaviors.has(c.va), bBehavior=behaviors.has(c.vb);
-    return (aOutcome&&bOutcome)||(aOutcome&&bBehavior)||(bOutcome&&aBehavior);
-  }).sort((a,b)=>Math.abs(b.r)-Math.abs(a.r)).slice(0,20);
-  const corrTexto = insightCandidates
-    .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
-    .join('\n') || 'Nenhuma associação prática atingiu os critérios mínimos; não invente insights correlacionais.';
-
-  const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
-
-MÉDIAS POR VARIÁVEL (cada uma usa somente os dias em que há dado):
-${mediasTexto}
-
-ASSOCIAÇÕES CANDIDATAS (somente relações interpretáveis com pelo menos 10 dias em comum):
+    return (aOutcome&&bBehavior)||(bOutcome&&aBehavior);
+  }).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0ASSOCIAÇÕES CANDIDATAS (somente relações interpretáveis com pelo menos 10 dias em comum):
 ${corrTexto}
+
+CRITÉRIO DE QUALIDADE — OBRIGATÓRIO:
+- Não chame de insight uma relação óbvia, circular ou que apenas repete como uma métrica foi construída.
+- Não compare indicadores que medem praticamente a mesma coisa (ex.: Dia Bom × Humor; Humor × Satisfação; vídeos únicos × visualizações do YouTube).
+- Não compare dois resultados subjetivos entre si. Procure fatores comportamentais ou de contexto que possam ajudar a entender esses resultados.
+- Uma correlação forte não basta: explique por que a relação acrescenta informação útil e o que ela permite investigar na vida cotidiana.
+- Se nenhuma associação for realmente interessante, retorne menos insights ou nenhum. Não preencha quantidade por obrigação.
+- Trate associações como pistas, nunca como causa ou prova.
 
 HISTÓRICO DO YOUTUBE:
 ${_resumo.youtubeCoverage ? `Período coberto: ${_resumo.youtubeCoverage.inicio} a ${_resumo.youtubeCoverage.fim} (${_resumo.youtubeCoverage.dias} dias com visualizações registradas).` : 'Nenhum histórico do YouTube disponível.'}
@@ -940,7 +952,10 @@ COMO PENSAR COM CUIDADO
 - Inclua o que vai contra sua hipótese, se houver. Não trate uma associação como causa.
 - Escolha no máximo 2 possibilidades realmente úteis. Se os dados não sustentarem uma conclusão, não invente uma só para preencher espaço.
 - NÃO fique apenas repetindo que meu humor, energia, foco ou produtividade estão baixos/altos. O objetivo é descobrir o que pode estar ligado a essas mudanças e o que eu posso fazer na prática.
-- Procure relações úteis entre comportamentos que posso mudar e como me sinto: passos/movimento, sono, rotina, hidratação, interação social, treino e uso de internet, por exemplo. Use somente as variáveis que realmente existirem nos registros.
+- Procure primeiro relações não óbvias entre comportamentos/contexto e resultados pessoais: sono, movimento, treino, interação social, lazer, leitura e uso de internet. Use somente variáveis existentes e não trate métricas derivadas da mesma atividade como descobertas independentes.
+- Priorize contradições úteis entre indicadores (por exemplo, produtividade alta junto com procrastinação alta): descreva a coexistência sem presumir que um indicador invalida o outro.
+- Não use Dia Bom, Humor e Satisfação como explicações uns dos outros. São avaliações próximas e não revelam, por si só, um fator que ajude a entender a rotina.
+- Antes de manter qualquer insight, pergunte: "Isso me ensina algo que eu ainda não saberia olhando para essas duas métricas?" Se não, descarte.
 - Compare os dias: quando uma variável está mais alta ou mais baixa que o meu habitual, como ficam humor, energia, foco ou produtividade? Veja tanto o mesmo dia quanto o dia seguinte e os dias posteriores. Não confunda coincidência no mesmo dia com algo que veio antes.
 - Antes de sugerir uma ação, procure um padrão nos meus próprios dados. Se houver exemplos repetidos, diga claramente algo como "Nos dias em que você deu mais passos, seu humor também costumou ficar melhor". Se os registros não mostrarem isso, não afirme que mostram.
 - Transforme o padrão em uma sugestão pequena e testável. Por exemplo, se os dados apoiarem uma ligação entre movimento e humor, sugira experimentar uma caminhada curta e observar o humor no mesmo dia e no dia seguinte. Deixe claro quando é apenas um teste para descobrir se ajuda, e não algo comprovado pelos dados.
