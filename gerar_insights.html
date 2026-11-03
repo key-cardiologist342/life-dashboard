@@ -540,10 +540,14 @@ garminAtiv.forEach(a => {
   _todasCorr = corrs;
 
   // resumo para o Claude
+  // Estatísticas por variável: cada média informa sua própria amostra e cobertura.
   const medias = {};
   vars.forEach(v => {
-    const vals = datas.map(d=>mapa[d][v]).filter(x=>x!=null);
-    if(vals.length) medias[v] = +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+    const valid = datas.filter(d=>mapa[d][v]!=null).map(d=>({data:d,value:mapa[d][v]}));
+    if(valid.length) medias[v] = {
+      media:+(valid.reduce((a,b)=>a+b.value,0)/valid.length).toFixed(2),
+      n:valid.length, inicio:valid[0].data, fim:valid[valid.length-1].data
+    };
   });
   const youtubeCoverage = youtubeDates.length ? {inicio:youtubeDates[0],fim:youtubeDates[youtubeDates.length-1],dias:youtubeDates.length} : null;
   const youtubeCategoryTotals = {};
@@ -612,19 +616,29 @@ function copiarParaClaude(){
   const filtradas = _todasCorr.filter(c=>Math.abs(c.r)>=rMin && c.n>=nMin).slice(0,50);
 
   const mediasTexto = Object.entries(_resumo.medias)
-    .map(([k,v]) => `- ${label(k)}: ${v}`)
+    .map(([k,v]) => `- ${label(k)}: média ${v.media}; ${v.n} dias com dado; cobertura ${v.inicio} a ${v.fim}`)
     .join('\n');
 
-  const corrTexto = filtradas
-    .map(c=>`- ${label(c.va)} × ${label(c.vb)}: r=${c.r} (n=${c.n})`)
-    .join('\n');
+  // Para o prompt, priorizar relações interpretáveis e com amostra mínima.
+  // Não enviar correlações entre métricas redundantes ou fisiológicas equivalentes.
+  const outcomes = new Set(['humor','energia','clareza_mental','foco_geral','produtividade','satisfacao','dia_bom','procrastinacao','uso_excessivo_internet','dor_desconforto']);
+  const behaviors = new Set(['passos','calorias_ativas','treinou','qtd_atividades','duracao_min','alimentacao_registrada','agua_registrada','youtube_visualizacoes','filmes_assistidos','episodios_assistidos','leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min']);
+  const insightCandidates = _todasCorr.filter(c=>{
+    if(c.n<10 || Math.abs(c.r)<rMin) return false;
+    const aOutcome=outcomes.has(c.va), bOutcome=outcomes.has(c.vb);
+    const aBehavior=behaviors.has(c.va), bBehavior=behaviors.has(c.vb);
+    return (aOutcome&&bOutcome)||(aOutcome&&bBehavior)||(bOutcome&&aBehavior);
+  }).sort((a,b)=>Math.abs(b.r)-Math.abs(a.r)).slice(0,20);
+  const corrTexto = insightCandidates
+    .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
+    .join('\n') || 'Nenhuma associação prática atingiu os critérios mínimos; não invente insights correlacionais.';
 
   const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações.
 
-MÉDIAS DOS ÚLTIMOS ${_resumo.dias} DIAS:
+MÉDIAS POR VARIÁVEL (cada uma usa somente os dias em que há dado):
 ${mediasTexto}
 
-CORRELAÇÕES (r de Pearson; valores mais próximos de -1 ou +1 indicam associação mais forte):
+ASSOCIAÇÕES CANDIDATAS (somente relações interpretáveis com pelo menos 10 dias em comum):
 ${corrTexto}
 
 HISTÓRICO DO YOUTUBE:
@@ -650,7 +664,7 @@ ESCOLHA DOS INSIGHTS:
 - Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
 - Considere também alimentação/hidratação registradas, entretenimento, leitura, hobbies e padrões de consumo de YouTube, mas só destaque relações quando houver volume e cobertura suficientes.
 - Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
-- Não priorize automaticamente o maior número. Prefira relações que sejam compreensíveis e possam me ajudar a entender minha rotina. Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
+- Não priorize automaticamente o maior número. Prefira relações compreensíveis e úteis para minha rotina. Não use associações entre métricas derivadas ou quase duplicadas (por exemplo visualizações e vídeos únicos quando têm os mesmos valores). Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
 - Não crie vários insights que digam quase a mesma coisa. Combine relações relacionadas quando isso deixar a explicação mais útil.
 - Use as médias apenas para dar contexto quando ajudarem. Não transforme médias ou correlações em afirmações sobre uma sequência temporal que os dados não mostram.
 - A correlação é uma associação entre registros: não prova que uma coisa provoque a outra nem revela sozinha o motivo do padrão.
@@ -666,7 +680,7 @@ COMO ESCREVER CADA INSIGHT:
 - O texto deve ter 2 ou 3 frases naturais, curtas e fáceis de entender. Não use vírgulas dentro do campo texto; se precisar separar ideias use ponto e vírgula. Não use listas nem frases excessivamente longas.
 
 FORMATO DE SAÍDA:
-Se eu também enviar um bloco chamado DADOS DO RADAR PESSOAL, devolva DOIS blocos separados e rotulados INSIGHTS_CSV e RADAR_CSV. Se receber apenas estes dados de correlação, devolva somente INSIGHTS_CSV. Para o Radar mantenha exatamente o cabeçalho data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes e uma única linha de dados.
+Como este pedido sempre inclui DADOS DO RADAR PESSOAL, devolva obrigatoriamente DOIS blocos: INSIGHTS_CSV e RADAR_CSV. Não use regras condicionais de formato.
 
 INSIGHTS_CSV deve conter CSV puro, sem cercas Markdown, com exatamente este cabeçalho:
 icone,titulo,texto,cor,correlacao
@@ -690,9 +704,9 @@ Não copie o exemplo como resultado. Use apenas os padrões realmente sustentado
 
 ${buildRadarInput()}
 
-INSTRUÇÃO FINAL — ESTA REGRA VALE PARA A RESPOSTA INTEIRA
-Você recebeu DOIS conjuntos de dados e precisa devolver os DOIS resultados. Não escolha entre eles e não omita um deles.
-1. Primeiro, escreva INSIGHTS_CSV com o cabeçalho icone,titulo,texto,cor,correlacao e de 3 a 5 linhas de insights, ou menos somente se os dados realmente não sustentarem mais padrões úteis.
+FORMATO ÚNICO DE SAÍDA — OBRIGATÓRIO
+Você recebeu dados históricos e dados recentes do Radar. Gere os dois resultados abaixo, sem omitir nenhum.
+1. Primeiro, escreva INSIGHTS_CSV com o cabeçalho icone,titulo,texto,cor,correlacao e até 5 linhas de insights. Gere apenas os que tiverem utilidade real; zero ou poucos insights são preferíveis a relações frágeis.
 2. Depois, escreva RADAR_CSV com o cabeçalho data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes e uma única linha de dados.
 3. Coloque o nome INSIGHTS_CSV em uma linha própria antes do respectivo CSV e RADAR_CSV em uma linha própria antes do CSV. Não use cercas de código Markdown e não escreva introdução ou conclusão fora desses dois blocos.
 4. A instrução "gere um único registro RADAR_CSV" significa uma linha de dados para o Radar; NÃO significa que deve pular INSIGHTS_CSV.
