@@ -125,6 +125,12 @@ const SUPABASE_KEY='sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
 const {data:{session}}=await supabase.auth.getSession();
 if(!session){window.location.href='login.html';throw new Error('Sessão ausente');}
+const GARMIN_OWNER_ID='f94dac5e-4ff1-4827-9371-0bbd24172523';
+if(session.user.id!==GARMIN_OWNER_ID){
+  const status=document.getElementById('load-status');
+  if(status){status.textContent='Você entrou com uma conta diferente da conta autorizada a acessar os dados do Garmin. Saia e entre com a conta usada na importação dos dados.';status.className='status bad';}
+  throw new Error('Conta autenticada diferente da conta proprietária dos dados Garmin (bloqueio de segurança/RLS).');
+}
 window.logout=async()=>{await supabase.auth.signOut();window.location.href='login.html';};
 document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
 const $=id=>document.getElementById(id);
