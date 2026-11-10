@@ -198,7 +198,7 @@ function buildPrompt(){
     resumo:'string curto, até 500 caracteres',
     evolucao:{status:'progredindo | estavel | regredindo | em_construcao | sem_dados',pontos_positivos:['string'],pontos_atencao:['string']},
     recuperacao:{status:'adequada | atencao | insuficiente | sem_dados',observacoes:['string']},
-    previsoes:{5km_segundos:'number|null',10km_segundos:'number|null',21km_segundos:'number|null',confianca:'baixa | moderada | alta',justificativa:'string'},
+    previsoes:{'5km_segundos':'number|null','10km_segundos':'number|null','21km_segundos':'number|null',confianca:'baixa | moderada | alta',justificativa:'string'},
     recomendacoes:[{prioridade:'alta | media | baixa',acao:'string',motivo:'string'}],
     alertas:['string'],
     dados_insuficientes:['string']
