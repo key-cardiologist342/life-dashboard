@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Corrida — Life Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#FFF4ED;--surface:#fff;--surface2:#FFF0D2;--border:#976A8D35;--text:#38283A;--muted:#806D7A;--pink:#E94F91;--mauve:#976A8D;--green:#477A54;--blue:#397F91;--orange:#F07845;--red:#C94E57}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(circle at 5% 0%,#F05B9C12,transparent 25rem),radial-gradient(circle at 95% 12%,#E8D58A35,transparent 24rem),var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:70px}
+header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;position:sticky;top:0;z-index:30;background:#FFF8E9F2;backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.logo{font:800 1.15rem 'Syne',sans-serif;white-space:nowrap}.logo span{color:var(--pink)}
+.header-right{display:flex;align-items:center;gap:10px}.date-chip{font: .68rem 'DM Mono',monospace;color:var(--muted)}
+.logout{background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);cursor:pointer}
+nav{display:flex;gap:3px;padding:0 12px;overflow-x:auto;background:#ffffffb8;border-bottom:1px solid var(--border);scrollbar-width:none}
+nav a{padding:12px 13px;color:var(--muted);font-size:.78rem;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+nav a.active{color:var(--text);border-color:var(--pink);font-weight:700}
+main{max-width:1120px;margin:0 auto;padding:28px 18px}
+@media(min-width:700px){main{padding:38px 28px}}
+.hero{padding:24px;border:1px solid var(--border);border-radius:26px 8px 26px 8px;background:linear-gradient(115deg,#F6DDEB,#FFF6D9 58%,#FCE6D9);margin-bottom:22px}
+.eyebrow{font:700 .65rem 'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--mauve);margin-bottom:8px}
+h1{font:800 clamp(1.7rem,4vw,2.4rem) 'Syne',sans-serif;letter-spacing:-.05em;color:#49334A}
+.hero p{font-size:.84rem;line-height:1.65;color:#705D6D;margin-top:8px;max-width:760px}
+.section{margin:26px 0}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.section-title{font:700 .72rem 'Syne',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mauve)}
+.section-title:after{content:"";display:inline-block;width:35px;height:1px;background:var(--border);margin-left:10px;vertical-align:middle}
+.card{background:#ffffffed;border:1px solid var(--border);border-radius:20px 7px 20px 7px;padding:18px;box-shadow:0 5px 18px #5C364F0A}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:700px){.grid.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.two-col{grid-template-columns:1fr 1fr}}
+.metric .label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.metric .value{font:800 1.5rem 'Syne',sans-serif;color:var(--mauve);margin-top:5px}.metric .sub{font-size:.67rem;color:var(--muted);margin-top:3px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+select,input,textarea{font:inherit;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;max-width:100%}
+select:focus,input:focus,textarea:focus{outline:3px solid #E94F9128;border-color:var(--pink)}
+button{font:600 .78rem 'DM Sans',sans-serif;cursor:pointer}
+.btn{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:11px;padding:10px 14px}
+.btn.primary{background:linear-gradient(110deg,var(--mauve),var(--pink),var(--orange));border:0;color:#fff;box-shadow:0 5px 0 #976A8D20}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.muted{color:var(--muted);font-size:.74rem;line-height:1.55}
+.status{font-size:.76rem;margin-top:10px;line-height:1.5}.status.good{color:var(--green)}.status.bad{color:var(--red)}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.75rem}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);white-space:nowrap}th{font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.prompt-box{font: .7rem/1.65 'DM Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:340px;overflow:auto;background:#FFF9F4;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;color:#695565}
+textarea.json-input{width:100%;min-height:230px;font: .74rem/1.6 'DM Mono',monospace;resize:vertical;margin-top:10px}
+.analysis-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:760px){.analysis-grid{grid-template-columns:1.2fr .8fr}}
+.analysis-item{background:#FFF6EA;border-left:3px solid var(--mauve);border-radius:8px 14px 14px 8px;padding:12px;margin-top:8px;font-size:.78rem;line-height:1.55}
+.pill{display:inline-block;border-radius:100px;padding:4px 9px;background:#F6E7F0;color:var(--mauve);font-size:.65rem;font-weight:700}
+.empty{padding:22px;text-align:center;color:var(--muted);font-size:.78rem}
+.saved{display:grid;gap:10px}.saved-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px;background:#FFF7EF;border-radius:12px;border:1px solid var(--border)}
+.saved-row strong{font-size:.8rem}.saved-row small{display:block;color:var(--muted);margin-top:4px;font-size:.68rem}
+.note{background:#FFF0D2;border-radius:12px;padding:12px 14px;color:#705D6D;font-size:.72rem;line-height:1.55;margin-top:12px}
+@media(max-width:520px){header{padding:13px}.date-chip{display:none}main{padding:22px 13px}.hero{padding:19px}.card{padding:14px}.grid.metrics{gap:8px}.metric .value{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">life<span>.</span>dash — corrida</div>
+  <div class="header-right"><span class="date-chip" id="today"></span><button class="logout" onclick="logout()">Sair</button></div>
+</header>
+<nav>
+  <a href="index.html">Visão Geral</a><a href="diario.html">Diário</a><a href="financeiro.html">Financeiro</a><a href="treino.html">Treino</a><a href="corrida.html" class="active">Corrida</a><a href="gerar_insights.html">Insights</a><a href="alimentacao.html">Alimentação</a><a href="atividades.html">Cultura & lazer</a>
+</nav>
+<main>
+  <section class="hero">
+    <div class="eyebrow">Projeto meia maratona · junho de 2027</div>
+    <h1>Corrida, com contexto. 🏃‍♀️</h1>
+    <p>Seu centro de acompanhamento: dados reais do Garmin, evolução, recuperação e projeções com incerteza explícita. A página prepara o contexto; a análise acontece no ChatGPT, sem API de IA.</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div class="section-title">Panorama do período</div><div class="controls"><label class="muted" for="periodo">Janela</label><select id="periodo"><option value="30">30 dias</option><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select><button class="btn" id="refresh">↻ Atualizar dados</button></div></div>
+    <div class="grid metrics">
+      <div class="card metric"><div class="label">Corridas</div><div class="value" id="m-corridas">—</div><div class="sub" id="m-corridas-sub">no período</div></div>
+      <div class="card metric"><div class="label">Distância</div><div class="value" id="m-distancia">—</div><div class="sub">quilômetros corridos</div></div>
+      <div class="card metric"><div class="label">Tempo correndo</div><div class="value" id="m-tempo">—</div><div class="sub">tempo total registrado</div></div>
+      <div class="card metric"><div class="label">Média semanal</div><div class="value" id="m-semanal">—</div><div class="sub">km por semana coberta</div></div>
+    </div>
+    <div class="grid two-col" style="margin-top:10px">
+      <div class="card"><div class="section-head"><strong style="font-size:.82rem">Recuperação e rotina</strong><span class="pill" id="coverage">Carregando</span></div><div class="grid">
+        <div class="metric"><div class="label">Sono médio</div><div class="value" id="m-sono">—</div><div class="sub" id="m-sono-n">dias disponíveis</div></div>
+        <div class="metric"><div class="label">FC repouso</div><div class="value" id="m-fcr">—</div><div class="sub" id="m-fcr-n">dias disponíveis</div></div>
+        <div class="metric"><div class="label">VFC média</div><div class="value" id="m-vfc">—</div><div class="sub" id="m-vfc-n">dias disponíveis</div></div>
+        <div class="metric"><div class="label">Body Battery</div><div class="value" id="m-bb">—</div><div class="sub" id="m-bb-n">dias disponíveis</div></div>
+      </div></div>
+      <div class="card"><strong style="font-size:.82rem">Cobertura dos dados</strong><div class="muted" id="data-coverage" style="margin-top:10px">Buscando dados...</div><div class="note">Ausência de registro não será interpretada como ausência de treino ou recuperação ruim. O prompt informa amostras e lacunas.</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div class="section-title">Atividades de corrida</div><span class="pill" id="runs-count">—</span></div>
+    <div class="card table-wrap"><table><thead><tr><th>Data</th><th>Atividade</th><th>Distância</th><th>Tempo</th><th>Ritmo médio</th><th>FC média/máx.</th><th>Elevação</th></tr></thead><tbody id="runs-table"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody></table></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div class="section-title">Preparar análise</div><span class="pill">Sem API de IA</span></div>
+    <div class="card">
+      <p class="muted">A página reúne os dados do período e monta um prompt completo. Copie, envie aqui no ChatGPT e peça a análise. A resposta deve ser somente JSON válido, seguindo o contrato fixo abaixo.</p>
+      <div class="controls" style="margin-top:14px"><button class="btn primary" id="build-prompt">✦ Montar prompt de análise</button><button class="btn" id="copy-prompt" disabled>Copiar prompt</button></div>
+      <div class="prompt-box" id="prompt-preview" style="display:none"></div>
+      <div class="status" id="prompt-status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div class="section-title">Importar análise do ChatGPT</div><span class="pill">JSON estruturado</span></div>
+    <div class="card">
+      <p class="muted">Cole abaixo o JSON puro que o ChatGPT devolveu. A página valida os campos e salva cada parte em sua coluna correspondente. Não salvamos o prompt nem uma cópia textual integral da resposta.</p>
+      <textarea class="json-input" id="json-input" spellcheck="false" placeholder='Cole aqui o JSON retornado pelo ChatGPT…'></textarea>
+      <div class="controls" style="margin-top:10px"><button class="btn" id="validate-json">Validar JSON</button><button class="btn primary" id="save-analysis" disabled>Salvar análise</button></div>
+      <div class="status" id="json-status" aria-live="polite"></div>
+      <div id="analysis-preview"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><div class="section-title">Análises salvas</div><button class="btn" id="refresh-saved">Atualizar</button></div>
+    <div class="saved" id="saved-list"><div class="empty">Carregando análises…</div></div>
+  </section>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const SUPABASE_URL='https://bszolfkwpqidoqzlzjci.supabase.co';
+const SUPABASE_KEY='sb_publishable_72Os9pLeArI0ll83eZLPCw_0ttl9QNc';
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const {data:{session}}=await supabase.auth.getSession();
+if(!session){window.location.href='login.html';throw new Error('Sessão ausente');}
+window.logout=async()=>{await supabase.auth.signOut();window.location.href='login.html';};
+document.getElementById('today').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+const $=id=>document.getElementById(id);
+const RUN_TYPES=['running','treadmill_running','Corrida','Corrida em esteira'];
+let currentData=null, parsedAnalysis=null, promptText='';
+const fmt=(n,d=1)=>n==null?'—':Number(n).toLocaleString('pt-BR',{maximumFractionDigits:d,minimumFractionDigits:d});
+const avg=(rows,key)=>{const v=rows.map(x=>Number(x[key])).filter(Number.isFinite);return v.length?{value:v.reduce((a,b)=>a+b,0)/v.length,n:v.length}:{value:null,n:0};};
+const pace=(km,sec)=>km>0&&sec>0?sec/km:null;
+const fmtPace=sec=>sec==null?'—':Math.floor(sec/60)+':'+String(Math.round(sec%60)).padStart(2,'0')+'/km';
+const fmtTime=sec=>{if(!sec)return'—';const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h? h+'h '+String(m).padStart(2,'0')+'min':m+'min';};
+const isoDaysAgo=n=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);};
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function loadData(){
+  $('refresh').disabled=true;$('refresh').textContent='Buscando…';
+  try{
+    const days=Number($('periodo').value),end=isoDaysAgo(0),start=isoDaysAgo(days-1);
+    const [runsR,dailyR,sleepR]=await Promise.all([
+      supabase.from('garmin_atividades').select('garmin_activity_id,data,tipo,titulo,distancia_km,duracao_seg,fc_media,fc_maxima,te_aerobico,te_anaerobico,carga_treino,cadencia_media,subida_m,calorias').gte('data',start).lte('data',end).in('tipo',RUN_TYPES).order('data',{ascending:false}).limit(500),
+      supabase.from('garmin_diario').select('data,fc_repouso,vfc_noturna_ms,vfc_media_7d,vfc_status,estresse_diario,body_battery_carregado,body_battery_gasto').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500),
+      supabase.from('sono').select('data,duracao_min,sleep_score,fc_repouso,body_battery,vfc_status,necessidade_min,qualidade').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500)
+    ]);
+    for(const r of [runsR,dailyR,sleepR])if(r.error)throw r.error;
+    const runs=runsR.data||[],daily=dailyR.data||[],sleep=sleepR.data||[];
+    const ids=runs.map(x=>x.garmin_activity_id).filter(Boolean);
+    let samples=[];
+    if(ids.length){
+      const sampleR=await supabase.from('garmin_atividade_amostras').select('garmin_activity_id,tempo_decorrido_seg,distancia_m,velocidade_mps,fc_bpm,cadencia_spm,potencia_w,elevacao_m,performance_condition').in('garmin_activity_id',ids).order('indice',{ascending:true}).limit(30000);
+      if(!sampleR.error)samples=sampleR.data||[];
+    }
+    const sampleStats={};
+    samples.forEach(s=>{const k=s.garmin_activity_id;(sampleStats[k]??=[]).push(s);});
+    const enriched=runs.map(r=>{
+      const ss=sampleStats[r.garmin_activity_id]||[];
+      const mean=(key)=>{const a=ss.map(x=>Number(x[key])).filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;};
+      const max=(key)=>{const a=ss.map(x=>Number(x[key])).filter(Number.isFinite);return a.length?Math.max(...a):null;};
+      const min=(key)=>{const a=ss.map(x=>Number(x[key])).filter(Number.isFinite);return a.length?Math.min(...a):null;};
+      return {...r,ritmo_seg_km:pace(Number(r.distancia_km),Number(r.duracao_seg)),amostras: ss.length,
+        fc_amostras_media:mean('fc_bpm'),fc_amostras_max:max('fc_bpm'),cadencia_amostras_media:mean('cadencia_spm'),
+        potencia_media_w:mean('potencia_w'),performance_condition_media:mean('performance_condition'),
+        elevacao_amostras_min:min('elevacao_m'),elevacao_amostras_max:max('elevacao_m')};
+    });
+    const totalKm=runs.reduce((s,r)=>s+Number(r.distancia_km||0),0);
+    const totalSec=runs.reduce((s,r)=>s+Number(r.duracao_seg||0),0);
+    const daysCovered=Math.max(1,Math.ceil((new Date(end+'T12:00:00')-new Date(start+'T12:00:00'))/86400000)+1);
+    const sleepAvg=avg(sleep,'duracao_min'),hrAvg=avg(daily,'fc_repouso'),hrvAvg=avg(daily,'vfc_noturna_ms'),bbAvg=avg(sleep,'body_battery');
+    currentData={periodo:{inicio:start,fim:end,dias:daysCovered},corridas:enriched,recuperacao:{sono:sleep,garmin_diario:daily,medias:{sono_min:sleepAvg,fc_repouso:hrAvg,vfc_noturna_ms:hrvAvg,body_battery:bbAvg}},cobertura:{corridas:runs.length,amostras:samples.length,dias_sono:sleep.length,dias_garmin:daily.length},resumo:{distancia_km:+totalKm.toFixed(2),duracao_seg:totalSec,media_semanal_km:+(totalKm/(daysCovered/7)).toFixed(2),ritmo_medio_seg_km:totalKm?Math.round(totalSec/totalKm):null}};
+    $('m-corridas').textContent=runs.length;$('m-corridas-sub').textContent=days+' dias de janela';
+    $('m-distancia').textContent=fmt(totalKm)+' km';$('m-tempo').textContent=fmtTime(totalSec);
+    $('m-semanal').textContent=fmt(totalKm/(daysCovered/7))+' km';
+    $('m-sono').textContent=sleepAvg.value==null?'—':fmt(sleepAvg.value/60,1)+' h';$('m-sono-n').textContent=sleepAvg.n+' noites';
+    $('m-fcr').textContent=hrAvg.value==null?'—':Math.round(hrAvg.value)+' bpm';$('m-fcr-n').textContent=hrAvg.n+' dias';
+    $('m-vfc').textContent=hrvAvg.value==null?'—':fmt(hrvAvg.value)+' ms';$('m-vfc-n').textContent=hrvAvg.n+' dias';
+    $('m-bb').textContent=bbAvg.value==null?'—':Math.round(bbAvg.value);$('m-bb-n').textContent=bbAvg.n+' noites';
+    $('coverage').textContent=runs.length+' corridas · '+samples.length.toLocaleString('pt-BR')+' amostras';
+    $('data-coverage').innerHTML='Janela: <strong>'+start.split('-').reverse().join('/')+' a '+end.split('-').reverse().join('/')+'</strong><br>Corridas: '+runs.length+' registros<br>Amostras de atividade: '+samples.length.toLocaleString('pt-BR')+' ('+(ids.length?'coletadas quando disponíveis':'sem IDs de atividade')+')<br>Sono: '+sleep.length+' registros<br>Garmin diário: '+daily.length+' registros';
+    $('runs-count').textContent=runs.length+' atividades';
+    $('runs-table').innerHTML=enriched.length?enriched.map(r=>'<tr><td>'+escapeHtml(new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'))+'</td><td>'+escapeHtml(r.titulo||r.tipo)+'</td><td>'+fmt(r.distancia_km)+' km</td><td>'+fmtTime(r.duracao_seg)+'</td><td>'+fmtPace(r.ritmo_seg_km)+'</td><td>'+(r.fc_media??'—')+' / '+(r.fc_maxima??'—')+'</td><td>'+(r.subida_m==null?'—':Math.round(r.subida_m)+' m')+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">Nenhuma corrida registrada nessa janela.</td></tr>';
+    $('prompt-status').textContent='Dados atualizados. Período pronto para análise.';
+    await loadSaved();
+  }catch(e){$('prompt-status').textContent='Erro ao carregar dados: '+e.message;$('prompt-status').className='status bad';}
+  finally{$('refresh').disabled=false;$('refresh').textContent='↻ Atualizar dados';}
+}
+function buildPrompt(){
+  if(!currentData)throw new Error('Atualize os dados primeiro.');
+  const d=currentData;
+  const system='Você é um treinador de corrida baseado em fisiologia do exercício, treinamento de endurance, biomecânica, recuperação e prevenção de lesões. Faça uma análise criteriosa e honesta. Diferencie dado observado, tendência e hipótese. Não invente dados nem complete lacunas. Não transforme correlação em causalidade. Se a amostra for pequena, declare baixa confiança e deixe previsões como null. Não prescreva teste máximo. O objetivo de longo prazo é completar uma meia maratona em junho de 2027, com construção gradual de base. A usuária prefere prescrições por ritmo/velocidade quando houver evidência suficiente e quer correr continuamente, sem forçar progressão. Avalie carga, frequência, distribuição, ritmo, FC, elevação, cadência e recuperação quando disponíveis. Considere que atividades com pausas ou caminhadas não representam necessariamente corrida contínua.';
+  const contract={
+    periodo:{inicio:'YYYY-MM-DD',fim:'YYYY-MM-DD'},
+    resumo:'string curto, até 500 caracteres',
+    evolucao:{status:'progredindo | estavel | regredindo | em_construcao | sem_dados',pontos_positivos:['string'],pontos_atencao:['string']},
+    recuperacao:{status:'adequada | atencao | insuficiente | sem_dados',observacoes:['string']},
+    previsoes:{5km_segundos:'number|null',10km_segundos:'number|null',21km_segundos:'number|null',confianca:'baixa | moderada | alta',justificativa:'string'},
+    recomendacoes:[{prioridade:'alta | media | baixa',acao:'string',motivo:'string'}],
+    alertas:['string'],
+    dados_insuficientes:['string']
+  };
+  promptText=system+'\n\nResponda EXCLUSIVAMENTE com um JSON válido, sem Markdown, sem bloco de código, sem introdução e sem texto após o JSON. Use exatamente as chaves e tipos abaixo. Não crie chaves extras. Datas no formato ISO. Use null quando não houver evidência suficiente.\n\nCONTRATO JSON:\n'+JSON.stringify(contract,null,2)+'\n\nDADOS REAIS DO PERÍODO (JSON):\n'+JSON.stringify(d,null,2);
+  $('prompt-preview').textContent=promptText;$('prompt-preview').style.display='block';$('copy-prompt').disabled=false;
+  $('prompt-status').textContent='Prompt pronto. Copie e envie ao ChatGPT.';$('prompt-status').className='status good';
+}
+function validateAnalysis(a){
+  const keys=['periodo','resumo','evolucao','recuperacao','previsoes','recomendacoes','alertas','dados_insuficientes'];
+  if(!a||typeof a!=='object'||Array.isArray(a))throw new Error('A raiz precisa ser um objeto JSON.');
+  const missing=keys.filter(k=>!(k in a));if(missing.length)throw new Error('Campos ausentes: '+missing.join(', '));
+  if(!a.periodo||!/^\d{4}-\d{2}-\d{2}$/.test(a.periodo.inicio)||!/^\d{4}-\d{2}-\d{2}$/.test(a.periodo.fim))throw new Error('Período inválido.');
+  if(typeof a.resumo!=='string'||a.resumo.length>500)throw new Error('Resumo precisa ser texto com até 500 caracteres.');
+  const ev=['progredindo','estavel','regredindo','em_construcao','sem_dados'];
+  const rec=['adequada','atencao','insuficiente','sem_dados'];
+  if(!a.evolucao||!ev.includes(a.evolucao.status)||!Array.isArray(a.evolucao.pontos_positivos)||!Array.isArray(a.evolucao.pontos_atencao))throw new Error('Estrutura de evolução inválida.');
+  if(!a.recuperacao||!rec.includes(a.recuperacao.status)||!Array.isArray(a.recuperacao.observacoes))throw new Error('Estrutura de recuperação inválida.');
+  if(!a.previsoes||!['baixa','moderada','alta'].includes(a.previsoes.confianca))throw new Error('Previsões ou confiança inválidas.');
+  for(const k of ['5km_segundos','10km_segundos','21km_segundos'])if(a.previsoes[k]!==null&&(!Number.isFinite(a.previsoes[k])||a.previsoes[k]<=0))throw new Error('Previsão '+k+' deve ser número positivo ou null.');
+  if(!Array.isArray(a.recomendacoes)||!Array.isArray(a.alertas)||!Array.isArray(a.dados_insuficientes))throw new Error('Recomendações, alertas e dados_insuficientes precisam ser listas.');
+  if(a.recomendacoes.some(x=>!x||!['alta','media','baixa'].includes(x.prioridade)||typeof x.acao!=='string'||typeof x.motivo!=='string'))throw new Error('Cada recomendação precisa de prioridade, ação e motivo válidos.');
+  return a;
+}
+function previewAnalysis(a){
+  const list=(arr)=>arr.length?arr.map(x=>'<div class="analysis-item">'+escapeHtml(typeof x==='string'?x:(x.acao+' — '+x.motivo))+'</div>').join(''):'<p class="muted">Nenhum item.</p>';
+  $('analysis-preview').innerHTML='<div class="analysis-grid" style="margin-top:14px"><div class="card"><span class="pill">Resumo</span><p style="font-size:.82rem;line-height:1.6;margin-top:9px">'+escapeHtml(a.resumo)+'</p><h4 style="margin-top:14px;font-size:.76rem">Pontos positivos</h4>'+list(a.evolucao.pontos_positivos)+'<h4 style="margin-top:14px;font-size:.76rem">Pontos de atenção</h4>'+list(a.evolucao.pontos_atencao)+'</div><div class="card"><span class="pill">Recuperação: '+escapeHtml(a.recuperacao.status)+'</span>'+list(a.recuperacao.observacoes)+'<h4 style="margin-top:14px;font-size:.76rem">Recomendações</h4>'+list(a.recomendacoes)+'<h4 style="margin-top:14px;font-size:.76rem">Alertas</h4>'+list(a.alertas)+'</div></div>';
+}
+$('build-prompt').addEventListener('click',()=>{try{buildPrompt();}catch(e){$('prompt-status').textContent=e.message;$('prompt-status').className='status bad';}});
+$('copy-prompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(promptText);$('prompt-status').textContent='Prompt copiado. Agora é só colar no ChatGPT.';$('prompt-status').className='status good';}catch(e){$('prompt-status').textContent='Não consegui copiar automaticamente. Selecione o texto exibido e copie.';$('prompt-status').className='status bad';}});
+$('validate-json').addEventListener('click',()=>{
+  try{parsedAnalysis=validateAnalysis(JSON.parse($('json-input').value));previewAnalysis(parsedAnalysis);$('save-analysis').disabled=false;$('json-status').textContent='JSON válido! Confira a prévia e salve.';$('json-status').className='status good';}
+  catch(e){parsedAnalysis=null;$('save-analysis').disabled=true;$('analysis-preview').innerHTML='';$('json-status').textContent='JSON inválido: '+e.message;$('json-status').className='status bad';}
+});
+$('save-analysis').addEventListener('click',async()=>{
+  if(!parsedAnalysis)return;
+  const a=parsedAnalysis;
+  $('save-analysis').disabled=true;
+  try{
+    const row={user_id:session.user.id,data_inicio:a.periodo.inicio,data_fim:a.periodo.fim,resumo:a.resumo,
+      evolucao_status:a.evolucao.status,pontos_positivos:a.evolucao.pontos_positivos,pontos_atencao:a.evolucao.pontos_atencao,
+      recuperacao_status:a.recuperacao.status,recuperacao_observacoes:a.recuperacao.observacoes,
+      previsoes:a.previsoes,recomendacoes:a.recomendacoes,alertas:a.alertas,dados_insuficientes:a.dados_insuficientes};
+    const {error}=await supabase.from('corrida_analises').insert(row);if(error)throw error;
+    $('json-status').textContent='Análise salva com sucesso!';$('json-status').className='status good';
+    $('json-input').value='';$('analysis-preview').innerHTML='';parsedAnalysis=null;await loadSaved();
+  }catch(e){$('json-status').textContent='Não foi possível salvar: '+e.message;$('json-status').className='status bad';$('save-analysis').disabled=false;}
+});
+async function loadSaved(){
+  const {data,error}=await supabase.from('corrida_analises').select('id,gerado_em,data_inicio,data_fim,resumo,evolucao_status,recuperacao_status,previsoes,recomendacoes,alertas').order('gerado_em',{ascending:false}).limit(8);
+  if(error){$('saved-list').innerHTML='<div class="empty">Não foi possível carregar análises: '+escapeHtml(error.message)+'</div>';return;}
+  $('saved-list').innerHTML=data?.length?data.map(a=>'<div class="saved-row"><div><strong>'+escapeHtml(a.resumo)+'</strong><small>'+new Date(a.data_inicio+'T12:00:00').toLocaleDateString('pt-BR')+' – '+new Date(a.data_fim+'T12:00:00').toLocaleDateString('pt-BR')+' · evolução: '+escapeHtml(a.evolucao_status)+' · recuperação: '+escapeHtml(a.recuperacao_status)+'</small></div><span class="pill">'+new Date(a.gerado_em).toLocaleDateString('pt-BR')+'</span></div>').join(''):'<div class="empty">Nenhuma análise salva ainda. Sua primeira análise aparecerá aqui.</div>';
+}
+$('refresh').addEventListener('click',loadData);$('periodo').addEventListener('change',loadData);$('refresh-saved').addEventListener('click',loadSaved);
+await loadData();
+</script>
+</body>
+</html>
