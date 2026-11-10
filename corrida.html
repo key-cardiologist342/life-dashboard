@@ -142,12 +142,12 @@ async function loadData(){
   try{
     const days=Number($('periodo').value),end=isoDaysAgo(0),start=isoDaysAgo(days-1);
     const [runsR,dailyR,sleepR]=await Promise.all([
-      supabase.from('garmin_atividades').select('garmin_activity_id,data,tipo,titulo,distancia_km,duracao_seg,fc_media,fc_maxima,te_aerobico,te_anaerobico,carga_treino,cadencia_media,subida_m,calorias').gte('data',start).lte('data',end).in('tipo',RUN_TYPES).order('data',{ascending:false}).limit(500),
+      supabase.from('garmin_atividades').select('garmin_activity_id,data,tipo,titulo,distancia_km,duracao_seg,fc_media,fc_maxima,te_aerobico,te_anaerobico,carga_treino,cadencia_media,subida_m,calorias').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500),
       supabase.from('garmin_diario').select('data,fc_repouso,vfc_noturna_ms,vfc_media_7d,vfc_status,estresse_diario,body_battery_carregado,body_battery_gasto').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500),
       supabase.from('sono').select('data,duracao_min,sleep_score,fc_repouso,body_battery,vfc_status,necessidade_min,qualidade').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500)
     ]);
     for(const r of [runsR,dailyR,sleepR])if(r.error)throw r.error;
-    const runs=runsR.data||[],daily=dailyR.data||[],sleep=sleepR.data||[];
+    const allActivities=runsR.data||[],runs=allActivities.filter(x=>RUN_TYPES.includes(x.tipo)),daily=dailyR.data||[],sleep=sleepR.data||[];
     const ids=runs.map(x=>x.garmin_activity_id).filter(Boolean);
     let samples=[];
     if(ids.length){
@@ -179,7 +179,7 @@ async function loadData(){
     $('m-vfc').textContent=hrvAvg.value==null?'—':fmt(hrvAvg.value)+' ms';$('m-vfc-n').textContent=hrvAvg.n+' dias';
     $('m-bb').textContent=bbAvg.value==null?'—':Math.round(bbAvg.value);$('m-bb-n').textContent=bbAvg.n+' noites';
     $('coverage').textContent=runs.length+' corridas · '+samples.length.toLocaleString('pt-BR')+' amostras';
-    $('data-coverage').innerHTML='Janela: <strong>'+start.split('-').reverse().join('/')+' a '+end.split('-').reverse().join('/')+'</strong><br>Corridas: '+runs.length+' registros<br>Amostras de atividade: '+samples.length.toLocaleString('pt-BR')+' ('+(ids.length?'coletadas quando disponíveis':'sem IDs de atividade')+')<br>Sono: '+sleep.length+' registros<br>Garmin diário: '+daily.length+' registros';
+    $('data-coverage').innerHTML='Janela: <strong>'+start.split('-').reverse().join('/')+' a '+end.split('-').reverse().join('/')+'</strong><br>Atividades Garmin consultadas: '+allActivities.length+'<br>Corridas: '+runs.length+' registros<br>Amostras de atividade: '+samples.length.toLocaleString('pt-BR')+' ('+(ids.length?'coletadas quando disponíveis':'sem IDs de atividade')+')<br>Sono: '+sleep.length+' registros<br>Garmin diário: '+daily.length+' registros';
     $('runs-count').textContent=runs.length+' atividades';
     $('runs-table').innerHTML=enriched.length?enriched.map(r=>'<tr><td>'+escapeHtml(new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'))+'</td><td>'+escapeHtml(r.titulo||r.tipo)+'</td><td>'+fmt(r.distancia_km)+' km</td><td>'+fmtTime(r.duracao_seg)+'</td><td>'+fmtPace(r.ritmo_seg_km)+'</td><td>'+(r.fc_media??'—')+' / '+(r.fc_maxima??'—')+'</td><td>'+(r.subida_m==null?'—':Math.round(r.subida_m)+' m')+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">Nenhuma corrida registrada nessa janela.</td></tr>';
     $('load-status').textContent='Dados carregados: '+runs.length+' corridas, '+sleep.length+' noites de sono e '+daily.length+' dias de métricas diárias.';$('load-status').className='status good';$('build-prompt').disabled=false;$('prompt-status').textContent='Dados atualizados. Período pronto para análise.';
