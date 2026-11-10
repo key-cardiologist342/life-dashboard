@@ -88,14 +88,14 @@ textarea.json-input{width:100%;min-height:230px;font: .74rem/1.6 'DM Mono',monos
 
   <section class="section">
     <div class="section-head"><div class="section-title">Atividades de corrida</div><span class="pill" id="runs-count">—</span></div>
-    <div class="card table-wrap"><table><thead><tr><th>Data</th><th>Atividade</th><th>Distância</th><th>Tempo</th><th>Ritmo médio</th><th>FC média/máx.</th><th>Elevação</th></tr></thead><tbody id="runs-table"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody></table></div>
+    <div class="card table-wrap"><div class="status" id="load-status" aria-live="polite">Carregando atividades e indicadores do Garmin…</div><table><thead><tr><th>Data</th><th>Atividade</th><th>Distância</th><th>Tempo</th><th>Ritmo médio</th><th>FC média/máx.</th><th>Elevação</th></tr></thead><tbody id="runs-table"><tr><td colspan="7" class="empty">Carregando…</td></tr></tbody></table></div>
   </section>
 
   <section class="section">
     <div class="section-head"><div class="section-title">Preparar análise</div><span class="pill">Sem API de IA</span></div>
     <div class="card">
       <p class="muted">A página reúne os dados do período e monta um prompt completo. Copie, envie aqui no ChatGPT e peça a análise. A resposta deve ser somente JSON válido, seguindo o contrato fixo abaixo.</p>
-      <div class="controls" style="margin-top:14px"><button class="btn primary" id="build-prompt">✦ Montar prompt de análise</button><button class="btn" id="copy-prompt" disabled>Copiar prompt</button></div>
+      <div class="controls" style="margin-top:14px"><button class="btn primary" id="build-prompt" disabled>✦ Montar prompt de análise</button><button class="btn" id="copy-prompt" disabled>Copiar prompt</button></div>
       <div class="prompt-box" id="prompt-preview" style="display:none"></div>
       <div class="status" id="prompt-status" aria-live="polite"></div>
     </div>
@@ -182,13 +182,13 @@ async function loadData(){
     $('data-coverage').innerHTML='Janela: <strong>'+start.split('-').reverse().join('/')+' a '+end.split('-').reverse().join('/')+'</strong><br>Corridas: '+runs.length+' registros<br>Amostras de atividade: '+samples.length.toLocaleString('pt-BR')+' ('+(ids.length?'coletadas quando disponíveis':'sem IDs de atividade')+')<br>Sono: '+sleep.length+' registros<br>Garmin diário: '+daily.length+' registros';
     $('runs-count').textContent=runs.length+' atividades';
     $('runs-table').innerHTML=enriched.length?enriched.map(r=>'<tr><td>'+escapeHtml(new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'))+'</td><td>'+escapeHtml(r.titulo||r.tipo)+'</td><td>'+fmt(r.distancia_km)+' km</td><td>'+fmtTime(r.duracao_seg)+'</td><td>'+fmtPace(r.ritmo_seg_km)+'</td><td>'+(r.fc_media??'—')+' / '+(r.fc_maxima??'—')+'</td><td>'+(r.subida_m==null?'—':Math.round(r.subida_m)+' m')+'</td></tr>').join(''):'<tr><td colspan="7" class="empty">Nenhuma corrida registrada nessa janela.</td></tr>';
-    $('prompt-status').textContent='Dados atualizados. Período pronto para análise.';
+    $('load-status').textContent='Dados carregados: '+runs.length+' corridas, '+sleep.length+' noites de sono e '+daily.length+' dias de métricas diárias.';$('load-status').className='status good';$('build-prompt').disabled=false;$('prompt-status').textContent='Dados atualizados. Período pronto para análise.';
     await loadSaved();
-  }catch(e){$('prompt-status').textContent='Erro ao carregar dados: '+e.message;$('prompt-status').className='status bad';}
+  }catch(e){currentData=null;$('build-prompt').disabled=true;$('load-status').textContent='Falha ao carregar dados do Garmin: '+(e.message||String(e));$('load-status').className='status bad';$('runs-table').innerHTML='<tr><td colspan="7" class="empty">Não foi possível consultar as atividades. Confira a mensagem acima e tente atualizar.</td></tr>';$('prompt-status').textContent='O prompt só fica disponível depois que os dados carregarem.';$('prompt-status').className='status bad';}
   finally{$('refresh').disabled=false;$('refresh').textContent='↻ Atualizar dados';}
 }
 function buildPrompt(){
-  if(!currentData)throw new Error('Atualize os dados primeiro.');
+  if(!currentData){$('prompt-status').textContent='Os dados ainda não carregaram. Use “Atualizar dados” e confira o aviso na seção de atividades.';$('prompt-status').className='status bad';return;}
   const d=currentData;
   const system='Você é um treinador de corrida baseado em fisiologia do exercício, treinamento de endurance, biomecânica, recuperação e prevenção de lesões. Faça uma análise criteriosa e honesta. Diferencie dado observado, tendência e hipótese. Não invente dados nem complete lacunas. Não transforme correlação em causalidade. Se a amostra for pequena, declare baixa confiança e deixe previsões como null. Não prescreva teste máximo. O objetivo de longo prazo é completar uma meia maratona em junho de 2027, com construção gradual de base. A usuária prefere prescrições por ritmo/velocidade quando houver evidência suficiente e quer correr continuamente, sem forçar progressão. Avalie carga, frequência, distribuição, ritmo, FC, elevação, cadência e recuperação quando disponíveis. Considere que atividades com pausas ou caminhadas não representam necessariamente corrida contínua.';
   const contract={
