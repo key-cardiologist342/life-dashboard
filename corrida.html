@@ -153,8 +153,8 @@ async function loadData(){
       supabase.from('sono').select('data,duracao_min,sleep_score,fc_repouso,body_battery,vfc_status,necessidade_min,qualidade').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(result=>({data:result.data,error:result.error})).catch(error=>({data:null,error}))
     ]);
     if(runsR.error)throw new Error('Consulta de atividades: '+runsR.error.message);
-    const allActivities=runsR.data?.data||[],runs=allActivities.filter(x=>RUN_TYPES.includes(x.tipo));
-    const daily=dailyR.error?[]:(dailyR.data?.data||[]),sleep=sleepR.error?[]:(sleepR.data?.data||[]);
+    const allActivities=runsR.data||[],runs=allActivities.filter(x=>RUN_TYPES.includes(x.tipo));
+    const daily=dailyR.error?[]:(dailyR.data||[]),sleep=sleepR.error?[]:(sleepR.data||[]);
     const indicatorErrors=[dailyR.error&&('Garmin diário: '+dailyR.error.message),sleepR.error&&('Sono: '+sleepR.error.message)].filter(Boolean);
     const ids=runs.map(x=>x.garmin_activity_id).filter(Boolean);
     let samples=[];
