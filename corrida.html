@@ -142,9 +142,9 @@ async function loadData(){
   try{
     const days=Number($('periodo').value),end=isoDaysAgo(0),start=isoDaysAgo(days-1);
     const [runsR,dailyR,sleepR]=await Promise.all([
-      supabase.from('garmin_atividades').select('garmin_activity_id,data,tipo,titulo,distancia_km,duracao_seg,fc_media,fc_maxima,te_aerobico,te_anaerobico,carga_treino,cadencia_media,subida_m,calorias').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(data=>({data,error:null})).catch(error=>({data:null,error})),
-      supabase.from('garmin_diario').select('data,fc_repouso,vfc_noturna_ms,vfc_media_7d,vfc_status,estresse_diario,body_battery_carregado,body_battery_gasto').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(data=>({data,error:null})).catch(error=>({data:null,error})),
-      supabase.from('sono').select('data,duracao_min,sleep_score,fc_repouso,body_battery,vfc_status,necessidade_min,qualidade').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(data=>({data,error:null})).catch(error=>({data:null,error}))
+      supabase.from('garmin_atividades').select('garmin_activity_id,data,tipo,titulo,distancia_km,duracao_seg,fc_media,fc_maxima,te_aerobico,te_anaerobico,carga_treino,cadencia_media,subida_m,calorias').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(result=>({data:result.data,error:result.error})).catch(error=>({data:null,error})),
+      supabase.from('garmin_diario').select('data,fc_repouso,vfc_noturna_ms,vfc_media_7d,vfc_status,estresse_diario,body_battery_carregado,body_battery_gasto').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(result=>({data:result.data,error:result.error})).catch(error=>({data:null,error})),
+      supabase.from('sono').select('data,duracao_min,sleep_score,fc_repouso,body_battery,vfc_status,necessidade_min,qualidade').gte('data',start).lte('data',end).order('data',{ascending:false}).limit(500).then(result=>({data:result.data,error:result.error})).catch(error=>({data:null,error}))
     ]);
     if(runsR.error)throw new Error('Consulta de atividades: '+runsR.error.message);
     const allActivities=runsR.data?.data||[],runs=allActivities.filter(x=>RUN_TYPES.includes(x.tipo));
