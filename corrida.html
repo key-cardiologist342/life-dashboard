@@ -131,7 +131,7 @@ const $=id=>document.getElementById(id);
 const RUN_TYPES=['running','treadmill_running','Corrida','Corrida em esteira'];
 let currentData=null, parsedAnalysis=null, promptText='';
 const fmt=(n,d=1)=>n==null?'—':Number(n).toLocaleString('pt-BR',{maximumFractionDigits:d,minimumFractionDigits:d});
-const avg=(rows,key)=>{const v=rows.map(x=>Number(x[key])).filter(Number.isFinite);return v.length?{value:v.reduce((a,b)=>a+b,0)/v.length,n:v.length}:{value:null,n:0};};
+const avg=(rows,key)=>{const v=rows.map(x=>x[key]).filter(x=>x!==null&&x!==undefined&&x!=='').map(Number).filter(Number.isFinite);return v.length?{value:v.reduce((a,b)=>a+b,0)/v.length,n:v.length}:{value:null,n:0};};
 const pace=(km,sec)=>km>0&&sec>0?sec/km:null;
 const fmtPace=sec=>sec==null?'—':Math.floor(sec/60)+':'+String(Math.round(sec%60)).padStart(2,'0')+'/km';
 const fmtTime=sec=>{if(!sec)return'—';const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h? h+'h '+String(m).padStart(2,'0')+'min':m+'min';};
@@ -170,7 +170,7 @@ async function loadData(){
     const totalSec=runs.reduce((s,r)=>s+Number(r.duracao_seg||0),0);
     const daysCovered=Math.max(1,Math.ceil((new Date(end+'T12:00:00')-new Date(start+'T12:00:00'))/86400000)+1);
     const sleepAvg=avg(sleep,'duracao_min'),hrAvg=avg(daily,'fc_repouso'),hrvAvg=avg(daily,'vfc_noturna_ms'),bbAvg=avg(sleep,'body_battery');
-    currentData={periodo:{inicio:start,fim:end,dias:daysCovered},corridas:enriched,recuperacao:{sono:sleep,garmin_diario:daily,medias:{sono_min:sleepAvg,fc_repouso:hrAvg,vfc_noturna_ms:hrvAvg,body_battery:bbAvg}},cobertura:{corridas:runs.length,amostras:samples.length,dias_sono:sleep.length,dias_garmin:daily.length},resumo:{distancia_km:+totalKm.toFixed(2),duracao_seg:totalSec,media_semanal_km:+(totalKm/(daysCovered/7)).toFixed(2),ritmo_medio_seg_km:totalKm?Math.round(totalSec/totalKm):null}};
+    currentData={periodo:{inicio:start,fim:end,dias:daysCovered},corridas:enriched,recuperacao:{sono:sleep,garmin_diario:daily,medias:{sono_min:sleepAvg,fc_repouso:hrAvg,vfc_noturna_ms:hrvAvg,body_battery:bbAvg}},cobertura:{corridas:runs.length,amostras:samples.length,limite_amostras_atingido:samples.length===30000,dias_sono:sleep.length,dias_garmin:daily.length},resumo:{distancia_km:+totalKm.toFixed(2),duracao_seg:totalSec,media_semanal_km:+(totalKm/(daysCovered/7)).toFixed(2),ritmo_medio_seg_km:totalKm?Math.round(totalSec/totalKm):null}};
     $('m-corridas').textContent=runs.length;$('m-corridas-sub').textContent=days+' dias de janela';
     $('m-distancia').textContent=fmt(totalKm)+' km';$('m-tempo').textContent=fmtTime(totalSec);
     $('m-semanal').textContent=fmt(totalKm/(daysCovered/7))+' km';
