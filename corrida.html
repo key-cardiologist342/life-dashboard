@@ -256,7 +256,7 @@ $('refresh').addEventListener('click',loadData);$('periodo').addEventListener('c
 await loadData();
 </script>
 <script>
-window.addEventListener('error',e=>{const el=document.getElementById('load-status');if(el&&el.textContent.includes('Carregando')){el.textContent='Erro ao iniciar o JavaScript: '+(e.message||'falha ao carregar um recurso')+'. Atualize a página; se persistir, envie este aviso.';el.className='status bad';}});
+window.addEventListener('error',e=>{const el=document.getElementById('load-status');if(el&&el.textContent.includes('Carregando')){el.textContent='Erro JavaScript: '+(e.message||'falha ao carregar recurso')+' | arquivo: '+(e.filename||'desconhecido')+' | linha: '+(e.lineno||'?')+' | coluna: '+(e.colno||'?');el.className='status bad';}});
 window.addEventListener('unhandledrejection',e=>{const el=document.getElementById('load-status');if(el&&el.textContent.includes('Carregando')){el.textContent='Falha de conexão/inicialização: '+(e.reason?.message||String(e.reason)||'erro desconhecido');el.className='status bad';}});
 setTimeout(()=>{const el=document.getElementById('load-status');if(el&&el.textContent.includes('Carregando')){el.textContent='A página não conseguiu iniciar o carregamento após 15 segundos. Pode ser falha ao importar o Supabase ou conectar ao serviço. Envie este aviso para diagnóstico.';el.className='status bad';}},15000);
 </script>
