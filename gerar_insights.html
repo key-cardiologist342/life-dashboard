@@ -1044,7 +1044,7 @@ function parseCsvRows(source,expectedColumns){
       }else if(/\s/.test(ch)){
         let j=i;
         while(j<text.length&&/\s/.test(text[j]))j++;
-        const nextIsQuoted=text[j]==='"'||text[j]==='“';
+        const nextIsQuoted=text[j]==='"'||text[j]==='“'||text[j]==='”';
         if(expectedColumns&&row.length===expectedColumns-1&&nextIsQuoted){pushRow();i=j-1;}
         else field+=ch;
       }else field+=ch;
