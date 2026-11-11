@@ -1097,12 +1097,19 @@ function parseInsightOutput(raw){
     .trim();
   const insights=insightRows.slice(1).map((r,i)=>{
     if(r.length!==5)throw new Error('Insight '+(i+1)+' foi lido com '+r.length+' campos; eram esperados 5. Confira se cada insight está em uma linha e se as vírgulas do texto estão dentro de aspas.');
-    const [icone,titulo,texto,corRaw,corr]=r.map(v=>v.trim());
+    const [icone,titulo,texto,corRaw,corrRaw]=r.map(v=>v.trim());
     const cor=normalizeHexColor(corRaw);
-    const correlation=Number(corr);
+    const corrNormalized=String(corrRaw??'')
+      .normalize('NFKC')
+      .replace(/[−–—]/g,'-')
+      .replace(/^\\s*r\\s*=\\s*/i,'')
+      .replace(/,/g,'.')
+      .replace(/\\s/g,'')
+      .trim();
+    const correlation=Number(corrNormalized);
     if(!icone||!titulo||!texto)throw new Error('Insight '+(i+1)+' está sem ícone, título ou texto.');
     if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido. Valor recebido: '+JSON.stringify(corRaw)+'.');
-    if(corr===''||!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1.');
+    if(!corrNormalized||!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1. Valor recebido: '+JSON.stringify(corrRaw)+'. Use um número como -0.555 ou 0.72.');
     return {icone,titulo,texto,cor,correlacao:correlation};
   });
   if(insights.length>5)throw new Error('O formato permite no máximo 5 insights por importação.');
