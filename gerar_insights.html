@@ -208,7 +208,7 @@ main{max-width:1080px!important}
   <div class="page-title">Gerador de <span>Insights</span></div>
   <p class="page-sub">Um laboratório para investigar padrões do seu cotidiano. Compare comportamentos e resultados sem confundir associação com causa; observe também lacunas, exceções e perguntas que ainda precisam de dados.</p>
   <div class="insights-stats" aria-label="Resumo da análise">
-    <div class="insights-stat"><div class="k">Dias com dados</div><div class="v" id="stat-days">—</div><div class="s">janela consolidada</div></div>
+    <div class="insights-stat"><div class="k">Dias com algum dado</div><div class="v" id="stat-days">—</div><div class="s">janela consolidada</div></div>
     <div class="insights-stat"><div class="k">Variáveis</div><div class="v" id="stat-vars">—</div><div class="s">com registros disponíveis</div></div>
     <div class="insights-stat"><div class="k">Relações úteis</div><div class="v" id="stat-correlations">—</div><div class="s">após os filtros atuais</div></div>
     <div class="insights-stat"><div class="k">Relatórios guardados</div><div class="v" id="stat-saved">—</div><div class="s">Insights + Radar</div></div>
@@ -237,6 +237,7 @@ main{max-width:1080px!important}
 
   <!-- FILTROS -->
   <div class="section-title">correlações encontradas</div>
+  <p class="radar-intro">São associações exploratórias calculadas apenas nos dias em que as duas variáveis têm registro. O tamanho da amostra aparece ao lado de cada resultado; quanto mais combinações testamos, maior a chance de encontrar relações por acaso.</p>
   <div class="filtros">
     <span class="filtro-label">Força mínima da associação:</span>
     <input type="range" id="rMin" min="0.30" max="0.85" step="0.05" value="0.60" oninput="filtrarCorr()"/>
@@ -677,9 +678,10 @@ function filtrarCorr(){
     const color = abs>=0.6?'var(--green)':abs>=0.4?'var(--orange)':abs>=0.2?'var(--blue)':'var(--muted)';
     const sinal = c.r>0?'+':'−';
     const force = abs>=0.6?'forte':abs>=0.4?'moderada':abs>=0.2?'fraca':'';
+    const sampleNote = c.n<15?'amostra pequena':c.n<30?'amostra intermediária':'amostra maior';
     return `
       <div class="corr-item">
-        <div class="corr-label"><strong>${label(c.va)}</strong> × <strong>${label(c.vb)}</strong> <span style="font-size:0.62rem">(${force})</span></div>
+        <div class="corr-label"><strong>${label(c.va)}</strong> × <strong>${label(c.vb)}</strong> <span style="font-size:0.62rem">(${force}; ${sampleNote})</span></div>
         <div class="corr-bar-wrap"><div class="corr-bar" style="width:${pct}%;background:${color}"></div></div>
         <div class="corr-val" style="color:${color}">${sinal}${c.r.toFixed(2)}</div>
         <div class="corr-n">n=${c.n}</div>
