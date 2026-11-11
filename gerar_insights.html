@@ -737,19 +737,11 @@ Exemplo do nível de clareza esperado (use somente se os dados reais sustentarem
 
 Não copie o exemplo como resultado. Use apenas os padrões realmente sustentados pelos dados fornecidos.`;
 
+  // O formato completo já está definido em textoBase (Insights) e buildRadarInput (Radar).
+  // Evita repetir instruções de saída conflitantes no prompt final.
   const texto = `${textoBase}
 
-${buildRadarInput()}
-
-FORMATO ÚNICO DE SAÍDA — OBRIGATÓRIO
-Você recebeu dados históricos e dados recentes do Radar. Gere os dois resultados abaixo, sem omitir nenhum.
-1. Primeiro, escreva INSIGHTS_CSV com o cabeçalho icone,titulo,texto,cor,correlacao e até 5 linhas de insights. Gere apenas os que tiverem utilidade real; zero ou poucos insights são preferíveis a relações frágeis.
-2. Depois, escreva RADAR_CSV com o cabeçalho data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes e uma única linha de dados.
-3. Coloque o nome INSIGHTS_CSV em uma linha própria antes do respectivo CSV e RADAR_CSV em uma linha própria antes do CSV. Não use cercas de código Markdown e não escreva introdução ou conclusão fora desses dois blocos.
-4. A instrução "gere um único registro RADAR_CSV" significa uma linha de dados para o Radar; NÃO significa que deve pular INSIGHTS_CSV.
-5. Escreva para uma pessoa comum, não como relatório. Use frases curtas e palavras que as pessoas usam no dia a dia. Evite expressões como "melhora sustentada", "recuperação parcial", "trajetória", "extrapolação", "indicador antecedente", "desfecho" e "episódios compatíveis". Em vez disso, diga por exemplo "a melhora ainda não durou vários dias", "o foco melhorou mas o humor não acompanhou" ou "ainda não temos registros suficientes para saber se isso costuma acontecer antes".
-6. No Radar, comece pela possibilidade para os próximos dias, explique em poucas palavras o que nos dados leva a essa ideia e diga o que observar. Se os dados não mostrarem um sinal que apareça antes de outras mudanças, explique isso de forma simples sem transformar a resposta num resumo da semana.
-7. Mantenha cuidado com os dados: uma relação não prova causa, não invente explicações e não faça previsões médicas.`;
+${buildRadarInput()}`;
 
   
 
