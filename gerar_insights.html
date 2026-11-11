@@ -687,7 +687,7 @@ CRITÉRIO DE QUALIDADE — OBRIGATÓRIO:
 - Separe claramente: o que foi observado, o que é apenas uma hipótese e o que ainda precisamos registrar para investigar.
 - Quando não houver associação útil, transforme a lacuna em uma pergunta investigável; não invente uma explicação.
 
-O YouTube é um módulo independente e está totalmente excluído desta análise. Não use, mencione, solicite nem infira informações sobre YouTube.
+O YouTube aparece somente como quantidade diária de vídeos diferentes. Não use nem solicite títulos, canais, categorias ou minutos assistidos.
 
 ALIMENTAÇÃO, ÁGUA, LAZER E LEITURA:
 - Alimentação e água são anotações em texto livre. Não infira calorias, nutrientes ou volume.
@@ -900,7 +900,7 @@ async function renderRadar(){
         return;
       }
       const delta = a.mean-b.mean;
-      const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='tempo_lazer_min'?20:0.5);
+      const threshold = Math.max(Math.abs(b.mean)*0.15, ['tempo_series_filmes_min','tempo_hobbies_min'].includes(m.field)?20:0.5);
       if(Math.abs(delta)<threshold){
         coverage.push({...entry,delta,threshold,status:'below_threshold',reason:'Diferença abaixo do limite de sinal'});
         return;
@@ -964,7 +964,7 @@ COMO PENSAR COM CUIDADO
 - Veja se sono, VFC, frequência cardíaca de repouso, estresse, Body Battery ou rotina mudaram antes da mudança que está tentando entender — não basta terem mudado na mesma semana. Não faça previsões médicas.
 - Confira as datas em que há dados de cada fonte. Falta de registro não significa valor zero; se houver lacunas, explique isso de maneira simples.
 - Alimentação/água: trate apenas presença e texto das anotações; nunca estime calorias, nutrientes ou volume a partir de texto.
-- Leitura: variações são pontos percentuais entre registros do mesmo livro; não chame isso de páginas lidas nem estime conclusão com poucos pontos.
+- Leitura: use somente presença de registro no dia (sim/não). Não há duração ou minutos de leitura disponíveis.
 - Filmes/séries: some por dia os minutos disponíveis nos registros; para episódios priorize a duração registrada no evento e use a duração oficial apenas como fallback. Para filmes use a duração oficial cadastrada; isso é uma estimativa da duração do conteúdo, não comprovação de tempo real assistido. Hobbies: some por dia somente minutos explicitamente registrados. YouTube: conte vídeos diferentes por dia; não há duração assistida confiável. Leitura: temos apenas presença de registro no dia, sem minutos.
 - Inclua o que vai contra sua hipótese, se houver. Não trate uma associação como causa.
 - Escolha no máximo 2 possibilidades realmente úteis. Se os dados não sustentarem uma conclusão, não invente uma só para preencher espaço.
