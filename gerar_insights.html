@@ -1089,12 +1089,19 @@ function parseInsightOutput(raw){
   const same=(a,b)=>a.length===b.length&&a.every((v,i)=>v.trim().replace(/^"|"$/g,'')===b[i]);
   if(!insightRows.length||!same(insightRows[0],insightHeader))throw new Error('Cabeçalho INSIGHTS_CSV diferente do esperado: icone,titulo,texto,cor,correlacao.');
   if(!radarRows.length||!same(radarRows[0],radarHeader))throw new Error('Cabeçalho RADAR_CSV diferente do esperado.');
+  const normalizeHexColor=value=>String(value??'')
+    .normalize('NFKC')
+    .replace(/[\\u200B-\\u200D\\uFEFF]/g,'')
+    .trim()
+    .replace(/^[\\s"'“”‘’]+|[\\s"'“”‘’]+$/g,'')
+    .trim();
   const insights=insightRows.slice(1).map((r,i)=>{
     if(r.length!==5)throw new Error('Insight '+(i+1)+' foi lido com '+r.length+' campos; eram esperados 5. Confira se cada insight está em uma linha e se as vírgulas do texto estão dentro de aspas.');
-    const [icone,titulo,texto,cor,corr]=r.map(v=>v.trim());
+    const [icone,titulo,texto,corRaw,corr]=r.map(v=>v.trim());
+    const cor=normalizeHexColor(corRaw);
     const correlation=Number(corr);
     if(!icone||!titulo||!texto)throw new Error('Insight '+(i+1)+' está sem ícone, título ou texto.');
-    if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido.');
+    if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido. Valor recebido: '+JSON.stringify(corRaw)+'.');
     if(corr===''||!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1.');
     return {icone,titulo,texto,cor,correlacao:correlation};
   });
