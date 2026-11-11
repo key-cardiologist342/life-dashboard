@@ -155,6 +155,35 @@ main{max-width:1080px!important}
 .saved-columns{grid-template-columns:minmax(0,1fr)!important;gap:22px!important}
 .saved-grid{grid-template-columns:minmax(0,1fr)!important}
 @media(min-width:760px){.saved-columns{grid-template-columns:minmax(0,1fr)!important}.saved-grid{grid-template-columns:minmax(0,1fr)!important}}
+
+/* ── INSIGHTS: laboratório pessoal ── */
+.insights-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 30px}
+.insights-stat{background:#fff;border:1px solid var(--border);border-radius:7px 17px 17px 17px;padding:14px 16px;box-shadow:4px 4px 0 #976A8D10}
+.insights-stat .k{font:700 .62rem 'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.insights-stat .v{font:800 1.45rem 'Syne',sans-serif;color:var(--purple);margin-top:5px}
+.insights-stat .s{font-size:.68rem;color:var(--muted);margin-top:3px}
+.import-card{background:#fff;border:1px solid var(--border);border-radius:8px 20px 8px 20px;padding:20px;margin:26px 0;box-shadow:0 8px 24px rgba(92,54,79,.06)}
+.import-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+.import-head h2{font:800 1rem 'Syne',sans-serif;color:var(--text)}
+.import-chip{font:700 .62rem 'DM Mono',monospace;padding:5px 8px;border-radius:100px;background:#EAF3E9;color:#477A54;white-space:nowrap}
+.import-card p{font-size:.77rem;line-height:1.6;color:var(--muted)}
+.import-input{width:100%;min-height:220px;resize:vertical;margin-top:12px;padding:13px;border:1px solid #976A8D55;border-radius:10px;background:#FFFCFA;color:var(--text);font:.72rem/1.65 'DM Mono',monospace}
+.import-input:focus{outline:3px solid #E94F9128;border-color:var(--pink)}
+.import-status{font-size:.76rem;line-height:1.55;margin-top:10px;min-height:20px}
+.import-status.good{color:#477A54}.import-status.bad{color:#C94E57}.import-status.pending{color:#806D7A}
+.import-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.import-preview div{padding:10px 12px;border-radius:10px;background:#FFF4ED;border:1px solid var(--border)}
+.import-preview strong{display:block;font:800 1.1rem 'Syne',sans-serif;color:var(--purple)}
+.import-preview span{font-size:.66rem;color:var(--muted)}
+.saved-card{transition:transform .18s,box-shadow .18s}
+.saved-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(92,54,79,.07)}
+.saved-meta{line-height:1.5}
+.corr-list{max-height:560px}
+.radar-item{grid-template-columns:minmax(0,1fr) auto}
+.page-sub{max-width:760px}
+@media(min-width:760px){.insights-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.import-preview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.import-card{padding:15px}.import-head{flex-direction:column}.import-chip{align-self:flex-start}.insights-stat .v{font-size:1.25rem}}
+
 </style>
 </head>
 <body>
@@ -170,7 +199,14 @@ main{max-width:1080px!important}
 
 <main>
   <div class="page-title">Gerador de <span>Insights</span></div>
-  <p class="page-sub">Veja os relatórios mais recentes, filtre as correlações e gere uma nova análise quando quiser.</p>
+  <p class="page-sub">Um laboratório para investigar padrões do seu cotidiano. Compare comportamentos e resultados sem confundir associação com causa; observe também lacunas, exceções e perguntas que ainda precisam de dados.</p>
+  <div class="insights-stats" aria-label="Resumo da análise">
+    <div class="insights-stat"><div class="k">Dias com dados</div><div class="v" id="stat-days">—</div><div class="s">janela consolidada</div></div>
+    <div class="insights-stat"><div class="k">Variáveis</div><div class="v" id="stat-vars">—</div><div class="s">com registros disponíveis</div></div>
+    <div class="insights-stat"><div class="k">Relações úteis</div><div class="v" id="stat-correlations">—</div><div class="s">após os filtros atuais</div></div>
+    <div class="insights-stat"><div class="k">Relatórios guardados</div><div class="v" id="stat-saved">—</div><div class="s">Insights + Radar</div></div>
+  </div>
+
 
   <section class="saved-section" aria-labelledby="savedReportsTitle">
     <div class="saved-head">
@@ -221,15 +257,12 @@ main{max-width:1080px!important}
   <div class="copy-box" id="copyBox" onclick="copiarTexto()"></div>
   <div class="copy-badge" id="copyBadge">✓ Copiado! Cole no ChatGPT.</div>
 
-  <div class="instrucao" id="instrucao">
-    Após receber o CSV de insights do ChatGPT:<br>
-    1. Acesse <strong>Supabase → Table Editor → insights</strong><br>
-    2. Clique em <strong>Insert → Import data from CSV</strong><br>
-    3. Cole o CSV gerado<br>
-    4. Sua dash já exibe os novos insights automaticamente!<br><br>
-    <strong>Formato esperado do CSV:</strong><br>
-    <code>icone,titulo,texto,cor,correlacao</code>
-  </div>
+  <section class="import-card" aria-labelledby="importTitle">
+    <div class="import-head"><div><h2 id="importTitle">Importar resultado do ChatGPT</h2><p>É só colar a resposta completa do prompt conjunto. A página identifica os blocos <strong>INSIGHTS_CSV</strong> e <strong>RADAR_CSV</strong>, valida os dois e salva automaticamente nas tabelas existentes.</p></div><span class="import-chip">✦ salvamento automático</span></div>
+    <textarea id="insights-import-input" class="import-input" spellcheck="false" placeholder="Cole aqui a resposta completa do ChatGPT, incluindo INSIGHTS_CSV e RADAR_CSV…"></textarea>
+    <div id="insights-import-status" class="import-status" aria-live="polite">Aguardando a resposta. Nenhum dado será salvo enquanto os dois blocos não estiverem completos e válidos.</div>
+    <div id="insights-import-preview"></div>
+  </section>
 
 
 
@@ -300,9 +333,11 @@ async function renderSavedReports(){
     const date=rows[0][dateField]||rows[0].data;
     return date?rows.filter(row=>(row[dateField]||row.data)===date):[rows[0]];
   }
+  const savedStat=document.getElementById('stat-saved');
+  if(savedStat)savedStat.textContent=(ir.status==='fulfilled'?ir.value.length:0)+(rr.status==='fulfilled'?' + '+rr.value.length:'');
   if(ir.status==='rejected') insightsEl.innerHTML='<div class="saved-empty">Não consegui carregar os insights recentes. Confira a conexão/permissão no Supabase.<br><small>'+escHTML(ir.reason?.message||'Erro desconhecido')+'</small></div>';
   else {
-    const rows=latestBatch(ir.value,'data');
+    const rows=ir.value.slice(0,30);
     insightsEl.innerHTML=rows.length?rows.map(row=>{
       const accent=/^#[0-9a-f]{6}$/i.test(String(row.cor||''))?row.cor:'#a78bfa';
       return '<article class="saved-card insight-card" style="--saved-accent:'+escHTML(accent)+'"><div class="saved-card-top"><span class="saved-icon">'+escHTML(row.icone||'✨')+'</span><div><div class="saved-title">'+escHTML(row.titulo||'Insight')+'</div><div class="saved-meta">'+escHTML(reportDate(row))+(row.correlacao!=null?' · associação '+escHTML(row.correlacao):'')+'</div></div></div>'+longTextCard(row.texto,accent)+'</article>';
@@ -311,12 +346,14 @@ async function renderSavedReports(){
   }
   if(rr.status==='rejected') radarEl.innerHTML='<div class="saved-empty">Não consegui carregar o Radar recente. Confira a conexão/permissão no Supabase.<br><small>'+escHTML(rr.reason?.message||'Erro desconhecido')+'</small></div>';
   else {
-    const rows=latestBatch(rr.value,'data_fim').slice(0,1);
-    if(!rows.length) radarEl.innerHTML='<div class="saved-empty">Ainda não há relatório do Radar salvo. O último relatório aparecerá aqui depois da importação.</div>';
+    const rows=rr.value.slice(0,15);
+    if(!rows.length) radarEl.innerHTML='<div class="saved-empty">Ainda não há relatório do Radar salvo. O primeiro aparecerá aqui depois da importação.</div>';
     else {
-      const row=rows[0], title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
-      const body=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\n\n');
-      radarEl.innerHTML='<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+longTextCard(body,'#a78bfa')+'</article>';
+      radarEl.innerHTML=rows.map(row=>{
+        const title=row.resumo||('Radar pessoal'+(reportDate(row)?' · '+reportDate(row):''));
+        const body=row.texto||[row.resumo,row.sinais_observados?'O que os dados mostram: '+row.sinais_observados:'',row.limitacoes?'O que ainda não sabemos: '+row.limitacoes:'',row.acoes?'O que observar/fazer: '+row.acoes:''].filter(Boolean).join('\n\n');
+        return '<article class="saved-card radar-card"><div class="saved-card-top"><span class="saved-icon">🔎</span><div><div class="saved-title">'+escHTML(title)+'</div><div class="saved-meta">'+escHTML(row.data_inicio||'')+(row.data_fim?' a '+escHTML(row.data_fim):'')+(reportDate(row)?' · salvo '+escHTML(reportDate(row)):'')+'</div></div></div>'+longTextCard(body,'#a78bfa')+'</article>';
+      }).join('');
       bindReadMore(radarEl);
     }
   }
@@ -609,7 +646,11 @@ function filtrarCorr(){
   document.getElementById('nMinVal').textContent = nMin;
 
   const filtradas = _todasCorr.filter(c => Math.abs(c.r)>=rMin && c.n>=nMin && isUsefulInsightPair(c));
-  document.getElementById('corrCount').textContent = `${filtradas.length} correlações`;
+  document.getElementById('corrCount').textContent = `${filtradas.length} relações`;
+  const daysEl=document.getElementById('stat-days'), varsEl=document.getElementById('stat-vars'), corrEl=document.getElementById('stat-correlations');
+  if(daysEl)daysEl.textContent=_resumo?.dias??'—';
+  if(varsEl)varsEl.textContent=_resumo?.vars?.length??'—';
+  if(corrEl)corrEl.textContent=filtradas.length;
 
   const cl = document.getElementById('corrList');
   if(!filtradas.length){
@@ -648,7 +689,7 @@ function copiarParaClaude(){
 
   // Reutiliza os mesmos critérios da lista visual para não apresentar candidatos inúteis.
   const insightCandidates = _todasCorr.filter(c=>
-    c.n>=10 && Math.abs(c.r)>=rMin && isUsefulInsightPair(c)
+    c.n>=nMin && Math.abs(c.r)>=rMin && isUsefulInsightPair(c)
   ).sort((x,y)=>Math.abs(y.r)-Math.abs(x.r)).slice(0,15);
   const corrTexto = insightCandidates
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
@@ -669,6 +710,11 @@ CRITÉRIO DE QUALIDADE — OBRIGATÓRIO:
 - Uma correlação forte não basta: explique por que a relação acrescenta informação útil e o que ela permite investigar na vida cotidiana.
 - Se nenhuma associação for realmente interessante, retorne menos insights ou nenhum. Não preencha quantidade por obrigação.
 - Trate associações como pistas, nunca como causa ou prova.
+- Há muitas combinações possíveis entre variáveis; por isso, algumas associações fortes podem aparecer por acaso. Não escolha um resultado só por ter o maior valor.
+- Dê preferência a relações com mais dias em comum e cobertura distribuída ao longo do período. Declare baixa confiança quando a amostra for pequena, concentrada em poucos dias ou muito incompleta.
+- Procure exceções e dias que não combinam com o padrão. Não esconda evidências contrárias.
+- Separe claramente: o que foi observado, o que é apenas uma hipótese e o que ainda precisamos registrar para investigar.
+- Quando não houver associação útil, transforme a lacuna em uma pergunta investigável; não invente uma explicação.
 
 HISTÓRICO DO YOUTUBE:
 ${_resumo.youtubeCoverage ? `Período coberto: ${_resumo.youtubeCoverage.inicio} a ${_resumo.youtubeCoverage.fim} (${_resumo.youtubeCoverage.dias} dias com visualizações registradas).` : 'Nenhum histórico do YouTube disponível.'}
@@ -1022,6 +1068,133 @@ document.getElementById('radarRefreshBtn').addEventListener('click',()=>{renderR
 
 document.getElementById('refreshSavedReports').addEventListener('click',renderSavedReports);
 renderSavedReports().catch(e=>console.error('Relatórios salvos:',e));
+
+
+/* ── IMPORTAÇÃO AUTOMÁTICA INSIGHTS + RADAR ── */
+const importInput=document.getElementById('insights-import-input');
+const importStatus=document.getElementById('insights-import-status');
+const importPreview=document.getElementById('insights-import-preview');
+let importTimer=null, importBusy=false, lastImportFingerprint='';
+
+function parseCsvRows(source){
+  const text=String(source||'').replace(/^\\uFEFF/,'').trim();
+  const rows=[];let row=[],field='',quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],next=text[i+1];
+    if(quoted){
+      if(ch==='"'&&next==='"'){field+='"';i++;}
+      else if(ch==='"')quoted=false;
+      else field+=ch;
+    }else if(ch==='"'){quoted=true;}
+    else if(ch===','){row.push(field);field='';}
+    else if(ch==='\\n'||ch==='\\r'){
+      if(ch==='\\r'&&next==='\\n')i++;
+      row.push(field);field='';
+      if(row.some(v=>v.trim()!==''))rows.push(row);
+      row=[];
+    }else field+=ch;
+  }
+  if(quoted)throw new Error('Há aspas abertas no CSV. Confira se a resposta foi copiada por inteiro.');
+  row.push(field);if(row.some(v=>v.trim()!==''))rows.push(row);
+  return rows;
+}
+function extractCsvBlock(raw,marker,nextMarker){
+  const start=raw.search(new RegExp('(?:^|\\n)\\s*'+marker+'\\s*(?:\\n|$)','i'));
+  if(start<0)throw new Error('Não encontrei o bloco '+marker+'.');
+  const markerMatch=raw.slice(start).match(new RegExp('(?:^|\\n)\\s*'+marker+'\\s*(?:\\n|$)','i'));
+  const bodyStart=start+markerMatch[0].length;
+  let body=raw.slice(bodyStart);
+  if(nextMarker){
+    const next=body.search(new RegExp('(?:^|\\n)\\s*'+nextMarker+'\\s*(?:\\n|$)','i'));
+    if(next>=0)body=body.slice(0,next);
+  }
+  return body.replace(/^\\s*\`\`\`[^\\n]*\\n?/,'').replace(/\\n?\\s*\`\`\`\\s*$/,'').trim();
+}
+function validIsoDate(value){
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value||'')))return false;
+  const d=new Date(value+'T12:00:00Z');
+  return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===value;
+}
+function parseInsightOutput(raw){
+  const insightRows=parseCsvRows(extractCsvBlock(raw,'INSIGHTS_CSV','RADAR_CSV'));
+  const radarRows=parseCsvRows(extractCsvBlock(raw,'RADAR_CSV',null));
+  const insightHeader=['icone','titulo','texto','cor','correlacao'];
+  const radarHeader=['data_inicio','data_fim','texto','resumo','sinais_observados','limitacoes','acoes'];
+  const same=(a,b)=>a.length===b.length&&a.every((v,i)=>v.trim().replace(/^"|"$/g,'')===b[i]);
+  if(!insightRows.length||!same(insightRows[0],insightHeader))throw new Error('Cabeçalho INSIGHTS_CSV diferente do esperado: icone,titulo,texto,cor,correlacao.');
+  if(!radarRows.length||!same(radarRows[0],radarHeader))throw new Error('Cabeçalho RADAR_CSV diferente do esperado.');
+  const insights=insightRows.slice(1).map((r,i)=>{
+    if(r.length!==5)throw new Error('Insight '+(i+1)+' precisa ter exatamente 5 campos.');
+    const [icone,titulo,texto,cor,corr]=r.map(v=>v.trim());
+    const correlation=Number(corr);
+    if(!icone||!titulo||!texto)throw new Error('Insight '+(i+1)+' está sem ícone, título ou texto.');
+    if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido.');
+    if(!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1.');
+    return {icone,titulo,texto,cor,correlacao:correlation};
+  });
+  if(insights.length>5)throw new Error('O formato permite no máximo 5 insights por importação.');
+  const dataRows=radarRows.slice(1);
+  if(dataRows.length!==1||dataRows[0].length!==7)throw new Error('O RADAR_CSV precisa ter exatamente uma linha com 7 campos.');
+  const [data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes]=dataRows[0].map(v=>v.trim());
+  if(!validIsoDate(data_inicio)||!validIsoDate(data_fim)||data_inicio>data_fim)throw new Error('As datas do Radar são inválidas ou estão invertidas.');
+  if(!texto||!resumo)throw new Error('O Radar precisa conter texto e resumo.');
+  return {insights,radar:{data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes}};
+}
+function setImportStatus(message,kind='pending'){
+  importStatus.textContent=message;importStatus.className='import-status '+kind;
+}
+async function saveInsightOutput(parsed){
+  if(importBusy)return;
+  importBusy=true;
+  try{
+    const fingerprint=JSON.stringify(parsed);
+    if(fingerprint===lastImportFingerprint){setImportStatus('Esta mesma resposta já foi salva nesta sessão. Nenhuma duplicação foi criada.','good');return;}
+    const stamp=new Date().toISOString(),r=parsed.radar;
+    const {data:existingRadar,error:radarLookupError}=await _supa.from('radar_analises').select('id').eq('data_inicio',r.data_inicio).eq('data_fim',r.data_fim).eq('texto',r.texto).limit(1);
+    if(radarLookupError)throw radarLookupError;
+    const radarExists=!!existingRadar?.length;
+    const radarInsert=radarExists?{data:existingRadar, error:null}:await _supa.from('radar_analises').insert({...r,gerado_em:stamp}).select('id');
+    if(radarInsert.error)throw radarInsert.error;
+    let savedInsights=0,duplicates=0;
+    for(const insight of parsed.insights){
+      const {data:found,error:lookupError}=await _supa.from('insights').select('id').eq('titulo',insight.titulo).eq('texto',insight.texto).eq('correlacao',insight.correlacao).limit(1);
+      if(lookupError)throw lookupError;
+      if(found?.length){duplicates++;continue;}
+      const {error:insertError}=await _supa.from('insights').insert({...insight,gerado_em:stamp});
+      if(insertError)throw insertError;
+      savedInsights++;
+    }
+    lastImportFingerprint=fingerprint;
+    const radarMessage=radarExists?'Radar já estava salvo':'1 Radar salvo';
+    setImportStatus('Importação concluída: '+savedInsights+' insight(s) novo(s) e '+radarMessage+'.'+(duplicates?' '+duplicates+' insight(s) já existiam e foram ignorados.':''),'good');
+    importPreview.innerHTML='<div class="import-preview"><div><strong>'+savedInsights+'</strong><span>novos insights salvos</span></div><div><strong>'+(radarExists?'já existia':'1 salvo')+'</strong><span>relatório Radar</span></div></div>';
+    await renderSavedReports();
+  }catch(error){
+    setImportStatus('Não foi possível salvar automaticamente: '+(error?.message||String(error))+' Você pode corrigir a resposta e colar novamente.','bad');
+  }finally{importBusy=false;}
+}
+async function processInsightPaste(){
+  const raw=importInput.value.trim();
+  if(!raw||!raw.includes('INSIGHTS_CSV')||!raw.includes('RADAR_CSV'))return;
+  if(importBusy)return;
+  try{
+    const parsed=parseInsightOutput(raw);
+    importPreview.innerHTML='<div class="import-preview"><div><strong>'+parsed.insights.length+'</strong><span>insights reconhecidos</span></div><div><strong>1</strong><span>relatório Radar reconhecido</span></div></div>';
+    setImportStatus('Resposta válida. Salvando os dois blocos nas tabelas do Life Dashboard…','pending');
+    await saveInsightOutput(parsed);
+  }catch(error){
+    setImportStatus('Ainda não foi possível importar: '+(error?.message||String(error)),'bad');
+    importPreview.innerHTML='';
+  }
+}
+importInput.addEventListener('paste',()=>{
+  window.setTimeout(processInsightPaste,80);
+});
+importInput.addEventListener('input',()=>{
+  window.clearTimeout(importTimer);
+  importTimer=window.setTimeout(processInsightPaste,900);
+});
+
 
 // ── BOOT ─────────────────────────────────────────────────
 renderRadar();
