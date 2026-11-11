@@ -433,7 +433,7 @@ const [diario, sono, clue, treino, garmin, garminAtiv, alimentacao, vidaItens, v
   sb('garmin_diario?order=data.desc&limit=365'),
   sb('garmin_atividades?order=data.desc&limit=500'),
   sb('alimentacao_diaria?order=data.asc&limit=365'),
-  sb('vida_itens?select=id,tipo,titulo,autor,categoria&order=created_at.asc&limit=1000'),
+  sb('vida_itens?select=id,tipo,duracao_oficial_min&order=created_at.asc&limit=1000'),
   sb('vida_registros?select=id,item_id,data,data_assistido,assistido,tipo_evento,temporada,episodio,progresso_percent,duracao_min,observacoes,created_at&order=data.asc&limit=2000'),
 ]);
 
@@ -520,13 +520,14 @@ garminAtiv.forEach(a => {
     const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
     if(!mapa[eventDate]) mapa[eventDate]={};
     const m=mapa[eventDate];
-    if(r.tipo_evento==='assistido' && item.tipo==='filme') m.filmes_assistidos=(m.filmes_assistidos||0)+1;
-    if(r.tipo_evento==='episodio' && item.tipo==='serie') m.episodios_assistidos=(m.episodios_assistidos||0)+1;
-    if(r.tipo_evento==='sessao_hobbie' && item.tipo==='hobbie'){
-      m.sessoes_hobbies=(m.sessoes_hobbies||0)+1;
-      if(r.duracao_min!=null) m.duracao_hobbies_min=(m.duracao_hobbies_min||0)+Number(r.duracao_min);
+    if((r.tipo_evento==='assistido' && item.tipo==='filme') || (r.tipo_evento==='episodio' && item.tipo==='serie')){
+      if(item.duracao_oficial_min!=null) m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(item.duracao_oficial_min);
+    }
+    if(r.tipo_evento==='sessao_hobbie' && item.tipo==='hobbie' && r.duracao_min!=null){
+      m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(r.duracao_min);
     }
     if(r.tipo_evento==='progresso_leitura' && item.tipo==='livro' && r.progresso_percent!=null){
+      m.leitura_registrada=1;
       const previous=leiturasPorItem.get(r.item_id);
       const current=Number(r.progresso_percent);
       if(previous!=null){
@@ -580,13 +581,7 @@ garminAtiv.forEach(a => {
       n:valid.length, inicio:valid[0].data, fim:valid[valid.length-1].data
     };
   });
-  const cultureSummary = {
-    library:vidaItens.map(({tipo,titulo,autor,categoria})=>({tipo,titulo,autor,categoria})),
-    records:vidaRegistros.filter(r=>r.tipo_evento!=='episodio'||r.assistido===true).map(r=>({data:r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data,tipo_evento:r.tipo_evento,titulo:itemById.get(r.item_id)?.titulo||'item não identificado',tipo:itemById.get(r.item_id)?.tipo||'não identificado',temporada:r.temporada,episodio:r.episodio,progresso_percent:r.progresso_percent,duracao_min:r.duracao_min,observacoes:r.observacoes})),
-    food:alimentacao.map(a=>({data:a.data,alimentacao:a.texto,agua:a.agua_texto})),
-    readingProgressPointsByDay:leituraPontosPorDia
-  };
-  _resumo = { dias: datas.length, medias, vars, cultureSummary };
+  _resumo = { dias: datas.length, medias, vars };
 
   filtrarCorr();
 }
@@ -671,7 +666,7 @@ function copiarParaClaude(){
     .map(c=>`- ${label(c.va)} × ${label(c.vb)}: associação ${c.r}; ${c.n} dias em comum`)
     .join('\n') || 'Nenhuma relação comportamento × resultado atingiu os critérios mínimos; não invente insights.';
 
-  const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações. O YouTube é um módulo independente e está totalmente excluído desta análise: não use seus dados nem o mencione.
+  const textoBase = `Aqui estão meus DADOS DE CORRELAÇÕES (INSIGHTS) do meu Life Dashboard. Quero entender melhor meus padrões pessoais. Analise com cuidado e transforme os resultados em explicações claras e úteis para minha vida cotidiana. Não trate correlação como causa e não invente explicações. O YouTube e os detalhes de filmes, séries, livros e hobbies são módulos independentes e estão excluídos desta análise. Use somente os totais diários agregados de tempo de lazer e o indicador de leitura registrada, sem identificar conteúdos.
 
 MÉDIAS POR VARIÁVEL (cada uma usa somente os dias em que há dado):
 ${mediasTexto}
@@ -704,7 +699,7 @@ ${JSON.stringify(_resumo.cultureSummary)}
 
 ESCOLHA DOS INSIGHTS:
 - Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
-- Considere alimentação/hidratação registradas, filmes/séries, leitura e hobbies quando houver volume e cobertura suficientes. YouTube está fora do escopo.
+- Considere alimentação/hidratação registradas e lazer apenas de forma agregada por dia: minutos totais estimados de filmes/séries (duração oficial por item) somados aos minutos explicitamente registrados em hobbies, sem títulos, nomes, categorias ou detalhes. Leitura pode aparecer somente como registro de leitura no dia (sim/não), sem livro, autor ou progresso. Não confunda duração oficial com tempo real assistido e não trate ausência de registro como zero.
 - Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
 - Não priorize automaticamente o maior número. Prefira relações compreensíveis e úteis para minha rotina. Não use associações entre métricas derivadas ou quase duplicadas (por exemplo visualizações e vídeos únicos quando têm os mesmos valores). Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
 - Não crie vários insights que digam quase a mesma coisa. Combine relações relacionadas quando isso deixar a explicação mais útil.
@@ -812,12 +807,8 @@ const RADAR_METRICS = [
   {table:'sono', field:'sleep_score', label:'Pontuação do sono', higherGood:null, group:'Garmin'},
   {table:'alimentacao_diaria', field:'alimentacao_registrada', label:'Registro de alimentação', higherGood:null, group:'Alimentação'},
   {table:'alimentacao_diaria', field:'agua_registrada', label:'Registro de água', higherGood:null, group:'Hidratação'},
-  {table:'vida_diario', field:'filmes_assistidos', label:'Filmes registrados', higherGood:null, group:'Cultura'},
-  {table:'vida_diario', field:'episodios_assistidos', label:'Episódios registrados', higherGood:null, group:'Cultura'},
-  {table:'vida_diario', field:'atualizacoes_leitura', label:'Atualizações de leitura', higherGood:null, group:'Leitura'},
-  {table:'vida_diario', field:'leitura_variacao_pp_media', label:'Variação média de leitura (p.p.)', higherGood:null, group:'Leitura'},
-  {table:'vida_diario', field:'sessoes_hobbies', label:'Sessões de hobbies', higherGood:null, group:'Hobbies'},
-  {table:'vida_diario', field:'duracao_hobbies_min', label:'Duração de hobbies', higherGood:null, group:'Hobbies'},
+  {table:'vida_diario', field:'tempo_lazer_min', label:'Tempo de lazer (minutos)', higherGood:null, group:'Lazer'},
+  {table:'vida_diario', field:'leitura_registrada', label:'Leitura registrada no dia', higherGood:null, group:'Lazer'},
 
 ];
 
@@ -849,7 +840,7 @@ async function renderRadar(){
       sb('sono?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('garmin_diario?data=gte.'+from+'&order=data.asc&limit=365'),
       sb('alimentacao_diaria?data=gte.'+from+'&order=data.asc&limit=365'),
-      sb('vida_itens?select=id,tipo,titulo&limit=1000'),
+      sb('vida_itens?select=id,tipo,duracao_oficial_min&limit=1000'),
       sb('vida_registros?data=gte.'+from+'&select=data,data_assistido,assistido,created_at,item_id,tipo_evento,progresso_percent,duracao_min&order=data.asc,created_at.asc&limit=2000')
     ]);
     const sono = sonoResult.status==='fulfilled' ? sonoResult.value : [];
@@ -868,10 +859,10 @@ async function renderRadar(){
       const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
       if(!lifeMap.has(eventDate)) lifeMap.set(eventDate,{data:eventDate});
       const day=lifeMap.get(eventDate);
-      if(r.tipo_evento==='assistido'&&item.tipo==='filme') day.filmes_assistidos=(day.filmes_assistidos||0)+1;
-      if(r.tipo_evento==='episodio'&&item.tipo==='serie') day.episodios_assistidos=(day.episodios_assistidos||0)+1;
-      if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'){day.sessoes_hobbies=(day.sessoes_hobbies||0)+1;if(r.duracao_min!=null)day.duracao_hobbies_min=(day.duracao_hobbies_min||0)+Number(r.duracao_min);}
+      if((r.tipo_evento==='assistido'&&item.tipo==='filme')||(r.tipo_evento==='episodio'&&item.tipo==='serie')){if(item.duracao_oficial_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(item.duracao_oficial_min);}
+      if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'&&r.duracao_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(r.duracao_min);
       if(r.tipo_evento==='progresso_leitura'&&item.tipo==='livro'&&r.progresso_percent!=null){
+        day.leitura_registrada=1;
         const prev=lastProgress.get(r.item_id),cur=Number(r.progresso_percent);
         if(prev!=null){if(!readingDeltas.has(r.data))readingDeltas.set(r.data,[]);readingDeltas.get(r.data).push(cur-prev);}
         lastProgress.set(r.item_id,cur);day.atualizacoes_leitura=(day.atualizacoes_leitura||0)+1;
@@ -898,7 +889,7 @@ async function renderRadar(){
         return;
       }
       const delta = a.mean-b.mean;
-      const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='duracao_min'?20:0.5);
+      const threshold = Math.max(Math.abs(b.mean)*0.15, m.field==='tempo_lazer_min'?20:0.5);
       if(Math.abs(delta)<threshold){
         coverage.push({...entry,delta,threshold,status:'below_threshold',reason:'Diferença abaixo do limite de sinal'});
         return;
