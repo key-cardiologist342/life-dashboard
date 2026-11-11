@@ -68,6 +68,21 @@ textarea.json-input{width:100%;min-height:230px;font: .74rem/1.6 'DM Mono',monos
   </section>
 
   <section class="section">
+    <div class="section-head"><div class="section-title">Importação Garmin</div><span class="pill">Sessão autenticada</span></div>
+    <div class="card">
+      <p class="muted">Importe os dados diretamente pela sua sessão já autenticada. Primeiro fazemos uma prévia; nada é gravado até você confirmar.</p>
+      <div class="controls" style="margin-top:12px">
+        <label class="muted" for="garmin-start">De</label><input id="garmin-start" type="date"/>
+        <label class="muted" for="garmin-end">Até</label><input id="garmin-end" type="date"/>
+        <button class="btn primary" id="garmin-preview">Ver prévia</button>
+        <button class="btn" id="garmin-confirm" disabled>Confirmar importação</button>
+      </div>
+      <div class="status" id="garmin-import-status" aria-live="polite"></div>
+      <pre class="prompt-box" id="garmin-import-result" style="display:none;max-height:260px"></pre>
+    </div>
+  </section>
+
+  <section class="section">
     <div class="section-head"><div class="section-title">Panorama do período</div><div class="controls"><label class="muted" for="periodo">Janela</label><select id="periodo"><option value="30">30 dias</option><option value="60">60 dias</option><option value="90" selected>90 dias</option><option value="180">180 dias</option></select><button class="btn" id="refresh">↻ Atualizar dados</button></div></div>
     <div class="grid metrics">
       <div class="card metric"><div class="label">Corridas</div><div class="value" id="m-corridas">—</div><div class="sub" id="m-corridas-sub">no período</div></div>
@@ -258,6 +273,42 @@ async function loadSaved(){
   if(error){$('saved-list').innerHTML='<div class="empty">Não foi possível carregar análises: '+escapeHtml(error.message)+'</div>';return;}
   $('saved-list').innerHTML=data?.length?data.map(a=>'<div class="saved-row"><div><strong>'+escapeHtml(a.resumo)+'</strong><small>'+new Date(a.data_inicio+'T12:00:00').toLocaleDateString('pt-BR')+' – '+new Date(a.data_fim+'T12:00:00').toLocaleDateString('pt-BR')+' · evolução: '+escapeHtml(a.evolucao_status)+' · recuperação: '+escapeHtml(a.recuperacao_status)+'</small></div><span class="pill">'+new Date(a.gerado_em).toLocaleDateString('pt-BR')+'</span></div>').join(''):'<div class="empty">Nenhuma análise salva ainda. Sua primeira análise aparecerá aqui.</div>';
 }
+// Importação Garmin autenticada: supabase.functions.invoke usa a sessão ativa automaticamente.
+const dateInput=(d)=>{const x=new Date();x.setDate(x.getDate()-d);return x.toISOString().slice(0,10);};
+$('garmin-start').value=dateInput(6);$('garmin-end').value=dateInput(0);
+let garminPreview=null;
+async function callGarminImport(confirm=false){
+  const startDate=$('garmin-start').value,endDate=$('garmin-end').value;
+  const status=$('garmin-import-status'),result=$('garmin-import-result');
+  const previewBtn=$('garmin-preview'),confirmBtn=$('garmin-confirm');
+  if(!startDate||!endDate||startDate>endDate){status.textContent='Informe um intervalo de datas válido.';status.className='status bad';return;}
+  const days=Math.round((new Date(endDate+'T00:00:00')-new Date(startDate+'T00:00:00'))/86400000)+1;
+  if(days<1||days>31){status.textContent='O intervalo precisa ter entre 1 e 31 dias.';status.className='status bad';return;}
+  previewBtn.disabled=true;confirmBtn.disabled=true;
+  status.textContent=confirm?'Importando e gravando os dados…':'Consultando a Garmin e preparando a prévia…';status.className='status';
+  try{
+    const {data,error}=await supabase.functions.invoke('garmin-import-manual',{body:{startDate,endDate,confirm}});
+    if(error)throw new Error(error.message||'Falha ao chamar a função Garmin.');
+    if(!data||data.ok!==true)throw new Error(data?.error||('Importação não concluída: '+JSON.stringify(data)));
+    garminPreview=data;
+    result.style.display='block';result.textContent=JSON.stringify(data,null,2);
+    if(confirm){
+      status.textContent='Importação concluída. Os dados foram gravados no Supabase.';status.className='status good';
+      garminPreview=null;await loadData();
+    }else{
+      status.textContent='Prévia pronta. Confira as contagens; confirme somente se estiver tudo certo.';status.className='status good';
+      confirmBtn.disabled=false;
+    }
+  }catch(err){
+    status.textContent='Erro: '+(err?.message||String(err));status.className='status bad';
+    result.style.display='none';garminPreview=null;
+  }finally{previewBtn.disabled=false;confirmBtn.disabled=!garminPreview;}
+}
+$('garmin-preview').addEventListener('click',()=>callGarminImport(false));
+$('garmin-confirm').addEventListener('click',()=>{
+  if(!garminPreview||!window.confirm('Confirma gravar os dados desta prévia no Life Dashboard?'))return;
+  callGarminImport(true);
+});
 $('refresh').addEventListener('click',loadData);$('periodo').addEventListener('change',loadData);$('refresh-saved').addEventListener('click',loadSaved);
 await loadData();
 </script>
