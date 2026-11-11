@@ -518,8 +518,12 @@ garminAtiv.forEach(a => {
     const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
     if(!mapa[eventDate]) mapa[eventDate]={};
     const m=mapa[eventDate];
-    if((r.tipo_evento==='assistido' && item.tipo==='filme') || (r.tipo_evento==='episodio' && item.tipo==='serie')){
-      if(item.duracao_oficial_min!=null) m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(item.duracao_oficial_min);
+    if(r.tipo_evento==='assistido' && item.tipo==='filme' && item.duracao_oficial_min!=null){
+      m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(item.duracao_oficial_min);
+    }
+    if(r.tipo_evento==='episodio' && item.tipo==='serie'){
+      const minutos=r.duracao_min??item.duracao_oficial_min;
+      if(minutos!=null) m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(minutos);
     }
     if(r.tipo_evento==='sessao_hobbie' && item.tipo==='hobbie' && r.duracao_min!=null){
       m.tempo_lazer_min=(m.tempo_lazer_min||0)+Number(r.duracao_min);
@@ -839,7 +843,8 @@ async function renderRadar(){
       const eventDate=r.tipo_evento==='episodio'?(r.data_assistido||r.data):r.data;
       if(!lifeMap.has(eventDate)) lifeMap.set(eventDate,{data:eventDate});
       const day=lifeMap.get(eventDate);
-      if((r.tipo_evento==='assistido'&&item.tipo==='filme')||(r.tipo_evento==='episodio'&&item.tipo==='serie')){if(item.duracao_oficial_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(item.duracao_oficial_min);}
+      if(r.tipo_evento==='assistido'&&item.tipo==='filme'&&item.duracao_oficial_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(item.duracao_oficial_min);
+      if(r.tipo_evento==='episodio'&&item.tipo==='serie'){const minutos=r.duracao_min??item.duracao_oficial_min;if(minutos!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(minutos);}
       if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'&&r.duracao_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(r.duracao_min);
       if(r.tipo_evento==='progresso_leitura'&&item.tipo==='livro'&&r.progresso_percent!=null){
         day.leitura_registrada=1;
