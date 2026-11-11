@@ -304,6 +304,10 @@ async function callGarminImport(confirm=false){
     result.style.display='none';garminPreview=null;
   }finally{previewBtn.disabled=false;confirmBtn.disabled=!garminPreview;}
 }
+['garmin-start','garmin-end'].forEach(id=>$(id).addEventListener('change',()=>{
+  garminPreview=null;$('garmin-confirm').disabled=true;$('garmin-import-result').style.display='none';
+  $('garmin-import-status').textContent='Datas alteradas. Gere uma nova prévia antes de confirmar.';$('garmin-import-status').className='status';
+}));
 $('garmin-preview').addEventListener('click',()=>callGarminImport(false));
 $('garmin-confirm').addEventListener('click',()=>{
   if(!garminPreview||!window.confirm('Confirma gravar os dados desta prévia no Life Dashboard?'))return;
