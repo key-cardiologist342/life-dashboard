@@ -157,6 +157,13 @@ main{max-width:1080px!important}
 @media(min-width:760px){.saved-columns{grid-template-columns:minmax(0,1fr)!important}.saved-grid{grid-template-columns:minmax(0,1fr)!important}}
 
 /* ── INSIGHTS: laboratório pessoal ── */
+.radar-panel{background:#fff;border:1px solid var(--border);border-radius:7px 20px 7px 20px;padding:18px;margin:28px 0;box-shadow:0 8px 24px rgba(92,54,79,.05)}
+.radar-panel .radar-intro{margin:0 0 14px}
+.radar-panel .radar-status{margin:0 0 10px}
+.radar-panel .radar-actions{margin-top:14px}
+.radar-panel .radar-item{background:#FFF7F0;border:1px solid var(--border);border-left:3px solid #397F91;border-radius:8px 13px 13px 8px;padding:13px}
+.radar-panel .radar-item p{color:var(--muted)}
+
 .insights-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 30px}
 .insights-stat{background:#fff;border:1px solid var(--border);border-radius:7px 17px 17px 17px;padding:14px 16px;box-shadow:4px 4px 0 #976A8D10}
 .insights-stat .k{font:700 .62rem 'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -210,7 +217,7 @@ main{max-width:1080px!important}
 
   <section class="saved-section" aria-labelledby="savedReportsTitle">
     <div class="saved-head">
-      <div><h2 id="savedReportsTitle">Seus relatórios</h2><p>Mostra só a importação mais recente: as últimas linhas de Insights e o último relatório do Radar.</p></div>
+      <div><h2 id="savedReportsTitle">Seus relatórios</h2><p>Histórico recente: até 30 insights e 15 relatórios do Radar, do mais novo ao mais antigo.</p></div>
       <button class="radar-btn" id="refreshSavedReports" type="button">↻ Atualizar</button>
     </div>
     <div class="saved-columns">
@@ -243,7 +250,13 @@ main{max-width:1080px!important}
     <div class="empty"><div class="big">📊</div>Carregando dados...</div>
   </div>
 
-  <div hidden aria-hidden="true"><div id="radarStatus"></div><div id="radarList"></div><button id="radarRefreshBtn" type="button"></button></div>
+  <section class="radar-panel" aria-labelledby="radarTitle">
+    <div class="section-title" id="radarTitle">radar investigativo</div>
+    <p class="radar-intro">Compara os últimos 7 dias com os 21 anteriores e procura mudanças que merecem atenção. O Diário é a fonte principal; Sono e Garmin entram como complemento quando há dados. Falta de registro não significa valor zero.</p>
+    <div id="radarStatus" class="radar-status" aria-live="polite">Calculando tendências…</div>
+    <div id="radarList" class="radar-list"><div class="empty">Carregando o Radar…</div></div>
+    <div class="radar-actions"><button class="radar-btn" id="radarRefreshBtn" type="button">↻ Atualizar Radar</button></div>
+  </section>
 
   <!-- BOTÃO -->
   <div class="btn-wrap">
@@ -341,7 +354,7 @@ async function renderSavedReports(){
     insightsEl.innerHTML=rows.length?rows.map(row=>{
       const accent=/^#[0-9a-f]{6}$/i.test(String(row.cor||''))?row.cor:'#a78bfa';
       return '<article class="saved-card insight-card" style="--saved-accent:'+escHTML(accent)+'"><div class="saved-card-top"><span class="saved-icon">'+escHTML(row.icone||'✨')+'</span><div><div class="saved-title">'+escHTML(row.titulo||'Insight')+'</div><div class="saved-meta">'+escHTML(reportDate(row))+(row.correlacao!=null?' · associação '+escHTML(row.correlacao):'')+'</div></div></div>'+longTextCard(row.texto,accent)+'</article>';
-    }).join(''):'<div class="saved-empty">Ainda não há insights salvos. As linhas da importação mais recente aparecerão aqui depois que você importar o CSV.</div>';
+    }).join(''):'<div class="saved-empty">Ainda não há insights salvos. Eles aparecerão aqui depois da primeira importação.</div>';
     bindReadMore(insightsEl);
   }
   if(rr.status==='rejected') radarEl.innerHTML='<div class="saved-empty">Não consegui carregar o Radar recente. Confira a conexão/permissão no Supabase.<br><small>'+escHTML(rr.reason?.message||'Erro desconhecido')+'</small></div>';
