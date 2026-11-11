@@ -1077,7 +1077,7 @@ const importPreview=document.getElementById('insights-import-preview');
 let importTimer=null, importBusy=false, lastImportFingerprint='';
 
 function parseCsvRows(source){
-  const text=String(source||'').replace(/^\\uFEFF/,'').trim();
+  const text=String(source||'').replace(/^\uFEFF/,'').trim();
   const rows=[];let row=[],field='',quoted=false;
   for(let i=0;i<text.length;i++){
     const ch=text[i],next=text[i+1];
@@ -1087,8 +1087,8 @@ function parseCsvRows(source){
       else field+=ch;
     }else if(ch==='"'){quoted=true;}
     else if(ch===','){row.push(field);field='';}
-    else if(ch==='\\n'||ch==='\\r'){
-      if(ch==='\\r'&&next==='\\n')i++;
+    else if(ch==='\n'||ch==='\r'){
+      if(ch==='\r'&&next==='\n')i++;
       row.push(field);field='';
       if(row.some(v=>v.trim()!==''))rows.push(row);
       row=[];
@@ -1099,19 +1099,23 @@ function parseCsvRows(source){
   return rows;
 }
 function extractCsvBlock(raw,marker,nextMarker){
-  const start=raw.search(new RegExp('(?:^|\\n)\\s*'+marker+'\\s*(?:\\n|$)','i'));
+  const markerRegex=new RegExp('(?:^|\\n)\\s*'+marker+'\\s*(?:\\n|$)','i');
+  const start=raw.search(markerRegex);
   if(start<0)throw new Error('Não encontrei o bloco '+marker+'.');
-  const markerMatch=raw.slice(start).match(new RegExp('(?:^|\\n)\\s*'+marker+'\\s*(?:\\n|$)','i'));
+  const markerMatch=raw.slice(start).match(markerRegex);
   const bodyStart=start+markerMatch[0].length;
   let body=raw.slice(bodyStart);
   if(nextMarker){
     const next=body.search(new RegExp('(?:^|\\n)\\s*'+nextMarker+'\\s*(?:\\n|$)','i'));
     if(next>=0)body=body.slice(0,next);
   }
-  return body.replace(/^\\s*\`\`\`[^\\n]*\\n?/,'').replace(/\\n?\\s*\`\`\`\\s*$/,'').trim();
+  const lines=body.trim().split(/\r?\n/);
+  if(lines[0]?.trim().startsWith(String.fromCharCode(96,96,96)))lines.shift();
+  if(lines.at(-1)?.trim()===String.fromCharCode(96,96,96))lines.pop();
+  return lines.join('\n').trim();
 }
 function validIsoDate(value){
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value||'')))return false;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||'')))return false;
   const d=new Date(value+'T12:00:00Z');
   return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===value;
 }
@@ -1129,7 +1133,7 @@ function parseInsightOutput(raw){
     const correlation=Number(corr);
     if(!icone||!titulo||!texto)throw new Error('Insight '+(i+1)+' está sem ícone, título ou texto.');
     if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido.');
-    if(!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1.');
+    if(corr===''||!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1.');
     return {icone,titulo,texto,cor,correlacao:correlation};
   });
   if(insights.length>5)throw new Error('O formato permite no máximo 5 insights por importação.');
@@ -1150,23 +1154,26 @@ async function saveInsightOutput(parsed){
     const fingerprint=JSON.stringify(parsed);
     if(fingerprint===lastImportFingerprint){setImportStatus('Esta mesma resposta já foi salva nesta sessão. Nenhuma duplicação foi criada.','good');return;}
     const stamp=new Date().toISOString(),r=parsed.radar;
-    const {data:existingRadar,error:radarLookupError}=await _supa.from('radar_analises').select('id').eq('data_inicio',r.data_inicio).eq('data_fim',r.data_fim).eq('texto',r.texto).limit(1);
+    const {data:existingRadar,error:radarLookupError}=await _supa.from('radar_analises').select('id,gerado_em').eq('data_inicio',r.data_inicio).eq('data_fim',r.data_fim).eq('texto',r.texto).limit(1);
     if(radarLookupError)throw radarLookupError;
     const radarExists=!!existingRadar?.length;
-    const radarInsert=radarExists?{data:existingRadar, error:null}:await _supa.from('radar_analises').insert({...r,gerado_em:stamp}).select('id');
-    if(radarInsert.error)throw radarInsert.error;
+    const batchStamp=radarExists?existingRadar[0].gerado_em:stamp;
+    if(!radarExists){
+      const {error:radarInsertError}=await _supa.from('radar_analises').insert({...r,gerado_em:stamp});
+      if(radarInsertError)throw radarInsertError;
+    }
     let savedInsights=0,duplicates=0;
     for(const insight of parsed.insights){
-      const {data:found,error:lookupError}=await _supa.from('insights').select('id').eq('titulo',insight.titulo).eq('texto',insight.texto).eq('correlacao',insight.correlacao).limit(1);
+      const {data:found,error:lookupError}=await _supa.from('insights').select('id').eq('titulo',insight.titulo).eq('texto',insight.texto).eq('correlacao',insight.correlacao).eq('gerado_em',batchStamp).limit(1);
       if(lookupError)throw lookupError;
       if(found?.length){duplicates++;continue;}
-      const {error:insertError}=await _supa.from('insights').insert({...insight,gerado_em:stamp});
+      const {error:insertError}=await _supa.from('insights').insert({...insight,gerado_em:batchStamp});
       if(insertError)throw insertError;
       savedInsights++;
     }
     lastImportFingerprint=fingerprint;
     const radarMessage=radarExists?'Radar já estava salvo':'1 Radar salvo';
-    setImportStatus('Importação concluída: '+savedInsights+' insight(s) novo(s) e '+radarMessage+'.'+(duplicates?' '+duplicates+' insight(s) já existiam e foram ignorados.':''),'good');
+    setImportStatus('Importação concluída: '+savedInsights+' insight(s) novo(s) e '+radarMessage+'.'+(duplicates?' '+duplicates+' insight(s) desta mesma importação já existiam e foram ignorados.':''),'good');
     importPreview.innerHTML='<div class="import-preview"><div><strong>'+savedInsights+'</strong><span>novos insights salvos</span></div><div><strong>'+(radarExists?'já existia':'1 salvo')+'</strong><span>relatório Radar</span></div></div>';
     await renderSavedReports();
   }catch(error){
