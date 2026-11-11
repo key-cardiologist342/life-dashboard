@@ -679,7 +679,7 @@ CRITÉRIO DE QUALIDADE — OBRIGATÓRIO:
 - Não compare indicadores que medem praticamente a mesma coisa (ex.: Dia Bom × Humor; Humor × Satisfação; duas métricas duplicadas de consumo).
 - Não compare dois resultados subjetivos entre si. Procure fatores comportamentais ou de contexto que possam ajudar a entender esses resultados.
 - Uma correlação forte não basta: explique por que a relação acrescenta informação útil e o que ela permite investigar na vida cotidiana.
-- Se nenhuma associação for realmente interessante, retorne menos insights ou nenhum. Não preencha quantidade por obrigação.
+- Gere pelo menos 1 Insight. Se nenhuma associação candidata for suficientemente confiável ou útil, não invente uma correlação: produza 1 Insight descritivo sobre um padrão efetivamente observado nos dados disponíveis, explique a limitação e deixe o campo correlacao vazio. Se nem sequer houver um padrão observável, use um Insight de transparência informando que os dados atuais não sustentam uma descoberta, sem inventar relações.
 - Trate associações como pistas, nunca como causa ou prova.
 - Há muitas combinações possíveis entre variáveis; por isso, algumas associações fortes podem aparecer por acaso. Não escolha um resultado só por ter o maior valor.
 - Dê preferência a relações com mais dias em comum e cobertura distribuída ao longo do período. Declare baixa confiança quando a amostra for pequena, concentrada em poucos dias ou muito incompleta.
@@ -698,7 +698,7 @@ ALIMENTAÇÃO, ÁGUA, LAZER E LEITURA:
 - Ausência de registro não prova que a atividade não aconteceu. Identifique claramente quando a amostra é pequena ou recente.
 
 ESCOLHA DOS INSIGHTS:
-- Gere de 3 a 5 insights somente se os dados sustentarem essa quantidade. Se houver menos padrões úteis, gere menos.
+- Gere de 1 a 5 insights. A entrega de pelo menos 1 é obrigatória. Priorize associações úteis e sustentadas; se não houver associação calculável e defensável, use um Insight descritivo ou de transparência, sem fabricar correlação.
 - Considere lazer somente por métricas diárias separadas: minutos de filmes/séries; minutos de hobbies; quantidade de vídeos diferentes do YouTube; leitura registrada (sim/não). Nunca some essas quatro métricas entre si. Não use títulos, canais, livros, autores ou detalhes de conteúdo. Não estime minutos do YouTube nem de leitura. Não trate ausência de registro como zero.
 - Priorize padrões ligados ao meu bem-estar e à minha rotina: humor, energia, clareza mental, foco, produtividade, satisfação, estresse, uso de internet, procrastinação, sono e atividade física.
 - Não priorize automaticamente o maior número. Prefira relações compreensíveis e úteis para minha rotina. Não use associações entre métricas derivadas ou quase duplicadas (por exemplo visualizações e vídeos únicos quando têm os mesmos valores). Evite relações técnicas ou pouco interpretáveis, como duas métricas fisiológicas muito parecidas, salvo se houver um motivo claro para destacá-las.
@@ -727,7 +727,7 @@ Regras dos campos:
 - titulo: máximo de 8 palavras e sem vírgulas. Deve comunicar a descoberta em linguagem cotidiana.
 - texto: 2 ou 3 frases claras e práticas seguindo as regras acima; sem vírgulas.
 - cor: código hex conforme o tema (#a78bfa=humor/ciclo; #38bdf8=sono; #fb923c=energia; #34d399=saúde/treino; #f472b6=foco/tempo; #facc15=produtividade).
-- correlacao: valor numérico da correlação escolhida para representar o insight. Preserve o sinal negativo quando houver.
+- correlacao: valor numérico da correlação escolhida para representar o insight. Preserve o sinal negativo quando houver. Se o Insight for descritivo e não houver correlação calculável, deixe o campo vazio (""), sem inventar número.
 - Escolha a cor pelo tema principal do insight.
 - Use exclusivamente aspas duplas retas ASCII (") como delimitadores; nunca use aspas curvas ou tipográficas (“ ”).
 - Coloque todos os cinco campos entre aspas duplas para manter o CSV consistente. No campo correlacao use apenas o número entre aspas. Se houver aspas dentro de um campo textual duplique-as.
@@ -998,14 +998,25 @@ FORMATO DA RESPOSTA
 Gere um único registro RADAR_CSV com este cabeçalho exato:
 data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes
 Use data_inicio ${ctx.recentStart} e data_fim ${today}.
-- resumo: diga a principal possibilidade em palavras simples; até 35 palavras.
-- sinais_observados: até 3 fatos dos registros que ajudem a entender a possibilidade.
-- limitacoes: diga o que ainda não sabemos e por quê, sem jargões; até 30 palavras.
-- acoes: até 2 coisas concretas para observar nos próximos 3–7 dias e o que cada resultado indicaria.
-- texto: inclua "Resumo:", "O que nos dados sugere:", "O que observar nos próximos dias:" e "O que ainda não sabemos:"; no máximo 120 palavras.
-- Use frases curtas e palavras comuns. Se precisar usar um termo técnico, explique-o imediatamente em linguagem simples.
-- Não comece com um resumo dos últimos dias. Comece pela possibilidade para os próximos dias.
-Não inclua comentários fora dos blocos CSV. Coloque todos os campos textuais entre aspas duplas e duplique aspas internas. `;
+REGRAS OBRIGATÓRIAS DO RADAR:
+- Gere exatamente 1 linha de dados, além do cabeçalho. O Radar é obrigatório mesmo quando os dados forem insuficientes para uma previsão.
+- A linha deve conter exatamente 7 campos, nesta ordem: data_inicio,data_fim,texto,resumo,sinais_observados,limitacoes,acoes.
+- Cada coluna é independente e deve estar presente. Nunca omita, una ou incorpore uma coluna em outra.
+- resumo: principal possibilidade ou conclusão cautelosa em palavras simples; até 35 palavras.
+- sinais_observados: até 3 fatos concretos dos registros, com valores, variações e quantidade de registros quando disponíveis. Este campo deve existir separadamente do texto e do resumo. Se não houver sinal consistente, escreva isso explicitamente.
+- limitacoes: o que ainda não sabemos e por quê, incluindo cobertura e tamanho da amostra; até 30 palavras.
+- acoes: até 2 coisas concretas para observar nos próximos 3–7 dias e o que cada resultado indicaria. Se não houver teste útil, proponha apenas registrar o dado que falta.
+- texto: interpretação geral com possibilidade para os próximos dias quando houver suporte. Inclua as partes "Resumo:", "O que os dados sugerem:", "O que observar nos próximos dias:" e "O que ainda não sabemos:"; máximo de 120 palavras. Não use esse campo para substituir resumo, sinais_observados, limitacoes ou acoes.
+- Se os dados não sustentarem uma previsão, diga isso claramente no texto e no campo limitacoes. Não invente tendência, causa ou previsão para preencher o Radar.
+- Use frases curtas e palavras comuns. Não comece com um resumo genérico da semana.
+
+VALIDAÇÃO FINAL ANTES DE RESPONDER:
+- INSIGHTS_CSV: cabeçalho exato, de 1 a 5 linhas de dados, exatamente 5 campos por linha. Cor HEX válida. Correlacao numérica entre -1 e 1 ou vazia somente para Insight descritivo sem correlação calculável.
+- RADAR_CSV: cabeçalho exato e exatamente 1 linha de dados com exatamente 7 campos.
+- Todos os campos textuais entre aspas duplas retas ASCII. Vírgulas internas protegidas pelas aspas. Aspas internas duplicadas.
+- Não use aspas curvas. Não insira quebras de linha dentro dos campos. Não junte linhas nem campos.
+- Antes de entregar, conte os campos de cada linha. Se qualquer contagem estiver incorreta, corrija o CSV.
+- Entregue sempre os dois blocos, nesta ordem: INSIGHTS_CSV e RADAR_CSV. Não inclua comentários fora dos blocos CSV.`;
 }
 
 document.getElementById('radarRefreshBtn').addEventListener('click',()=>{renderRadar();});
@@ -1119,8 +1130,8 @@ function parseInsightOutput(raw){
     const correlation=Number(corrNormalized);
     if(!icone||!titulo||!texto)throw new Error('Insight '+(i+1)+' está sem ícone, título ou texto.');
     if(!/^#[0-9a-f]{6}$/i.test(cor))throw new Error('A cor do insight '+(i+1)+' precisa ser um HEX válido. Valor recebido: '+JSON.stringify(corRaw)+'.');
-    if(!corrNormalized||!Number.isFinite(correlation)||correlation < -1||correlation > 1)throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1. Valor recebido: '+JSON.stringify(corrRaw)+'. Use um número como -0.555 ou 0.72.');
-    return {icone,titulo,texto,cor,correlacao:correlation};
+    if(corrNormalized&&(!Number.isFinite(correlation)||correlation < -1||correlation > 1))throw new Error('A correlação do insight '+(i+1)+' precisa estar entre -1 e 1. Valor recebido: '+JSON.stringify(corrRaw)+'. Use um número como -0.555 ou 0.72.');
+    return {icone,titulo,texto,cor,correlacao:corrNormalized?correlation:null};
   });
   if(insights.length>5)throw new Error('O formato permite no máximo 5 insights por importação.');
   const dataRows=radarRows.slice(1);
@@ -1150,7 +1161,9 @@ async function saveInsightOutput(parsed){
     }
     let savedInsights=0,duplicates=0;
     for(const insight of parsed.insights){
-      const {data:found,error:lookupError}=await _supa.from('insights').select('id').eq('titulo',insight.titulo).eq('texto',insight.texto).eq('correlacao',insight.correlacao).eq('gerado_em',batchStamp).limit(1);
+      let lookup=_supa.from('insights').select('id').eq('titulo',insight.titulo).eq('texto',insight.texto).eq('gerado_em',batchStamp);
+      lookup=insight.correlacao==null?lookup.is('correlacao',null):lookup.eq('correlacao',insight.correlacao);
+      const {data:found,error:lookupError}=await lookup.limit(1);
       if(lookupError)throw lookupError;
       if(found?.length){duplicates++;continue;}
       const {error:insertError}=await _supa.from('insights').insert({...insight,gerado_em:batchStamp});
