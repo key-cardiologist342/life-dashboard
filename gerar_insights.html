@@ -511,8 +511,6 @@ garminAtiv.forEach(a => {
 
   // Cultura, leitura e hobbies: métricas diárias derivadas dos registros reais.
   const itemById = new Map(vidaItens.map(item=>[item.id,item]));
-  const leiturasPorItem = new Map();
-  const leituraPontosPorDia = {};
   vidaRegistros.slice().sort((a,b)=>(a.data||'').localeCompare(b.data||'') || (a.created_at||'').localeCompare(b.created_at||'')).forEach(r=>{
     const item=itemById.get(r.item_id);
     if(!item) return;
@@ -528,23 +526,8 @@ garminAtiv.forEach(a => {
     }
     if(r.tipo_evento==='progresso_leitura' && item.tipo==='livro' && r.progresso_percent!=null){
       m.leitura_registrada=1;
-      const previous=leiturasPorItem.get(r.item_id);
-      const current=Number(r.progresso_percent);
-      if(previous!=null){
-        const delta=current-previous;
-        if(!leituraPontosPorDia[r.data]) leituraPontosPorDia[r.data]=[];
-        leituraPontosPorDia[r.data].push(delta);
-      }
-      leiturasPorItem.set(r.item_id,current);
-      m.atualizacoes_leitura=(m.atualizacoes_leitura||0)+1;
     }
   });
-  Object.entries(leituraPontosPorDia).forEach(([date,deltas])=>{
-    if(!mapa[date]) mapa[date]={};
-    mapa[date].leitura_variacao_pp_media=+(deltas.reduce((a,b)=>a+b,0)/deltas.length).toFixed(2);
-    mapa[date].livros_com_evolucao=deltas.length;
-  });
-
   // ── COLETA TODAS AS VARIÁVEIS ─────────────────────────
   const todasVars = new Set();
   Object.values(mapa).forEach(obj => Object.keys(obj).forEach(k=>todasVars.add(k)));
@@ -592,8 +575,7 @@ const INSIGHT_BEHAVIORS = new Set([
   'duracao_min','sleep_score','body_battery','necessidade_min','fc_repouso','vfc_status','oximetria','respiracao',
   'passos','calorias_ativas','treinou','volume_treino','qtd_atividades','te_aerobico_max',
   'alimentacao_registrada','agua_registrada','social_bom','evento_positivo','evento_negativo','conflito',
-  'filmes_assistidos','episodios_assistidos',
-  'leitura_variacao_pp_media','sessoes_hobbies','duracao_hobbies_min'
+  'tempo_lazer_min','leitura_registrada'
 ]);
 const INSIGHT_EXCLUDED_PAIRS = new Set([
   'dia_bom|humor','dia_bom|satisfacao','humor|satisfacao',
@@ -850,8 +832,6 @@ async function renderRadar(){
     const lifeRows = lifeResult.status==='fulfilled' ? lifeResult.value : [];
     const foodDaily = food.map(x=>({data:x.data,alimentacao_registrada:x.texto?.trim()?1:0,agua_registrada:x.agua_texto?.trim()?1:0}));
     const lifeMap = new Map();
-    const lastProgress = new Map();
-    const readingDeltas = new Map();
     lifeRows.forEach(r=>{
       const item=radarItems.get(r.item_id);
       if(!item) return;
@@ -863,12 +843,8 @@ async function renderRadar(){
       if(r.tipo_evento==='sessao_hobbie'&&item.tipo==='hobbie'&&r.duracao_min!=null)day.tempo_lazer_min=(day.tempo_lazer_min||0)+Number(r.duracao_min);
       if(r.tipo_evento==='progresso_leitura'&&item.tipo==='livro'&&r.progresso_percent!=null){
         day.leitura_registrada=1;
-        const prev=lastProgress.get(r.item_id),cur=Number(r.progresso_percent);
-        if(prev!=null){if(!readingDeltas.has(r.data))readingDeltas.set(r.data,[]);readingDeltas.get(r.data).push(cur-prev);}
-        lastProgress.set(r.item_id,cur);day.atualizacoes_leitura=(day.atualizacoes_leitura||0)+1;
       }
     });
-    readingDeltas.forEach((vals,date)=>{const day=lifeMap.get(date)||{data:date};day.leitura_variacao_pp_media=vals.reduce((a,b)=>a+b,0)/vals.length;lifeMap.set(date,day);});
     const lifeDaily=[...lifeMap.values()];
     const foodError=foodResult.status==='rejected',lifeError=lifeResult.status==='rejected'||itemsResult.status==='rejected';
     // Completa com zero somente entre a primeira e a última data coberta pelo Takeout.
