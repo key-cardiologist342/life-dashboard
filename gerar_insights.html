@@ -1023,41 +1023,50 @@ const importPreview=document.getElementById('insights-import-preview');
 let importTimer=null, importBusy=false, lastImportFingerprint='';
 
 function parseCsvRows(source,expectedColumns){
-  const text=String(source||'').replace(/^\uFEFF/,'').trim();
-  const rows=[];let row=[],field='',quoteEnd=null,afterQuote=false;
+  // Normaliza aspas tipográficas antes de interpretar o CSV.
+  const text=String(source||'').replace(/^\uFEFF/,'').replace(/[“”]/g,'"').trim();
+  const rows=[];let row=[],field='',inQuotes=false,afterQuote=false;
+  const pushField=()=>{row.push(field.trim());field='';afterQuote=false;};
   const pushRow=()=>{
-    row.push(field.trim());field='';
+    pushField();
     if(row.some(v=>v.trim()!==''))rows.push(row);
-    row=[];afterQuote=false;
+    row=[];
   };
   for(let i=0;i<text.length;i++){
     const ch=text[i],next=text[i+1];
-    if(quoteEnd){
-      if(ch===quoteEnd&&next===quoteEnd){field+=quoteEnd;i++;}
-      else if(ch===quoteEnd){quoteEnd=null;afterQuote=true;}
+    if(inQuotes){
+      if(ch==='"'&&next==='"'){field+='"';i++;}
+      else if(ch==='"'){inQuotes=false;afterQuote=true;}
       else field+=ch;
-    }else if(afterQuote){
-      if(ch===','){row.push(field.trim());field='';afterQuote=false;}
-      else if(ch==='\n'||ch==='\r'){
+      continue;
+    }
+    if(afterQuote){
+      if(ch===','){pushField();continue;}
+      if(ch==='\n'||ch==='\r'){
         if(ch==='\r'&&next==='\n')i++;
-        pushRow();
-      }else if(/\s/.test(ch)){
+        pushRow();continue;
+      }
+      if(/\s/.test(ch)){
         let j=i;
         while(j<text.length&&/\s/.test(text[j]))j++;
-        const nextIsQuoted=text[j]==='"'||text[j]==='“'||text[j]==='”';
-        if(expectedColumns&&row.length===expectedColumns-1&&nextIsQuoted){pushRow();i=j-1;}
-        else field+=ch;
-      }else field+=ch;
-    }else if(ch==='"'||ch==='“'){quoteEnd=ch==='"'?'"':'”';}
-    else if(ch==='”'){afterQuote=true;}
-    else if(ch==','){row.push(field.trim());field='';}
-    else if(ch==='\n'||ch==='\r'){
+        if(expectedColumns&&row.length===expectedColumns-1&&text[j]==='"'){
+          pushRow();i=j-1;continue;
+        }
+        field+=ch;continue;
+      }
+      field+=ch;continue;
+    }
+    if(ch==='"'&&field.trim()===''){inQuotes=true;continue;}
+    if(ch===','){pushField();continue;}
+    if(ch==='\n'||ch==='\r'){
       if(ch==='\r'&&next==='\n')i++;
-      pushRow();
-    }else field+=ch;
+      pushRow();continue;
+    }
+    field+=ch;
   }
-  if(quoteEnd)throw new Error('Há aspas abertas no CSV. Confira se a resposta foi copiada por inteiro.');
-  row.push(field.trim());if(row.some(v=>v.trim()!==''))rows.push(row);
+  if(inQuotes)throw new Error('Há aspas abertas no CSV. Confira se a resposta foi copiada por inteiro.');
+  row.push(field.trim());
+  if(row.some(v=>v.trim()!==''))rows.push(row);
   return rows;
 }
 function extractCsvBlock(raw,marker,nextMarker){
